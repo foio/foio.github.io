@@ -1,0 +1,422 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>积木小站</title>
+<meta name="description" content="this is a tech blog by foio">
+<meta name="keywords" content="tech, blog, modern">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="积木小站">
+<meta property="og:description" content="this is a tech blog by foio">
+<meta property="og:url" content="/page12/index.html">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/page12/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+</head>
+
+<body id="post-index" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+<div class="entry-header">
+  
+  
+  <div class="header-title">
+    <div class="header-title-wrap">
+      <h1>积木小站</h1>
+      <h2></h2>
+    </div><!-- /.header-title-wrap -->
+  </div><!-- /.header-title -->
+</div><!-- /.entry-header -->
+
+<div id="main" role="main">
+  
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-13T00:00:00+08:00"><a href="/javascript-delegate/">July 13, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/javascript-delegate/" rel="bookmark" title="javascript事件委托机制对比" itemprop="url">javascript事件委托机制对比</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>随着DOM结构的复杂化和Ajax等动态脚本技术的运用，事件委托自然浮出了水面。jQuery为绑定和委托事件提供了.bind()、.live()和.delegate()方法。本文在讨论这几个方法内部实现的基础上，展示它们的优劣势及适用场合。</p>
+
+<hr>
+
+<h2 id="两个问题">两个问题</h2>
+
+<h4 id="1.元素过多时的性能问题">1.元素过多时的性能问题</h4>
+
+<p>假设有一个多行多列的表格，我们想让用户单击每个单元格都能看到与其中内容相关的更多信息（比如，通过提示条）。为此，可以为每个单元格都绑定click事件：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“</span><span class="nx">info_table</span> <span class="nx">td</span><span class="err">”</span><span class="p">).</span><span class="nx">bind</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span></code></pre></div>
+
+<p>问题是，如果表格中要绑定单击事件的有10列500行，那么查找和遍历5000个单元格会导致脚本执行速度明显变慢，而保存5000个td元素和相应的事件处理程序也会占用大量内存。</p>
+
+<h4 id="2.动态添加元素的无法直接绑定事件">2.动态添加元素的无法直接绑定事件</h4>
+
+<p>假设一个动态翻页的表格，每一次翻页都是重新插入的表格。通过给第一页添加事件，对后续通过js异步加载的页面没有作用。</p>
+
+<hr>
+
+<h2 id="基本解决方法">基本解决方法</h2>
+
+<p>事件委托可以解决上述两个问题。具体到代码上，只要用jQuery1.3新增的.live()方法代替.bind()方法即可：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span> <span class="nx">td</span><span class="err">”</span><span class="p">).</span><span class="nx">live</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span></code></pre></div>
+
+<p>这里的.live()方法会把click事件绑定到$(document)对象，而且只需要给$(document)绑定一次，就能够处理后续动态加载表格。在接收到任何事件时，$(document)对象都会检查事件类型和事件目标，如果是click事件且事件目标是td，那么就执行委托给它的处理程序。</p>
+
+<hr>
+
+<h2 id="基本方法的问题">基本方法的问题</h2>
+
+<p>到目前为止，一切似乎很完美。可惜，事实并非如此。因为.live()方法并不完美，它有如下几个主要缺点：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">1. $()函数会找到当前页面中的所有td元素并创建jQuery对象，但在确认事件目标时却不用这个td元素集合，而是使用选择符表达式与event.target或其祖先元素进行比较，因而生成这个jQuery对象会造成不必要的开销；收集td元素并创建jQuery对象，但实际操作的却是$(document)对象，令人费解。
+2. 默认把事件绑定到$(document)元素，如果DOM嵌套结构很深，事件冒泡通过大量祖先元素会导致性能损失；
+3. 只能放在直接选择的元素后面，不能在连缀的DOM遍历方法后面使用，即$(“#info_table td”).live…可以，但$(“#info_table”).find(“td”).live…不行；
+</code></pre></div>
+<p>jQuery从1.4开始支持在使用.live()方法时配合使用一个上下文参数：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">)[</span><span class="mi">0</span><span class="p">]).</span><span class="nx">live</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span></code></pre></div>
+
+<p>这样，“受托方”就从默认的$(document)变成了$(“#info_table”)[0]，节省了冒泡的旅程。不过，与.live()共同使用的上下文参数必须是一个单独的DOM元素，所以这里指定上下文对象时使用的是$(“#info_table”)[0]，即使用数组的索引操作符来取得的一个DOM元素。</p>
+
+<p>如前所述，为了突破单一.bind()方法的局限性，实现事件委托，jQuery1.3引入了.live()方法。后来，为解决“事件传播链”过长的问题，jQuery 1.4又支持为.live()方法指定上下文对象。而为了解决无谓生成元素集合的问题，jQuery 1.4.2干脆直接引入了一个新方法.delegate()。</p>
+
+<hr>
+
+<h2 id="更好的解决办法">更好的解决办法</h2>
+
+<p>使用.delegate()，前面的例子可以这样写：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">).</span><span class="nx">delegate</span><span class="p">(</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="err">”</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span></code></pre></div>
+
+<p>使用.delegate()有如下优点：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">1. 直接将目标元素选择符（”td”）、事件（”click”）及处理程序与“受拖方”$(“#info_table”)绑定，不额外收集元素、事件传播路径缩短、语义明确；
+2. 支持在连缀的DOM遍历方法后面调用，即支持$(“table”).find(“#info”).delegate…，支持精确控制；
+</code></pre></div>
+<p>在jQuery1.7中 .delegate()已被.on()取代,.on与.delegate主要区别在参数顺序。使用.on前面的例子可以这样写：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">).</span><span class="nx">on</span><span class="p">(</span><span class="err">”</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO;});</span></code></pre></div>
+
+<p>可见，.delegate()与.on()方法是一个相对完美的解决方案。但在DOM结构简单的情况下，也可以使用.live()。</p>
+
+<blockquote>
+<p>提示：使用事件委托时，如果注册到目标元素上的其他事件处理程序使用.stopPropagation()阻止了事件传播，那么事件委托就会失效。</p>
+</blockquote>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-13T00:00:00+08:00"><a href="/cache-negotiate/">July 13, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/cache-negotiate/" rel="bookmark" title="浏览器与服务器的缓存协商" itemprop="url">浏览器与服务器的缓存协商</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <blockquote>
+<p>当我们通过浏览器打开一个web页时，浏览器会将下载到的html，图片，js，css等缓存到本地。一旦浏览器向web服务器再次请求同样的内容时，便直接可以从本地获取。这种缓存策略是由浏览器和web服务器协商达成的，这就是http中的“<strong>缓存协商</strong>”</p>
+</blockquote>
+
+<p>缓存协商的几种方式</p>
+
+<h3 id="1.-last-modified">1. Last-Modified</h3>
+
+<p>服务器在http响应头插入Last-Modified信息：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">Last-Modified:Sun, 13 Jul 2014 07:58:28 GMT
+</code></pre></div>
+<p>浏览器收到后，当再次请求同一页面时会带上如下头信息：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">If-Modified-Since:Sun, 13 Jul 2014 07:58:28 GMT
+</code></pre></div>
+<p>而此时服务器响应变成：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">HTTP/1.1 304 Not Modified
+</code></pre></div>
+<p>这表示浏览器将使用本地缓存。</p>
+
+<h3 id="2.-etag">2. ETag</h3>
+
+<p>Etag是HTTP/1.1A支持的另一种缓存协商方法，它采用一串编码来标记标记内容，当Etag没有变化时，内容一定没有变化。
+Etag首先由web服务器生成，比如lighttpd会给一个静态文件生成ETag。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">ETag: &quot;1963686687&quot;
+</code></pre></div>
+<p>浏览器获得这个Etag后，在下次请求同一页面时会在HTTP头中附加以下信息来向服务器询问内容是否发生变化。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">If-None-Match: &quot;1963686687&quot;
+</code></pre></div>
+<p>这时服务器重新计算这个Etag值，并与HTTP头中的附加信息进行比较，如果相同的返回：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">HTTP/1.1 304 Not Modified
+</code></pre></div>
+<p>这表示浏览器可以使用本地缓存。</p>
+
+<h3 id="3.-expires">3. Expires</h3>
+
+<p>无论是Last-Modified还是ETag模式下，当浏览器需要使用内容是，都要首先询问服务器以确定当前缓存是否可用，待服务器返回304时，浏览器才可以放心的使用本地缓存。而Expires就是为了完全消灭浏览器到服务器的请求的。</p>
+
+<p>Expires告诉浏览器该内容何时过期，暗示在该内容过期之前不需要询问服务器。Expires的格式类似于Last-Modified，它指定了内容过期的绝对时间。比如：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">Expires:Sun, 07 Jul 2024 03:22:19 GMT
+</code></pre></div>
+<h3 id="4.-cache-control">4. Cache-Control</h3>
+
+<p>到目前为止还有一个问题，通过Expires指定的过期时间是web服务器的时间，但是如果用户本地时间和服务器时间不一致的话，就会影响到本地缓存有效期检查。为此HTTP/1.1中还有一个Cache-Control。</p>
+
+<p>Cache-Control的格式如下：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">Cache-Control: max-age=3600
+</code></pre></div>
+<p>其中max-age指定了缓存过期的相对时间，单位是秒。</p>
+
+<blockquote>
+<p>当HTTP头中同时有Expires和Cache-Control时，浏览器会优先考虑Cache-Control。</p>
+</blockquote>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+
+<div class="pagination">
+  
+    
+      <a href="/page11" class="btn">Previous</a>
+    
+  
+  <ul class="inline-list">
+    <li>
+      
+      <a href="/">1</a>
+      
+    </li>
+    
+      <li>
+        
+          <a href="/page2">2</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page3">3</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page4">4</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page5">5</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page6">6</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page7">7</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page8">8</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page9">9</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page10">10</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page11">11</a>
+        
+      </li>
+    
+      <li>
+        
+          <span class="current-page">12</span>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page13">13</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page14">14</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page15">15</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page16">16</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page17">17</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page18">18</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page19">19</a>
+        
+      </li>
+    
+  </ul>
+  
+    <a href="/page13" class="btn">Next</a>
+  
+</div><!-- /.pagination -->
+
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+
+          
+
+</body>
+</html>

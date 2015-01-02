@@ -1,0 +1,334 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>php内核之函数执行过程 &#8211; 积木小站</title>
+<meta name="description" content="php内核中用户定义函数执行过程">
+<meta name="keywords" content="php">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="php内核之函数执行过程">
+<meta property="og:description" content="php内核中用户定义函数执行过程">
+<meta property="og:url" content="/php-internal-function/">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/php-internal-function/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/php-internal-function/" rel="bookmark" title="php内核之函数执行过程">php内核之函数执行过程</a></h1>
+        
+        <h2>October 05, 2014</h2>
+        
+        <p class="entry-reading-time">
+          <i class="fa fa-clock-o"></i>
+          
+          Reading time ~4 minutes
+        </p><!-- /.entry-reading-time -->
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>在php内核中，用户定义函数使用下面的结构体表示：</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">union</span> <span class="n">_zend_function</span> <span class="p">{</span>
+    <span class="n">zend_uchar</span> <span class="n">type</span><span class="p">;</span>    
+    <span class="k">struct</span> <span class="p">{</span>
+        <span class="n">zend_uchar</span> <span class="n">type</span><span class="p">;</span>  <span class="cm">/* never used */</span>
+        <span class="kt">char</span> <span class="o">*</span><span class="n">function_name</span><span class="p">;</span>    <span class="c1">//函数名称</span>
+        <span class="n">zend_class_entry</span> <span class="o">*</span><span class="n">scope</span><span class="p">;</span> <span class="c1">//函数所在的类作用域</span>
+        <span class="n">zend_uint</span> <span class="n">fn_flags</span><span class="p">;</span>     <span class="c1">// 作为方法时的访问类型等，如ZEND_ACC_STATIC等  </span>
+        <span class="k">union</span> <span class="n">_zend_function</span> <span class="o">*</span><span class="n">prototype</span><span class="p">;</span> <span class="c1">//函数原型</span>
+        <span class="n">zend_uint</span> <span class="n">num_args</span><span class="p">;</span>     <span class="c1">//参数数目</span>
+        <span class="n">zend_uint</span> <span class="n">required_num_args</span><span class="p">;</span> <span class="c1">//需要的参数数目</span>
+        <span class="n">zend_arg_info</span> <span class="o">*</span><span class="n">arg_info</span><span class="p">;</span>  <span class="c1">//参数信息指针</span>
+        <span class="n">zend_bool</span> <span class="n">pass_rest_by_reference</span><span class="p">;</span>
+        <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">return_reference</span><span class="p">;</span>  <span class="c1">//返回值 </span>
+    <span class="p">}</span> <span class="n">common</span><span class="p">;</span> 
+    <span class="n">zend_op_array</span> <span class="n">op_array</span><span class="p">;</span>   <span class="c1">//函数中的操作</span>
+    <span class="n">zend_internal_function</span> <span class="n">internal_function</span><span class="p">;</span>  
+<span class="p">}</span> <span class="n">zend_function</span><span class="p">;</span></code></pre></div>
+
+<p>在结构体<em>zend_function中，最重要的字段就是op_array了，一个函数的执行过程，就是顺序地执行该opcode数组中的opcode。每一个opcode对应一组C函数。opcode和C函数的对应关系在zend</em>vm_execute.h的<code>zend_vm_get_opcode_handler</code>中设置，</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">opcode_handler_t</span> <span class="nf">zend_vm_get_opcode_handler</span><span class="p">(</span><span class="n">zend_uchar</span> <span class="n">opcode</span><span class="p">,</span> <span class="n">zend_op</span><span class="o">*</span> <span class="n">op</span><span class="p">)</span>
+<span class="p">{</span>
+        <span class="k">static</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">zend_vm_decode</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 0              */</span>
+            <span class="n">_CONST_CODE</span><span class="p">,</span>  <span class="cm">/* 1 = IS_CONST   */</span>
+            <span class="n">_TMP_CODE</span><span class="p">,</span>    <span class="cm">/* 2 = IS_TMP_VAR */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 3              */</span>
+            <span class="n">_VAR_CODE</span><span class="p">,</span>    <span class="cm">/* 4 = IS_VAR     */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 5              */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 6              */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 7              */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 8 = IS_UNUSED  */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 9              */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 10             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 11             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 12             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 13             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 14             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 15             */</span>
+            <span class="n">_CV_CODE</span>      <span class="cm">/* 16 = IS_CV     */</span>
+        <span class="p">};</span>
+        <span class="k">return</span> <span class="n">zend_opcode_handlers</span><span class="p">[</span><span class="n">opcode</span> <span class="o">*</span> <span class="mi">25</span> 
+                <span class="o">+</span> <span class="n">zend_vm_decode</span><span class="p">[</span><span class="n">op</span><span class="o">-&gt;</span><span class="n">op1</span><span class="p">.</span><span class="n">op_type</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span> 
+                <span class="o">+</span> <span class="n">zend_vm_decode</span><span class="p">[</span><span class="n">op</span><span class="o">-&gt;</span><span class="n">op2</span><span class="p">.</span><span class="n">op_type</span><span class="p">]];</span>
+<span class="p">}</span></code></pre></div>
+
+<p>从<code>zend_vm_get_opcode_handler</code>中我们可以看出，操作码和操作数的类型共同决定了对应的C函数。每一个操作码最多对应25个C函数，php5.4的全部159个操作码对应的C函数在zend_vm_execute.h的的第36585行到第40560行。</p>
+
+<p>了解了操作码数组相关知识后，让我们来看看php内核是如何执行一个用户定义函数的。</p>
+
+<p>函数调用对应的C函数为ZEND_DO_FCALL_BY_NAME_SPEC_HANDLER，而最终的实现在zend_do_fcall_common_helper_SPEC中。zend_do_fcall_common_helper_SPEC主要对全局执行结构体<em>zend_executor_globals进行相应的设置，比如设置当前执行的操作码数组等，然后执行op</em>array。相关代码片段如下：</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">EX</span><span class="p">(</span><span class="n">original_return_value</span><span class="p">)</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">);</span>
+<span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="c1">//设置_zend_executor_globals结构体的active_op_array为当前函数的op_array</span>
+<span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">fbc</span><span class="o">-&gt;</span><span class="n">op_array</span><span class="p">;</span>
+<span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">RETURN_VALUE_USED</span><span class="p">(</span><span class="n">opline</span><span class="p">))</span> <span class="p">{</span>
+    <span class="n">temp_variable</span> <span class="o">*</span><span class="n">ret</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">EX_T</span><span class="p">(</span><span class="n">opline</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">.</span><span class="n">var</span><span class="p">);</span>
+    <span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">ptr</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">ptr</span><span class="p">;</span>
+    <span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">ptr_ptr</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">ptr</span><span class="p">;</span>
+    <span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">fcall_returned_reference</span> <span class="o">=</span> <span class="p">(</span><span class="n">fbc</span><span class="o">-&gt;</span><span class="n">common</span><span class="p">.</span><span class="n">fn_flags</span> <span class="o">&amp;</span> <span class="n">ZEND_ACC_RETURN_REFERENCE</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="c1">//如果已经设置zend_execute == execute这返回2，否则调用zend_execute执行当前函数的op_array</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">EXPECTED</span><span class="p">(</span><span class="n">zend_execute</span> <span class="o">==</span> <span class="n">execute</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">EXPECTED</span><span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">ZEND_VM_ENTER</span><span class="p">();</span>
+    <span class="p">}</span> 
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">zend_execute</span><span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+<span class="p">}</span></code></pre></div>
+
+<p>执行op_array的execute函数的函数定义在zend_vm_execute.h中。execute首先为op_array对应的函数在内核函数调用栈中分配一个新的栈帧。然后初始化相关的执行数据。</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="nl">zend_vm_enter</span><span class="p">:</span>
+    <span class="c1">//为当前函数分配栈帧</span>
+    <span class="n">execute_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">zend_execute_data</span> <span class="o">*</span><span class="p">)</span><span class="n">zend_vm_stack_alloc</span><span class="p">(</span>
+        <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">zend_execute_data</span><span class="p">))</span> <span class="o">+</span>
+        <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">zval</span><span class="o">**</span><span class="p">)</span> <span class="o">*</span> <span class="n">op_array</span><span class="o">-&gt;</span><span class="n">last_var</span> <span class="o">*</span> <span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">)</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="mi">2</span><span class="p">))</span> <span class="o">+</span>
+        <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">temp_variable</span><span class="p">))</span> <span class="o">*</span> <span class="n">op_array</span><span class="o">-&gt;</span><span class="n">T</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+     <span class="c1">//初始化执行数据</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">CVs</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">zval</span><span class="o">***</span><span class="p">)((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">execute_data</span> <span class="o">+</span> <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">zend_execute_data</span><span class="p">)));</span>
+    <span class="n">memset</span><span class="p">(</span><span class="n">EX</span><span class="p">(</span><span class="n">CVs</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">zval</span><span class="o">**</span><span class="p">)</span> <span class="o">*</span> <span class="n">op_array</span><span class="o">-&gt;</span><span class="n">last_var</span><span class="p">);</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">Ts</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">temp_variable</span> <span class="o">*</span><span class="p">)(((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">EX</span><span class="p">(</span><span class="n">CVs</span><span class="p">))</span> <span class="o">+</span> <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">zval</span><span class="o">**</span><span class="p">)</span> <span class="o">*</span> <span class="n">op_array</span><span class="o">-&gt;</span><span class="n">last_var</span> <span class="o">*</span>
+<span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">)</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="mi">2</span><span class="p">)));</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">fbc</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">called_scope</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">object</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">old_error_reporting</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">op_array</span><span class="p">)</span> <span class="o">=</span> <span class="n">op_array</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">symbol_table</span><span class="p">)</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">);</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">prev_execute_data</span><span class="p">)</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">current_execute_data</span><span class="p">);</span>
+    <span class="n">EG</span><span class="p">(</span><span class="n">current_execute_data</span><span class="p">)</span> <span class="o">=</span> <span class="n">execute_data</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">nested</span><span class="p">)</span> <span class="o">=</span> <span class="n">nested</span><span class="p">;</span></code></pre></div>
+
+<p>完成上述初始化工作后，将在一个while循环中执行当前op_array的每一个opcode。</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">ret</span><span class="p">;</span>
+<span class="cp">#ifdef ZEND_WIN32</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">timed_out</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">zend_timeout</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+        <span class="p">}</span>
+<span class="cp">#endif</span>
+        <span class="k">if</span> <span class="p">((</span><span class="n">ret</span> <span class="o">=</span> <span class="n">OPLINE</span><span class="o">-&gt;</span><span class="n">handler</span><span class="p">(</span><span class="n">execute_data</span> <span class="n">TSRMLS_CC</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">switch</span> <span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">case</span> <span class="mi">1</span><span class="o">:</span>
+                    <span class="n">EG</span><span class="p">(</span><span class="n">in_execution</span><span class="p">)</span> <span class="o">=</span> <span class="n">original_in_execution</span><span class="p">;</span>
+                    <span class="k">return</span><span class="p">;</span>
+                <span class="k">case</span> <span class="mi">2</span><span class="o">:</span>
+                    <span class="n">op_array</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">);</span>
+                    <span class="k">goto</span> <span class="n">zend_vm_enter</span><span class="p">;</span>
+                <span class="k">case</span> <span class="mi">3</span><span class="o">:</span>
+                    <span class="n">execute_data</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">current_execute_data</span><span class="p">);</span>
+                <span class="k">default</span><span class="o">:</span>
+                    <span class="k">break</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+    <span class="p">}</span></code></pre></div>
+
+<p>opcode通过<code>OPLINE-&gt;handler(execute_data TSRMLS_CC)</code>执行，一个opcode的执行结果有四种状态，根据四种状态分别执行不同的流程。这里我们主要看状态为2的情况，opcode的执行结构状态为2表示该opcode是一个函数调用操作码，这种情况下，首先替换当前的op_array，<code>op_array = EG(active_op_array)</code>，然后跳转到zend_vm_enter处，为新函数分配堆栈并初始化执行环境。</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cp">#define ZEND_VM_CONTINUE()         return 0</span>
+<span class="cp">#define ZEND_VM_RETURN()           return 1</span>
+<span class="cp">#define ZEND_VM_ENTER()            return 2</span>
+<span class="cp">#define ZEND_VM_LEAVE()            return 3</span></code></pre></div>
+
+<p>我们在execute函数中看到了为函数调用分配堆栈相关的操作，但是为什么没有函数调用完毕后的释放堆栈相关的操作呢？</p>
+
+<p>php用户定义函数，无论是否有返回值，其对应的op_array都会有RETURN操作码，而RETURN操作码就是负责释放堆栈的。具体的实现在zend_vm_execute.h文件的<code>zend_leave_helper_SPEC</code>函数中,。</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">zend_vm_stack_free</span><span class="p">(</span><span class="n">execute_data</span> <span class="n">TSRMLS_CC</span><span class="p">);</span></code></pre></div>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#php" title="Pages tagged php" class="tag">php</a></span>
+        <span><a href="/php-internal-function/" rel="bookmark" title="php内核之函数执行过程">php内核之函数执行过程</a> was published on <span class="entry-date date published updated"><time datetime="2014-10-05T00:00:00+08:00">October 05, 2014</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2014-10-05">10/05/2014</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/docker-tutorial/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
+          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
+            <span>Published on October 24, 2014</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+<!--高速版，加载速度快，使用前需测试页面的兼容性-->
+<div id="SOHUCS" class="entry-content"></div>
+<script>
+  (function(){
+    var appid = 'cyrgTvN9G',
+    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
+    var doc = document,
+    s = doc.createElement('script'),
+    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
+    s.type = 'text/javascript';
+    s.charset = 'utf-8';
+    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
+    h.insertBefore(s,h.firstChild);
+    window.SCS_NO_IFRAME = true;
+  })()
+</script>       
+
+	        
+
+</body>
+</html>

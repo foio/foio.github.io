@@ -1,0 +1,264 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>javascript事件委托机制对比 &#8211; 积木小站</title>
+<meta name="description" content=" javascript事件委托机制">
+<meta name="keywords" content="javascript">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="javascript事件委托机制对比">
+<meta property="og:description" content=" javascript事件委托机制">
+<meta property="og:url" content="/javascript-delegate/">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/javascript-delegate/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/javascript-delegate/" rel="bookmark" title="javascript事件委托机制对比">javascript事件委托机制对比</a></h1>
+        
+        <h2>July 13, 2014</h2>
+        
+        <p class="entry-reading-time">
+          <i class="fa fa-clock-o"></i>
+          
+          Reading time ~1 minute
+        </p><!-- /.entry-reading-time -->
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>随着DOM结构的复杂化和Ajax等动态脚本技术的运用，事件委托自然浮出了水面。jQuery为绑定和委托事件提供了.bind()、.live()和.delegate()方法。本文在讨论这几个方法内部实现的基础上，展示它们的优劣势及适用场合。</p>
+
+<hr>
+
+<h2 id="两个问题">两个问题</h2>
+
+<h4 id="1.元素过多时的性能问题">1.元素过多时的性能问题</h4>
+
+<p>假设有一个多行多列的表格，我们想让用户单击每个单元格都能看到与其中内容相关的更多信息（比如，通过提示条）。为此，可以为每个单元格都绑定click事件：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“</span><span class="nx">info_table</span> <span class="nx">td</span><span class="err">”</span><span class="p">).</span><span class="nx">bind</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span></code></pre></div>
+
+<p>问题是，如果表格中要绑定单击事件的有10列500行，那么查找和遍历5000个单元格会导致脚本执行速度明显变慢，而保存5000个td元素和相应的事件处理程序也会占用大量内存。</p>
+
+<h4 id="2.动态添加元素的无法直接绑定事件">2.动态添加元素的无法直接绑定事件</h4>
+
+<p>假设一个动态翻页的表格，每一次翻页都是重新插入的表格。通过给第一页添加事件，对后续通过js异步加载的页面没有作用。</p>
+
+<hr>
+
+<h2 id="基本解决方法">基本解决方法</h2>
+
+<p>事件委托可以解决上述两个问题。具体到代码上，只要用jQuery1.3新增的.live()方法代替.bind()方法即可：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span> <span class="nx">td</span><span class="err">”</span><span class="p">).</span><span class="nx">live</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span></code></pre></div>
+
+<p>这里的.live()方法会把click事件绑定到$(document)对象，而且只需要给$(document)绑定一次，就能够处理后续动态加载表格。在接收到任何事件时，$(document)对象都会检查事件类型和事件目标，如果是click事件且事件目标是td，那么就执行委托给它的处理程序。</p>
+
+<hr>
+
+<h2 id="基本方法的问题">基本方法的问题</h2>
+
+<p>到目前为止，一切似乎很完美。可惜，事实并非如此。因为.live()方法并不完美，它有如下几个主要缺点：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">1. $()函数会找到当前页面中的所有td元素并创建jQuery对象，但在确认事件目标时却不用这个td元素集合，而是使用选择符表达式与event.target或其祖先元素进行比较，因而生成这个jQuery对象会造成不必要的开销；收集td元素并创建jQuery对象，但实际操作的却是$(document)对象，令人费解。
+2. 默认把事件绑定到$(document)元素，如果DOM嵌套结构很深，事件冒泡通过大量祖先元素会导致性能损失；
+3. 只能放在直接选择的元素后面，不能在连缀的DOM遍历方法后面使用，即$(“#info_table td”).live…可以，但$(“#info_table”).find(“td”).live…不行；
+</code></pre></div>
+<p>jQuery从1.4开始支持在使用.live()方法时配合使用一个上下文参数：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">)[</span><span class="mi">0</span><span class="p">]).</span><span class="nx">live</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span></code></pre></div>
+
+<p>这样，“受托方”就从默认的$(document)变成了$(“#info_table”)[0]，节省了冒泡的旅程。不过，与.live()共同使用的上下文参数必须是一个单独的DOM元素，所以这里指定上下文对象时使用的是$(“#info_table”)[0]，即使用数组的索引操作符来取得的一个DOM元素。</p>
+
+<p>如前所述，为了突破单一.bind()方法的局限性，实现事件委托，jQuery1.3引入了.live()方法。后来，为解决“事件传播链”过长的问题，jQuery 1.4又支持为.live()方法指定上下文对象。而为了解决无谓生成元素集合的问题，jQuery 1.4.2干脆直接引入了一个新方法.delegate()。</p>
+
+<hr>
+
+<h2 id="更好的解决办法">更好的解决办法</h2>
+
+<p>使用.delegate()，前面的例子可以这样写：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">).</span><span class="nx">delegate</span><span class="p">(</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="err">”</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span></code></pre></div>
+
+<p>使用.delegate()有如下优点：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">1. 直接将目标元素选择符（”td”）、事件（”click”）及处理程序与“受拖方”$(“#info_table”)绑定，不额外收集元素、事件传播路径缩短、语义明确；
+2. 支持在连缀的DOM遍历方法后面调用，即支持$(“table”).find(“#info”).delegate…，支持精确控制；
+</code></pre></div>
+<p>在jQuery1.7中 .delegate()已被.on()取代,.on与.delegate主要区别在参数顺序。使用.on前面的例子可以这样写：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">).</span><span class="nx">on</span><span class="p">(</span><span class="err">”</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO;});</span></code></pre></div>
+
+<p>可见，.delegate()与.on()方法是一个相对完美的解决方案。但在DOM结构简单的情况下，也可以使用.live()。</p>
+
+<blockquote>
+<p>提示：使用事件委托时，如果注册到目标元素上的其他事件处理程序使用.stopPropagation()阻止了事件传播，那么事件委托就会失效。</p>
+</blockquote>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#javascript" title="Pages tagged javascript" class="tag">javascript</a></span>
+        <span><a href="/javascript-delegate/" rel="bookmark" title="javascript事件委托机制对比">javascript事件委托机制对比</a> was published on <span class="entry-date date published updated"><time datetime="2014-07-13T00:00:00+08:00">July 13, 2014</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2014-07-13">07/13/2014</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/cache-negotiate/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
+          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
+            <span>Published on October 24, 2014</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+<!--高速版，加载速度快，使用前需测试页面的兼容性-->
+<div id="SOHUCS" class="entry-content"></div>
+<script>
+  (function(){
+    var appid = 'cyrgTvN9G',
+    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
+    var doc = document,
+    s = doc.createElement('script'),
+    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
+    s.type = 'text/javascript';
+    s.charset = 'utf-8';
+    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
+    h.insertBefore(s,h.firstChild);
+    window.SCS_NO_IFRAME = true;
+  })()
+</script>       
+
+	        
+
+</body>
+</html>

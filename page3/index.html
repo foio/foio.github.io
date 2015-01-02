@@ -1,0 +1,451 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>积木小站</title>
+<meta name="description" content="this is a tech blog by foio">
+<meta name="keywords" content="tech, blog, modern">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="积木小站">
+<meta property="og:description" content="this is a tech blog by foio">
+<meta property="og:url" content="/page3/index.html">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/page3/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+</head>
+
+<body id="post-index" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+<div class="entry-header">
+  
+  
+  <div class="header-title">
+    <div class="header-title-wrap">
+      <h1>积木小站</h1>
+      <h2></h2>
+    </div><!-- /.header-title-wrap -->
+  </div><!-- /.header-title -->
+</div><!-- /.entry-header -->
+
+<div id="main" role="main">
+  
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-10-19T00:00:00+08:00"><a href="/php-hash/">October 19, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~2 minutes
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/php-hash/" rel="bookmark" title="理解PHP的Hash冲突漏洞" itemprop="url">理解PHP的Hash冲突漏洞</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>Hash表对PHP的重要性是每个phper都非常清楚地。但是PHP却有一个与Hash表相关的致命漏洞，我们完全可以通过PHP的Hash冲突漏洞进行DDoS攻击，可以轻易的搞挂一台服务器。那么是什么导致PHP的Hash冲突呢？如何构造Hash冲突？</p>
+
+<hr>
+
+<h3 id="php的hashtab实现方式">PHP的Hashtab实现方式</h3>
+
+<p>PHP中的哈希表实现在源代码的Zend/zend_hash.c中，Zend/zend_hash.h中描述了Hashtab的结构体，从中我们可以大概了解Hashtab的实现机制。</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_hashtable</span> <span class="p">{</span> 
+    <span class="n">uint</span> <span class="n">nTableSize</span><span class="p">;</span>        <span class="c1">// hash Bucket的大小，最小为8，以2x增长。</span>
+    <span class="n">uint</span> <span class="n">nTableMask</span><span class="p">;</span>        <span class="c1">// nTableSize-1 ， 索引取值的优化</span>
+    <span class="n">uint</span> <span class="n">nNumOfElements</span><span class="p">;</span>    <span class="c1">// hash Bucket中当前存在的元素个数，count()函数会直接返回此值 </span>
+    <span class="n">ulong</span> <span class="n">nNextFreeElement</span><span class="p">;</span> <span class="c1">// 下一个数字索引的位置</span>
+    <span class="n">Bucket</span> <span class="o">*</span><span class="n">pInternalPointer</span><span class="p">;</span>   <span class="c1">// 当前遍历的指针（foreach比for快的原因之一）</span>
+    <span class="n">Bucket</span> <span class="o">*</span><span class="n">pListHead</span><span class="p">;</span>          <span class="c1">// 存储数组头元素指针</span>
+    <span class="n">Bucket</span> <span class="o">*</span><span class="n">pListTail</span><span class="p">;</span>          <span class="c1">// 存储数组尾元素指针</span>
+    <span class="n">Bucket</span> <span class="o">**</span><span class="n">arBuckets</span><span class="p">;</span>         <span class="c1">// 存储hash数组</span>
+    <span class="kt">dtor_func_t</span> <span class="n">pDestructor</span><span class="p">;</span>    <span class="c1">// 在删除元素时执行的回调函数，用于资源的释放</span>
+    <span class="n">zend_bool</span> <span class="n">persistent</span><span class="p">;</span>       <span class="c1">//指出了Bucket内存分配的方式。如果persisient为TRUE，则使用操作系统本身的内存分配函数为Bucket分配内存，否则使用PHP的内存分配函数。</span>
+    <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">nApplyCount</span><span class="p">;</span> <span class="c1">// 标记当前hash Bucket被递归访问的次数（防止多次递归）</span>
+    <span class="n">zend_bool</span> <span class="n">bApplyProtection</span><span class="p">;</span><span class="c1">// 标记当前hash桶允许不允许多次访问，不允许时，最多只能递归3次</span>
+<span class="cp">#if ZEND_DEBUG</span>
+    <span class="kt">int</span> <span class="n">inconsistent</span><span class="p">;</span>
+<span class="cp">#endif</span>
+<span class="p">}</span> <span class="n">HashTable</span><span class="p">;</span></code></pre></div>
+
+<p>从结构体<code>_hashtable</code>中我们可以看出，PHP内核是使用常用的拉链法实现Hash表的，其中<code>Bucket **arBuckets</code>存储了实际的数据。</p>
+
+<p><img src="http://www.php-internals.com/images/book/chapt03/03-01-02-zend_hashtable.png" alt="php内核hash表数据结构"></p>
+
+<p>其实PHP的Hash冲突漏洞就是利用在极端情况下，拉链法的Hashtab会退化为单链表的漏洞。由于Hash函数是公开的，因此经过精心的构造，是可以构造出导致Hash退化为链表的数据的。</p>
+
+<p><img src="http://cms.csdnimg.cn/article/201410/16/543fda7865385.jpg" alt="极端情况下退化为单链表"></p>
+
+<hr>
+
+<h3 id="本地实现php的hash漏洞攻击">本地实现PHP的Hash漏洞攻击</h3>
+
+<p>在我们使用数组时，PHP内核都是通过把数组内容插入到一个Hash表实现的，但对于关联数组(字符串下标)和索引数组(整数下标)的处理方法是不同的。关联数组使用如下函数将数据添加的Hash表:</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">ZEND_API</span> <span class="kt">int</span> <span class="nf">_zend_hash_add_or_update</span><span class="p">(</span><span class="n">HashTable</span> <span class="o">*</span><span class="n">ht</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arKey</span><span class="p">,</span> <span class="n">uint</span> <span class="n">nKeyLength</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">pData</span><span class="p">,</span> <span class="n">uint</span> <span class="n">nDataSize</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">pDest</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span> <span class="n">ZEND_FILE_LINE_DC</span><span class="p">){</span>
+<span class="p">...</span>
+ <span class="n">h</span> <span class="o">=</span> <span class="n">zend_inline_hash_func</span><span class="p">(</span><span class="n">arKey</span><span class="p">,</span> <span class="n">nKeyLength</span><span class="p">);</span><span class="c1">//根据字符串计算Hash值</span>
+ <span class="n">nIndex</span> <span class="o">=</span> <span class="n">h</span> <span class="o">&amp;</span> <span class="n">ht</span><span class="o">-&gt;</span><span class="n">nTableMask</span><span class="p">;</span>
+<span class="p">...</span>
+<span class="p">}</span></code></pre></div>
+
+<p>从上述代码中我们可以看出，关联数组需要使用Hash函数根据字符串计算Hash值。而索引数组却直接使用整数下标作为Hash值：</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">ZEND_API</span> <span class="kt">int</span> <span class="nf">_zend_hash_index_update_or_next_insert</span><span class="p">(</span><span class="n">HashTable</span> <span class="o">*</span><span class="n">ht</span><span class="p">,</span> <span class="n">ulong</span> <span class="n">h</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">pData</span><span class="p">,</span> <span class="n">uint</span> <span class="n">nDataSize</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">pDest</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span>
+<span class="n">ZEND_FILE_LINE_DC</span><span class="p">){</span>
+<span class="p">...</span>
+<span class="n">nIndex</span> <span class="o">=</span> <span class="n">h</span> <span class="o">&amp;</span> <span class="n">ht</span><span class="o">-&gt;</span><span class="n">nTableMask</span><span class="p">;</span> <span class="c1">//直接使用下标作为hash值</span>
+<span class="p">...</span>
+<span class="p">}</span></code></pre></div>
+
+<p>由于实现较为简单，大部分攻击是通过构造索引数组来实现的，只要使
+公式<code>h &amp; ht-&gt;nTableMask</code>得到同样的值即可，其中<code>ht-&gt;nTableMask</code>在_zend_hash_init函数中赋值：<code>ht-&gt;nTableMask = ht-&gt;nTableSize - 1</code>。</p>
+
+<p>有了以上基础知识，我们就可以构利用Hash冲突漏洞了。先直接上代码：</p>
+
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
+ <span class="nv">$size</span> <span class="o">=</span> <span class="nb">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">16</span><span class="p">);</span>
+ <span class="nv">$startTime</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+ <span class="nv">$array</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+ <span class="k">for</span> <span class="p">(</span><span class="nv">$key</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">$maxKey</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nv">$size</span><span class="p">;</span> <span class="nv">$key</span> <span class="o">&lt;=</span> <span class="nv">$maxKey</span><span class="p">;</span> <span class="nv">$key</span> <span class="o">+=</span> <span class="nv">$size</span><span class="p">)</span> <span class="p">{</span>
+         <span class="nv">$array</span><span class="p">[</span><span class="nv">$key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+ <span class="p">}</span>
+ <span class="nv">$endTime</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
+ <span class="k">echo</span> <span class="nv">$endTime</span> <span class="o">-</span> <span class="nv">$startTime</span> <span class="p">,</span><span class="nx">PHP_EOL</span><span class="p">;</span>
+ <span class="cp">?&gt;</span><span class="x"></span></code></pre></div>
+
+<p>这段代码创建了一个包含2<sup>16</sup> 个元素的索引数组，下标依次为:</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">0,2^16,2*2^16,......,n*2^16,......,(2^16-1)*2^16
+</code></pre></div>
+<p>这时<code>ht-&gt;nTableMask=2^16-1</code>，转换为二进制就是<code>1111 1111 1111
+1111</code>。而以上数组中的任意一个下标h和ht-&gt;nTableMask进行与运算都得0，<code>nIndex = h &amp; ht-&gt;nTableMask =
+0</code>。即所有的下标都得到同样的Hash值，这时Hash表就退化为链表了。事实上，这段代码在我的电脑里运行耗时40多秒。多恐怖啊。</p>
+
+<hr>
+
+<h3 id="常见的hash冲突攻击形式">常见的Hash冲突攻击形式</h3>
+
+<blockquote>
+<p>POST攻击：
+PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造一个无限大的哈希冲突的值，则可以拖垮服务器。</p>
+</blockquote>
+
+<p>PHP5.3.9以后的版本可以通过php.ini设置GET/POST/COOKIE 的最大输入变量数。默认为1000。但这种方法是无法完全避免攻击的，我们也可以在POST的变量值上做手脚，即反序列化攻击。</p>
+
+<blockquote>
+<p>反序列化攻击：
+如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。
+到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据</p>
+</blockquote>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-10-10T00:00:00+08:00"><a href="/solr-scoring/">October 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/solr-scoring/" rel="bookmark" title="solr4.10搜索结果评分算法简介" itemprop="url">solr4.10搜索结果评分算法简介</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>solr4.10使用lucene4.10作为其搜索核心，lucene4.10的排序算法综合使用量<a href="http://en.wikipedia.org/wiki/Vector_space_model">向量空间模型</a>和<a href="http://en.wikipedia.org/wiki/Standard_Boolean_model">布尔模型</a>。lucene4.10的搜索结果排序算法可以用如下公式描述：</p>
+
+<figure style="margin:0 auto;width:620px">
+    <img src="/images/lucene_score.jpg"/>
+</figure>
+
+<p>下面我们分别就公司的各个项进行解释。</p>
+
+<h4 id="1.-词条频率">1. 词条频率</h4>
+
+<p><code>tf(t in d)</code>定义为词条t在文档d中出现的评频率。文档d中出现词条t的次数越多，则评分越多。默认实现是：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">tf(t in d) = frequency½
+</code></pre></div>
+<h4 id="2.逆文档频率">2.逆文档频率</h4>
+
+<p><code>idf(t)</code>定义为出现词条t的文档数量占比的倒数。默认实现是：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">idf(t) = 1 + log ( numDocs/docFreq+1 )
+</code></pre></div>
+<h4 id="3.协同因子">3.协同因子</h4>
+
+<p><code>coord(q,d)</code>定义为查询q中词条在文档d中出现的次数。文档中出现查询词条越多，评分越高。</p>
+
+<h4 id="4.查询标准">4.查询标准</h4>
+
+<p><code>queryNorm(q)</code>主要用于查询(query)之间比较，不影响文档的排序。因为一个查询(query)的所有文档使用同样的因子。<code>queryNorm(q)</code>使用如下公式计算，</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">queryNorm(q) = queryNorm(sumOfSquaredWeights) = 1/sumOfSquaredWeights½
+</code></pre></div>
+<p>其中的<code>sumOfSquaredWeights</code>与查询中每个词条的权重的平方和有关可以用如下公式表示。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sumOfSquaredWeights = q.getBoost()2 · ∑  (idf(t) · t.getBoost())2
+</code></pre></div>
+<h4 id="5.-词条权重">5. 词条权重</h4>
+
+<p><code>t.getBoost()</code>用于设置查询(query)中某个词条的权重，只在查询时起作用。</p>
+
+<h4 id="6.-其他因子">6. 其他因子</h4>
+
+<p><code>norm(t,d)</code>定义了文档权重和文档长度信息。其中文档权重表示在建立索引时给予每个文档或者每个域不同的权重；而长度因子表示文档的域在分词后包含的词条总数，文档的域的长度也少，得分越高。其中可以用如下公式表示：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">norm(t,d) = lengthNorm · ∏   f.boost()
+</code></pre></div>
+<hr>
+
+<p>总结一下：lucene4.10的排序结果与如下因素有关:</p>
+
+<blockquote>
+<p>1.单个文档中出现搜索语句中所有词条的频率；即<code>tf(t in d)</code>,<code>coord(q,d)</code></p>
+
+<p>2.搜索语句中词条在全部文档中出现的频率；即<code>idf(t)</code></p>
+
+<p>3.词条权重，文档权重；即<code>t.getBoost()</code>，<code>q.getBoost()</code>，<code>f.boost()</code></p>
+
+<p>4.文档域长度；即<code>lengthNorm</code></p>
+</blockquote>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+
+<div class="pagination">
+  
+    
+      <a href="/page2" class="btn">Previous</a>
+    
+  
+  <ul class="inline-list">
+    <li>
+      
+      <a href="/">1</a>
+      
+    </li>
+    
+      <li>
+        
+          <a href="/page2">2</a>
+        
+      </li>
+    
+      <li>
+        
+          <span class="current-page">3</span>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page4">4</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page5">5</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page6">6</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page7">7</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page8">8</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page9">9</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page10">10</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page11">11</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page12">12</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page13">13</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page14">14</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page15">15</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page16">16</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page17">17</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page18">18</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page19">19</a>
+        
+      </li>
+    
+  </ul>
+  
+    <a href="/page4" class="btn">Next</a>
+  
+</div><!-- /.pagination -->
+
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+
+          
+
+</body>
+</html>

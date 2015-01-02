@@ -1,0 +1,255 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>unicode正则表达式书写技巧 &#8211; 积木小站</title>
+<meta name="description" content="unicode正则表达式">
+<meta name="keywords" content="unicode">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="unicode正则表达式书写技巧">
+<meta property="og:description" content="unicode正则表达式">
+<meta property="og:url" content="/unicode-regular-expressions/">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/unicode-regular-expressions/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/unicode-regular-expressions/" rel="bookmark" title="unicode正则表达式书写技巧">unicode正则表达式书写技巧</a></h1>
+        
+        <h2>September 02, 2014</h2>
+        
+        <p class="entry-reading-time">
+          <i class="fa fa-clock-o"></i>
+          
+          Reading time ~1 minute
+        </p><!-- /.entry-reading-time -->
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>Unicode字符多种多样，除去ascii中的字母、数字、标点和中文字符，还包括其它多种语言和多种符号，有些符号甚至很难打出来，这时候该如何表示呢？接下来我们首先简单的介绍以下Unicode的编码特点，然后针对不同的场景分别介绍如何写正则表达式。</p>
+
+<hr>
+
+<h3 id="1.unicode的编码特点">1.Unicode的编码特点</h3>
+
+<p>每一个Unicode字符都对应一个唯一的Unicode编码，一种语言的Unicode编码是在一个连续区间内的，除了这些基本特征外，Unicode编码还有三种属性Property、 Block、Script。我们可以用<code>\p</code>引用Unicode的属性，</p>
+
+<blockquote>
+<p><strong>Property</strong>用于表示字符本身的功能，比如符号，空格，字母等。可以用<code>\p{L}</code>表示字母、文字，而对应<code>\P{L}</code>表示不是字母、文字。Property是与语言无关的，即<code>\p{L}</code>用于表示所有语言的字符。比如：</p>
+</blockquote>
+<div class="highlight"><pre><code class="language-text" data-lang="text">L或者Letter:所有语言的字符
+P或者Punctuation:所有语言的标点 
+S或者Separator:所有语言的分隔符
+</code></pre></div>
+<blockquote>
+<p><strong>Block</strong>表示Uincode的一个区间，某种语言的字符通常是落在同一区间的，所以可以通过Block粗略表示某类语言的字符，比如<code>\p{InHebrew}</code>表示希伯莱语字符，<code>\p{InCJK_Compatibility}</code>表示兼容CJK（汉语、韩语、日本语）的字符。如下表所示：每一个Block表示方法都对应一段编码区间：</p>
+</blockquote>
+<div class="highlight"><pre><code class="language-text" data-lang="text">InCJK_Compatibility:\u3300–\u33F
+InHebrew:\u0590–\u05F
+</code></pre></div>
+<blockquote>
+<p><strong>Script</strong>表示Uincode的一个书写系统，比如<code>\p{Greek}</code>表示希腊语字符，<code>\p{Han}</code>表示汉语（中文字符），比如如下列举了希腊，汉语和阿拉伯书写系统。</p>
+</blockquote>
+<div class="highlight"><pre><code class="language-text" data-lang="text">Greek
+Han
+Arabic
+</code></pre></div>
+<hr>
+
+<h3 id="2.unicode正则应用案例">2.Unicode正则应用案例</h3>
+
+<ul>
+<li>匹配单个Unicode字符，下面例子去掉&quot;发&quot;字。</li>
+</ul>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“</span><span class="n">发财了</span><span class="err">，</span><span class="n">发了</span><span class="err">”</span><span class="o">;</span>
+<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;\u53d1&quot;</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></div>
+
+<ul>
+<li>匹配所有标点符号，下面例子去掉所有标点符号</li>
+</ul>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“</span><span class="n">发财了</span><span class="err">，</span><span class="n">发了</span><span class="err">！</span><span class="o">&lt;</span><span class="n">Software</span> <span class="n">Engineer</span> <span class="n">is</span> <span class="n">great</span><span class="o">!&gt;</span><span class="err">”</span><span class="o">;</span>
+<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;\\pP&quot;</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></div>
+
+<ul>
+<li>匹配某种语言，下面例子去掉所有汉字</li>
+</ul>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“</span><span class="n">发财了</span><span class="err">，</span><span class="n">发了</span><span class="err">！</span><span class="o">&lt;</span><span class="n">Software</span> <span class="n">Engineer</span> <span class="n">is</span> <span class="n">great</span><span class="o">!&gt;</span><span class="err">”</span><span class="o">;</span>
+<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;\\pHan&quot;</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></div>
+
+<hr>
+
+<p>关于uicode编码属性可以参考<a href="http://www.regular-expressions.info/unicode.html">这篇文章</a>。</br>
+关于Unicode码表可以参考<a href="http://zh.wikibooks.org/wiki/Unicode">这里</a></p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#unicode" title="Pages tagged unicode" class="tag">unicode</a></span>
+        <span><a href="/unicode-regular-expressions/" rel="bookmark" title="unicode正则表达式书写技巧">unicode正则表达式书写技巧</a> was published on <span class="entry-date date published updated"><time datetime="2014-09-02T00:00:00+08:00">September 02, 2014</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2014-0９-2">2014-0９-2</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/lex-yacc/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
+          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
+            <span>Published on October 24, 2014</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+<!--高速版，加载速度快，使用前需测试页面的兼容性-->
+<div id="SOHUCS" class="entry-content"></div>
+<script>
+  (function(){
+    var appid = 'cyrgTvN9G',
+    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
+    var doc = document,
+    s = doc.createElement('script'),
+    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
+    s.type = 'text/javascript';
+    s.charset = 'utf-8';
+    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
+    h.insertBefore(s,h.firstChild);
+    window.SCS_NO_IFRAME = true;
+  })()
+</script>       
+
+	        
+
+</body>
+</html>

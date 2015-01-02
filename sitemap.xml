@@ -1,0 +1,262 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+    <url>
+        <loc></loc>
+    </url>
+    
+    
+    <url>
+        <loc>/404.html</loc>
+    </url>
+    
+    <url>
+        <loc>/about/</loc>
+    </url>
+    
+    <url>
+        <loc>/feed.xml</loc>
+    </url>
+    
+    <url>
+        <loc>/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/posts/</loc>
+    </url>
+    
+    <url>
+        <loc>/sitemap.xml</loc>
+    </url>
+    
+    <url>
+        <loc>/tags/</loc>
+    </url>
+    
+    <url>
+        <loc>/theme-setup/</loc>
+    </url>
+    
+    <url>
+        <loc>/page2/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page3/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page4/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page5/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page6/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page7/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page8/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page9/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page10/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page11/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page12/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page13/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page14/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page15/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page16/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page17/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page18/index.html</loc>
+    </url>
+    
+    <url>
+        <loc>/page19/index.html</loc>
+    </url>
+    
+
+    
+    <url>
+        <loc>/mongo-atom/</loc>
+    </url>
+    
+    <url>
+        <loc>/hive-udf/</loc>
+    </url>
+    
+    <url>
+        <loc>/php-ext-exp/</loc>
+    </url>
+    
+    <url>
+        <loc>/php-ext-autoload/</loc>
+    </url>
+    
+    <url>
+        <loc>/php-hash/</loc>
+    </url>
+    
+    <url>
+        <loc>/solr-scoring/</loc>
+    </url>
+    
+    <url>
+        <loc>/solr-ik/</loc>
+    </url>
+    
+    <url>
+        <loc>/php-internal-function/</loc>
+    </url>
+    
+    <url>
+        <loc>/docker-tutorial/</loc>
+    </url>
+    
+    <url>
+        <loc>/unicode-regular-expressions/</loc>
+    </url>
+    
+    <url>
+        <loc>/lex-yacc/</loc>
+    </url>
+    
+    <url>
+        <loc>/php-sapi/</loc>
+    </url>
+    
+    <url>
+        <loc>/nginx-empty-domain/</loc>
+    </url>
+    
+    <url>
+        <loc>/php-safe/</loc>
+    </url>
+    
+    <url>
+        <loc>/linux-expects/</loc>
+    </url>
+    
+    <url>
+        <loc>/ripple/</loc>
+    </url>
+    
+    <url>
+        <loc>/varnish/</loc>
+    </url>
+    
+    <url>
+        <loc>/mysql-master-slave/</loc>
+    </url>
+    
+    <url>
+        <loc>/mysql-log/</loc>
+    </url>
+    
+    <url>
+        <loc>/weka-kmeans/</loc>
+    </url>
+    
+    <url>
+        <loc>/kpusher/</loc>
+    </url>
+    
+    <url>
+        <loc>/western-religion/</loc>
+    </url>
+    
+    <url>
+        <loc>/javascript-delegate/</loc>
+    </url>
+    
+    <url>
+        <loc>/cache-negotiate/</loc>
+    </url>
+    
+    <url>
+        <loc>/javascript-variable/</loc>
+    </url>
+    
+    <url>
+        <loc>/scrum/</loc>
+    </url>
+    
+    <url>
+        <loc>/nginx-phpfpm/</loc>
+    </url>
+    
+    <url>
+        <loc>/RESTful/</loc>
+    </url>
+    
+    <url>
+        <loc>/sibinnuosha/</loc>
+    </url>
+    
+    <url>
+        <loc>/mysql-stridx/</loc>
+    </url>
+    
+    <url>
+        <loc>/firefox-addon/</loc>
+    </url>
+    
+    <url>
+        <loc>/firefox-profile/</loc>
+    </url>
+    
+    <url>
+        <loc>/sci/</loc>
+    </url>
+    
+    <url>
+        <loc>/svn-post/</loc>
+    </url>
+    
+    <url>
+        <loc>/shalemei-post/</loc>
+    </url>
+    
+    <url>
+        <loc>/mysql-explain/</loc>
+    </url>
+    
+    <url>
+        <loc>/nginxci/</loc>
+    </url>
+    
+</urlset>

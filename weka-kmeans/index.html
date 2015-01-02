@@ -1,0 +1,296 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>weka kmeans算法测试 &#8211; 积木小站</title>
+<meta name="description" content="weka kmeans">
+<meta name="keywords" content="MachineLearning  weka">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="weka kmeans算法测试">
+<meta property="og:description" content="weka kmeans">
+<meta property="og:url" content="/weka-kmeans/">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/weka-kmeans/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/weka-kmeans/" rel="bookmark" title="weka kmeans算法测试">weka kmeans算法测试</a></h1>
+        
+        <h2>July 16, 2014</h2>
+        
+        <p class="entry-reading-time">
+          <i class="fa fa-clock-o"></i>
+          
+          Reading time ~2 minutes
+        </p><!-- /.entry-reading-time -->
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>weka是机器学习和数据挖掘库java库，提供有GUI界面版本和类库版本。weka是GNU通用公共许可证下发布的开源软件，这意味着我们在自己的项目自由的使用，并可以在开放源代码的情况下改进weka。在使用weka之前，我们首先要将自己的数据集转换为weka支持的格式。weka的数据格式请参考<a href="http://www.cs.waikato.ac.nz/ml/weka/arff.html">arff格式说明</a>。学习weka库最好先有一下机器学习方面的基础知识，然后学习官方example。接下来简单说明如何使用weka库的kmeans算法。</p>
+
+<hr>
+
+<p><strong>训练数据集集</strong></p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">@relation race
+
+@attribute height NUMERIC
+@attribute weight NUMERIC
+@attribute eyeColor NUMERIC
+@attribute hairColor NUMERIC
+
+@data
+170,70,1,1
+180,70,2,2
+175,70,1,1
+200,80,2,3
+210,80,2,1
+200,70,2,2
+150,50,1,1
+155,50,1,1
+170,70,1,1
+173,70,1,1
+170,70,1,2
+</code></pre></div>
+<p><strong>测试数据集集</strong></p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">@relation race
+
+@attribute height NUMERIC
+@attribute weight NUMERIC
+@attribute eyeColor NUMERIC
+@attribute hairColor NUMERIC
+
+@data
+170,71,1,1
+200,80,2,2
+</code></pre></div>
+<hr>
+
+<h3 id="代码">代码</h3>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">KmeansTest</span> <span class="o">{</span>
+      <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+            <span class="n">File</span> <span class="n">trainFile</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">File</span><span class="o">(</span><span class="s">&quot;race_train.arff&quot;</span><span class="o">);</span>
+            <span class="n">File</span> <span class="n">testFile</span>  <span class="o">=</span> <span class="k">new</span> <span class="nf">File</span><span class="o">(</span><span class="s">&quot;race_test.arff&quot;</span><span class="o">);</span>
+            <span class="n">ArffLoader</span> <span class="n">atf</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ArffLoader</span><span class="o">();</span>  
+            <span class="c1">// load data</span>
+            <span class="n">atf</span><span class="o">.</span><span class="na">setFile</span><span class="o">(</span><span class="n">trainFile</span><span class="o">);</span>  
+            <span class="n">Instances</span> <span class="n">train</span> <span class="o">=</span> <span class="n">atf</span><span class="o">.</span><span class="na">getDataSet</span><span class="o">();</span>
+            <span class="n">atf</span><span class="o">.</span><span class="na">setFile</span><span class="o">(</span><span class="n">testFile</span><span class="o">);</span>  
+            <span class="n">Instances</span> <span class="n">test</span> <span class="o">=</span> <span class="n">atf</span><span class="o">.</span><span class="na">getDataSet</span><span class="o">();</span> 
+            <span class="c1">// build clusterer</span>
+            <span class="n">SimpleKMeans</span> <span class="n">clusterer</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">SimpleKMeans</span><span class="o">();</span>
+            <span class="n">clusterer</span><span class="o">.</span><span class="na">setNumClusters</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
+            <span class="n">clusterer</span><span class="o">.</span><span class="na">buildClusterer</span><span class="o">(</span><span class="n">train</span><span class="o">);</span>   
+            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">clusterer</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+            <span class="c1">// output predictions      </span>
+            <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">test</span><span class="o">.</span><span class="na">numInstances</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+              <span class="kt">int</span> <span class="n">cluster</span> <span class="o">=</span> <span class="n">clusterer</span><span class="o">.</span><span class="na">clusterInstance</span><span class="o">(</span><span class="n">test</span><span class="o">.</span><span class="na">instance</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
+              <span class="kt">double</span><span class="o">[]</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">clusterer</span><span class="o">.</span><span class="na">distributionForInstance</span><span class="o">(</span><span class="n">test</span><span class="o">.</span><span class="na">instance</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
+              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">));</span>
+              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">&quot; - &quot;</span><span class="o">);</span>
+              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">cluster</span><span class="o">);</span>
+              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">&quot; - &quot;</span><span class="o">);</span>
+              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">Utils</span><span class="o">.</span><span class="na">arrayToString</span><span class="o">(</span><span class="n">dist</span><span class="o">));</span>
+              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">();</span>
+            <span class="o">}</span> 
+          <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<hr>
+
+<h3 id="结果如下">结果如下</h3>
+<div class="highlight"><pre><code class="language-text" data-lang="text">//kMeans聚类结果信息如下，比较重要的是每个聚类的中心以及误差
+kMeans
+======
+
+Number of iterations: 2
+Within cluster sum of squared errors: 1.7463888888888888
+Missing values globally replaced with mean/mode
+
+Cluster centroids:
+                         Cluster#
+Attribute    Full Data          0          1
+                  (11)        (4)        (7)
+============================================
+height        177.5455      197.5   166.1429
+weight         68.1818         75    64.2857
+eyeColor        1.3636          2          1
+hairColor       1.4545          2     1.1429
+
+//分类结果如下
+1 - 1 - 0.0,1.0
+2 - 0 - 1.0,0.0
+</code></pre></div>
+<blockquote>
+<p>更多资料请阅读<a href="http://www.cs.waikato.ac.nz/ml/weka/">weka官网</a>。</p>
+</blockquote>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#MachineLearning  weka" title="Pages tagged MachineLearning  weka" class="tag">MachineLearning  weka</a></span>
+        <span><a href="/weka-kmeans/" rel="bookmark" title="weka kmeans算法测试">weka kmeans算法测试</a> was published on <span class="entry-date date published updated"><time datetime="2014-07-16T00:00:00+08:00">July 16, 2014</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2014-07-16">07/16/2014</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/kpusher/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
+          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
+            <span>Published on October 24, 2014</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+<!--高速版，加载速度快，使用前需测试页面的兼容性-->
+<div id="SOHUCS" class="entry-content"></div>
+<script>
+  (function(){
+    var appid = 'cyrgTvN9G',
+    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
+    var doc = document,
+    s = doc.createElement('script'),
+    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
+    s.type = 'text/javascript';
+    s.charset = 'utf-8';
+    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
+    h.insertBefore(s,h.firstChild);
+    window.SCS_NO_IFRAME = true;
+  })()
+</script>       
+
+	        
+
+</body>
+</html>

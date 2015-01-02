@@ -1,0 +1,360 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>积木小站</title>
+<meta name="description" content="this is a tech blog by foio">
+<meta name="keywords" content="tech, blog, modern">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="积木小站">
+<meta property="og:description" content="this is a tech blog by foio">
+<meta property="og:url" content="/page13/index.html">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/page13/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+</head>
+
+<body id="post-index" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+<div class="entry-header">
+  
+  
+  <div class="header-title">
+    <div class="header-title-wrap">
+      <h1>积木小站</h1>
+      <h2></h2>
+    </div><!-- /.header-title-wrap -->
+  </div><!-- /.header-title -->
+</div><!-- /.entry-header -->
+
+<div id="main" role="main">
+  
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-10T00:00:00+08:00"><a href="/javascript-variable/">July 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/javascript-variable/" rel="bookmark" title="javascript的声明提前" itemprop="url">javascript的声明提前</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <blockquote>
+<p>众所周知，javascript有全局作用域和函数局部作用域(没有c，c++，java等强类型语言中的块作用域)。那下面一段代码的结果是什么呢？</p>
+</blockquote>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">scope</span> <span class="o">=</span> <span class="s2">&quot;global&quot;</span><span class="p">;</span>
+<span class="kd">function</span> <span class="nx">f</span><span class="p">(){</span>
+  <span class="nx">alter</span><span class="p">(</span><span class="nx">scope</span><span class="p">);</span>
+  
+  <span class="nx">alter</span><span class="p">(</span><span class="nx">scope</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nx">f</span><span class="p">();</span></code></pre></div>
+
+<p>这段代码的执行结果为：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kc">undefined</span>
+<span class="nx">local</span></code></pre></div>
+
+<p>输出local很容易理解，应用局部作用域的变量覆盖了全局作用域。但是输出undefined就有点奇怪了？</p>
+
+<p>这是由于函数作用域的特性导致的，局部变量在整个函数体中始终有定义，也就是说，在整个函数体中局部变量遮挡了全局变量，但是只有程序执行到var语句时局部变量才会被赋值。因此，上述过程等价于将函数内的变量的声明“提前”到函数体顶部，而变量的初始化仍然保留在原来位置，也就做“声明提前”。因为php也只有全局作用域和函数局部作用域，因此php的表现和javascript是一致的。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-03T00:00:00+08:00"><a href="/scrum/">July 03, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/scrum/" rel="bookmark" title="scrum,增量的价值交互" itemprop="url">scrum,增量的价值交互</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <blockquote>
+<p>敏捷软件开发又称敏捷开发，是一种从1990年代开始逐渐引起广泛关注的一些新型软件开发方 法，是一种应对快速变化的需求的一种软件开发能力。它们的具体名称、理念、过程、术语都不尽相同，相对于“非敏捷”，更强调程序员团队与业务专家之间的紧密协作、面对面的沟通（认为比书面的文档更有效）、频繁交付新的软件版本、紧凑而自我组织型的团队、能够很好地适应需求变化的代码编写和团队组织方法，也 更注重软件开发中人的作用。</p>
+</blockquote>
+
+<p>下面分别分析敏捷开发与传统的瀑布开发方式的不同。</p>
+
+<h4 id="1.瀑布式开发流程：">1.瀑布式开发流程：</h4>
+
+<figure>
+    <img src="/images/waterfull.png"/>
+    <figcaption>传统的瀑布式开发流程</figcaption>
+</figure>
+
+<p>瀑布式开发流程特征如下：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">1.基于阶段(文档)
+前一个阶段的输出就是下一个阶段的输入，文档是个阶段衔接的唯一信息。管理人员喜欢瀑布模型的原因是把文档理解为开发的速度，可以方便地界定不同阶段的里程碑，由此量化团队工作效率。
+2.基于一次性需求和前期设计
+没有迭代与反馈。瀑布模型对反馈没有涉及，所以对变化的客户需求非常不容易适应。瀑布就意味着没有回头路。 
+</code></pre></div>
+<p>近几年各大公司开始刮起了敏捷风。敏捷软件开发是一个开发软件的管理新模式，用来替代以文件驱动开发的瀑布开发模式。
+敏捷开发宣言：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">个体的交互    高于   流程与工具
+工作的软件    高于   详尽的文档
+客户的合作    高于   合同谈判
+响应变化      高于   遵循计划
+</code></pre></div>
+<p>敏捷开发要素:</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">三个角色：Scrum master(SM),Product Owner(PM),Team(RD,QA,FE)
+四个仪式：迭代计划会，每日站立会，Show Case，迭代回顾会
+三个工作：产品backlog，迭代backlog，燃尽图
+</code></pre></div>
+<p>从一张图基本可以理解scrum流程。
+<figure>
+    <img src="/images/scrum.png"/>
+    <figcaption>scrum示意图</figcaption>
+</figure></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+
+<div class="pagination">
+  
+    
+      <a href="/page12" class="btn">Previous</a>
+    
+  
+  <ul class="inline-list">
+    <li>
+      
+      <a href="/">1</a>
+      
+    </li>
+    
+      <li>
+        
+          <a href="/page2">2</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page3">3</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page4">4</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page5">5</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page6">6</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page7">7</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page8">8</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page9">9</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page10">10</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page11">11</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page12">12</a>
+        
+      </li>
+    
+      <li>
+        
+          <span class="current-page">13</span>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page14">14</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page15">15</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page16">16</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page17">17</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page18">18</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page19">19</a>
+        
+      </li>
+    
+  </ul>
+  
+    <a href="/page14" class="btn">Next</a>
+  
+</div><!-- /.pagination -->
+
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+
+          
+
+</body>
+</html>

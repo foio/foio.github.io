@@ -1,0 +1,250 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>浏览器与服务器的缓存协商 &#8211; 积木小站</title>
+<meta name="description" content="缓存协商">
+<meta name="keywords" content="server browser">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="浏览器与服务器的缓存协商">
+<meta property="og:description" content="缓存协商">
+<meta property="og:url" content="/cache-negotiate/">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/cache-negotiate/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/cache-negotiate/" rel="bookmark" title="浏览器与服务器的缓存协商">浏览器与服务器的缓存协商</a></h1>
+        
+        <h2>July 13, 2014</h2>
+        
+        <p class="entry-reading-time">
+          <i class="fa fa-clock-o"></i>
+          
+          Reading time ~1 minute
+        </p><!-- /.entry-reading-time -->
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <blockquote>
+<p>当我们通过浏览器打开一个web页时，浏览器会将下载到的html，图片，js，css等缓存到本地。一旦浏览器向web服务器再次请求同样的内容时，便直接可以从本地获取。这种缓存策略是由浏览器和web服务器协商达成的，这就是http中的“<strong>缓存协商</strong>”</p>
+</blockquote>
+
+<p>缓存协商的几种方式</p>
+
+<h3 id="1.-last-modified">1. Last-Modified</h3>
+
+<p>服务器在http响应头插入Last-Modified信息：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">Last-Modified:Sun, 13 Jul 2014 07:58:28 GMT
+</code></pre></div>
+<p>浏览器收到后，当再次请求同一页面时会带上如下头信息：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">If-Modified-Since:Sun, 13 Jul 2014 07:58:28 GMT
+</code></pre></div>
+<p>而此时服务器响应变成：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">HTTP/1.1 304 Not Modified
+</code></pre></div>
+<p>这表示浏览器将使用本地缓存。</p>
+
+<h3 id="2.-etag">2. ETag</h3>
+
+<p>Etag是HTTP/1.1A支持的另一种缓存协商方法，它采用一串编码来标记标记内容，当Etag没有变化时，内容一定没有变化。
+Etag首先由web服务器生成，比如lighttpd会给一个静态文件生成ETag。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">ETag: &quot;1963686687&quot;
+</code></pre></div>
+<p>浏览器获得这个Etag后，在下次请求同一页面时会在HTTP头中附加以下信息来向服务器询问内容是否发生变化。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">If-None-Match: &quot;1963686687&quot;
+</code></pre></div>
+<p>这时服务器重新计算这个Etag值，并与HTTP头中的附加信息进行比较，如果相同的返回：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">HTTP/1.1 304 Not Modified
+</code></pre></div>
+<p>这表示浏览器可以使用本地缓存。</p>
+
+<h3 id="3.-expires">3. Expires</h3>
+
+<p>无论是Last-Modified还是ETag模式下，当浏览器需要使用内容是，都要首先询问服务器以确定当前缓存是否可用，待服务器返回304时，浏览器才可以放心的使用本地缓存。而Expires就是为了完全消灭浏览器到服务器的请求的。</p>
+
+<p>Expires告诉浏览器该内容何时过期，暗示在该内容过期之前不需要询问服务器。Expires的格式类似于Last-Modified，它指定了内容过期的绝对时间。比如：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">Expires:Sun, 07 Jul 2024 03:22:19 GMT
+</code></pre></div>
+<h3 id="4.-cache-control">4. Cache-Control</h3>
+
+<p>到目前为止还有一个问题，通过Expires指定的过期时间是web服务器的时间，但是如果用户本地时间和服务器时间不一致的话，就会影响到本地缓存有效期检查。为此HTTP/1.1中还有一个Cache-Control。</p>
+
+<p>Cache-Control的格式如下：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">Cache-Control: max-age=3600
+</code></pre></div>
+<p>其中max-age指定了缓存过期的相对时间，单位是秒。</p>
+
+<blockquote>
+<p>当HTTP头中同时有Expires和Cache-Control时，浏览器会优先考虑Cache-Control。</p>
+</blockquote>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#server browser" title="Pages tagged server browser" class="tag">server browser</a></span>
+        <span><a href="/cache-negotiate/" rel="bookmark" title="浏览器与服务器的缓存协商">浏览器与服务器的缓存协商</a> was published on <span class="entry-date date published updated"><time datetime="2014-07-13T00:00:00+08:00">July 13, 2014</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2014-01-13">01/13/2014</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/javascript-variable/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
+          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
+            <span>Published on October 24, 2014</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+<!--高速版，加载速度快，使用前需测试页面的兼容性-->
+<div id="SOHUCS" class="entry-content"></div>
+<script>
+  (function(){
+    var appid = 'cyrgTvN9G',
+    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
+    var doc = document,
+    s = doc.createElement('script'),
+    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
+    s.type = 'text/javascript';
+    s.charset = 'utf-8';
+    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
+    h.insertBefore(s,h.firstChild);
+    window.SCS_NO_IFRAME = true;
+  })()
+</script>       
+
+	        
+
+</body>
+</html>

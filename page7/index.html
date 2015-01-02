@@ -1,0 +1,454 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>积木小站</title>
+<meta name="description" content="this is a tech blog by foio">
+<meta name="keywords" content="tech, blog, modern">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="积木小站">
+<meta property="og:description" content="this is a tech blog by foio">
+<meta property="og:url" content="/page7/index.html">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/page7/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+</head>
+
+<body id="post-index" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+<div class="entry-header">
+  
+  
+  <div class="header-title">
+    <div class="header-title-wrap">
+      <h1>积木小站</h1>
+      <h2></h2>
+    </div><!-- /.header-title-wrap -->
+  </div><!-- /.header-title -->
+</div><!-- /.entry-header -->
+
+<div id="main" role="main">
+  
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-08-12T00:00:00+08:00"><a href="/nginx-empty-domain/">August 12, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/nginx-empty-domain/" rel="bookmark" title="nginx,防止他人域名指向自己机器" itemprop="url">nginx,防止他人域名指向自己机器</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>总有一些人，热衷于窃取他人的劳动果实。比如好事者用一个空头域名指向你的主机，从而利用你的网站内容提升他自己的域名排名。比如我就发现有两个空头域名sunrisenet.cn、mbagroup.cn指向了我的网站，我们该如何防止这种情况发生呢?</p>
+
+<h2 id="方法1：将来自其他域名的访问导向自己的域名">方法1：将来自其他域名的访问导向自己的域名</h2>
+<div class="highlight"><pre><code class="language-text" data-lang="text"> server {
+     listen 80 default;
+     server_name _;
+     rewrite ^(.*) http://www.xuanhao360.com;
+ }
+ server {
+     listen 80;
+     server_name  www.xuanhao360.com;
+     root /var/www;
+     index  index.html;
+     ......
+ }
+</code></pre></div>
+<h2 id="方法2：对来自其他域名的访问返回500错误">方法2：对来自其他域名的访问返回500错误</h2>
+<div class="highlight"><pre><code class="language-text" data-lang="text">server {
+        listen 80 default;
+        server_name _;
+        return 500;
+}
+ server {
+     listen 80;
+     server_name  www.xuanhao360.com;
+     root /var/www;
+     index  index.html;
+     ......
+ }
+</code></pre></div>
+<h2 id="方法3：黑名单">方法3：黑名单</h2>
+<div class="highlight"><pre><code class="language-text" data-lang="text"> server {
+     listen 80 default;
+     server_name sunrisenet.cn;
+     return 500;
+ }
+ server {
+     listen 80;
+     server_name  www.xuanhao360.com;
+     root /var/www;
+     index  index.html;
+     ......
+ }
+</code></pre></div>
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-08-10T00:00:00+08:00"><a href="/php-safe/">August 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/php-safe/" rel="bookmark" title="php安全问题及场景演示" itemprop="url">php安全问题及场景演示</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>php是一门极其灵活的编程语言，它是高效开发web程序的最佳选择之一。但是灵活性往往带来安全性问题，这就需要我们工程师时刻审视自己的代码安全性。下面列举一些经常容易出现安全性问题的场景极其解决方案。</p>
+
+<h1 id="安全准则">安全准则</h1>
+<div class="highlight"><pre><code class="language-text" data-lang="text">1.不信任任何从客户端传入的数据，如$SERVER,$_GET,$_POST,$_COOKIE,$FILES,$ENV,$REQUEST等。
+2.最小化原则，将用户输入的数据的范围限制到最小化
+3.安全的代码不依赖任何安全配置，不能寄希望与php.ini的安全性配置
+4.程序的错误信息对外界屏蔽，程序的错误信息会给攻击者带来极大帮助
+</code></pre></div>
+<hr>
+
+<h1 id="安全场景">安全场景</h1>
+
+<p>本文列举了数据库操作场景、文件操作场景、命令执行场景下容易出现的安全问题以及应对方案。</p>
+
+<h2 id="1-数据库操作场景">1 数据库操作场景</h2>
+
+<h3 id="1.1-字符串变量注入">1.1 字符串变量注入</h3>
+
+<p>比如如下php代码：。</p>
+
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">$user = $_POST[&#39;uesr&#39;];</span>
+<span class="x">$password = $_POST[&#39;password&#39;];</span>
+<span class="x">$query=&quot;select * from user where name = &#39;$user&#39; and password = &#39;$password&#39;&quot;;</span>
+<span class="x">$result=$mysqli-&gt;query($query);</span></code></pre></div>
+
+<p>这段代码没有对不可信输入做检查，当<code>$_POST[&#39;user&#39;] = &quot;&#39; OR &#39;&#39; = &#39;&quot;</code>且<code>$_POST[&#39;password&#39;] = &quot;&#39; OR &#39;&#39; = &#39;&quot;</code>，实际的sql为：<code>select * from user where name = &#39;&#39; OR &#39;&#39; = &#39;&#39; and password = &#39;&#39; OR &#39;&#39; = &#39;&#39;</code>，这样的sql就可能将所有的数据库中用户信息泄露。</p>
+
+<h3 id="1.2-整形注入">1.2 整形注入</h3>
+
+<p>比如如下php代码：。</p>
+
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">$user = $_POST[&#39;id&#39;];</span>
+<span class="x">$query=&quot;select * from user where id = $id&quot;;</span>
+<span class="x">$result=$mysqli-&gt;query($query);</span></code></pre></div>
+
+<p>这段代码没有对不可信输入做检查，当<code>$_POST[&#39;id&#39;] = &quot;1 OR &#39;&#39; = &#39;&#39;&quot;</code>，实际的sql为：<code>select * from user where id = 1 OR &#39;&#39; = &#39;&#39;</code>，这样的sql就可能将所有的数据库中用户信息泄露。</p>
+
+<blockquote>
+<p>安全编码建议：以上情况都是要使用客户端传来的参数，因此必须严格检查。对于字符串型变量最好使用mysql_real_escape_string进行过滤，而对于整形变量必须使用intval来保证类型。</p>
+</blockquote>
+
+<hr>
+
+<h2 id="2-文件操作场景">2 文件操作场景</h2>
+
+<h3 id="2.1-文件名安全问题">2.1 文件名安全问题</h3>
+
+<p>如下php代码段：</p>
+
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">$file = $_GET[&#39;file&#39;];</span>
+<span class="x">if(!empty($file)){</span>
+<span class="x">    include_once($file);</span>
+<span class="x">}</span></code></pre></div>
+
+<p>include,include_once,require,requre_once这些函数的本质是载入php文件并执行，因此使用这些函数时务必非常小心。这段代码非常不安全，比如<code>$_GET[&#39;file&#39;]=&quot;../../../../../../../../etc/passwd%00.php&quot;</code>时，将会打开敏感文件/etc/passwd，因为<code>%00</code>是<code>\0</code>url编码后的值，对于操作系统而言相当于字符串的结束符。</p>
+
+<h3 id="2.2-文件读写安全问题">2.2 文件读写安全问题</h3>
+
+<p>如下php代码段：</p>
+
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">$filename=&quot;test1.txt&quot;;</span>
+<span class="x">$file_info=&quot;user input:\n&quot;;</span>
+<span class="x">$file_info.= &quot;$conent&quot;;</span>
+<span class="x">file_put_conent($filename,$conent);</span></code></pre></div>
+
+<p>当<code>$conent=&quot;eval($php_code)&quot;</code>时，会执行代码中的php_code，理论上攻击者可以运行任何php代码。这段代码主要问题在于用<code>双引号</code>包含用户提交的文件内容。</p>
+
+<blockquote>
+<p>安全编码建议：将输出到文件的数据放到单引号中而非双引号。在php中表示一个字符串的方法有三种：单引号、双引号、定界符，和其他两种语法不同，单引号字符串中出现的变量和转义序列不会被变量的值替代。无论从效率还是安全性方面，都强烈推荐使用单引号。</p>
+</blockquote>
+
+<hr>
+
+<h2 id="3-命令行操作场景">3 命令行操作场景</h2>
+
+<p>如下php代码段：</p>
+
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">uri = $request[&#39;uri&#39;];</span>
+<span class="x">$from = $request[&#39;from&#39;];</span>
+<span class="x">$to   = $request[&#39;to&#39;];</span>
+<span class="x">$tmp = &#39;/tmp/act_css_tmp_&#39; . $uri;  </span>
+<span class="x">system(&quot;/usr/bin/wget $from -O $tmp&quot;);</span></code></pre></div>
+
+<p>$request变量来自于用户URL的输入，最终进入到system函数里作为命令来执行，但是这段代码没有安全处理用户的输入，任意用户都可以通过如下URL来在机上执行自己的命令， <code>php?cmd=1190&amp;func=sync_css&amp;uri=hi&amp;from=;cat /etc/passwd;&amp;to=hi&amp;1=2</code> 最后导致系统的沦陷。</p>
+
+<blockquote>
+<p>安全编码建议我们应该尽量避免使用systemexecpopenpassthru, 反引号(``)......等直接执行系统命令的函数如果必须使用这些函数的时候我们就需要在用户的参数进入system函数之前经过过滤。Php提供两个作为命令安全输入的函数一个是escapeshellarg一个是escapeshellcmd。</p>
+</blockquote>
+
+<hr>
+
+<h1 id="安全配置">安全配置</h1>
+<div class="highlight"><pre><code class="language-text" data-lang="text">register_globals = Off   
+</code></pre></div>
+<p>register_globals允许php将$_GET和$_POST,$_COOKIE等变量里的内容自动注册为全局变量,如果程序里的某些变量没有经过初始化而直接使用将导致安全问题。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">isplay_errors = Off, log_errors = On 
+</code></pre></div>
+<p>如果脚本运行时出错,错误信息将提供非常多的信息给黑客,里面可能包含了web路径,一些调试信息甚至是部分的php代码。我们应该强制在线上业务关闭错误信息对外的显示该选项。并将error_log 指定为我们自定义的错误路径。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">expose_php = Off
+</code></pre></div>
+<p>防止php在http头输出中加入版本信息防止恶意攻击者从中获取敏感信息强制执行将此选项为off。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text"> allow_url_include = Off
+</code></pre></div>
+<p>防止php将远程资源作为php源文件执行。从而从一定程度上防范文件包含漏洞。强制执行此选项为off。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">max_input_vars = 1000 
+</code></pre></div>
+<p>设置用户输入生成的最大变量值。防止利用大量无用变量造成php程序hashtable冲突导致占用大量系统资源。建议执行为默认1000个值。 </p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+
+<div class="pagination">
+  
+    
+      <a href="/page6" class="btn">Previous</a>
+    
+  
+  <ul class="inline-list">
+    <li>
+      
+      <a href="/">1</a>
+      
+    </li>
+    
+      <li>
+        
+          <a href="/page2">2</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page3">3</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page4">4</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page5">5</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page6">6</a>
+        
+      </li>
+    
+      <li>
+        
+          <span class="current-page">7</span>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page8">8</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page9">9</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page10">10</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page11">11</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page12">12</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page13">13</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page14">14</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page15">15</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page16">16</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page17">17</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page18">18</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page19">19</a>
+        
+      </li>
+    
+  </ul>
+  
+    <a href="/page8" class="btn">Next</a>
+  
+</div><!-- /.pagination -->
+
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+
+          
+
+</body>
+</html>

@@ -1,0 +1,297 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>docker原理与示例 &#8211; 积木小站</title>
+<meta name="description" content="docker安装php,ssh,nginx服务">
+<meta name="keywords" content="docker">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="docker原理与示例">
+<meta property="og:description" content="docker安装php,ssh,nginx服务">
+<meta property="og:url" content="/docker-tutorial/">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/docker-tutorial/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/docker-tutorial/" rel="bookmark" title="docker原理与示例">docker原理与示例</a></h1>
+        
+        <h2>October 04, 2014</h2>
+        
+        <p class="entry-reading-time">
+          <i class="fa fa-clock-o"></i>
+          
+          Reading time ~1 minute
+        </p><!-- /.entry-reading-time -->
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>Docker 是一个开源的应用容器引擎，让开发者可以打包他们的应用以及依赖环境到一个可移植的容器中，然后发布到任何流行的 Linux 机器上。接下来我首先简单的解释一下docker的原理，然后了解一下docker镜像的构建基本操作，最后演示如何运行docker镜像。</p>
+
+<hr>
+
+<h3 id="1.原理篇">1.原理篇</h3>
+
+<p>Docker可以把应用程序和它所依赖的从操作系统到软件包的环境打包成一个镜像文件。听起来好像一个典型的虚拟机，但是Docker要比虚拟机轻量的多。那么，Docker和一个完全的虚拟机有何区别？Docker是如何做到提供一个完整的文件系统，独立的网络环境等等这些功能，同时还没有如此庞大？</p>
+
+<p>一个功能完整的虚拟机要在宿主机器上重新运行一个Guest Os已达到隔离环境的作用，在Docker的哲学里，这是严重的资源浪费。下图基本上描述了Docker容器和虚拟机的区别。</p>
+
+<p><img src="http://infoqstatic.com/resource/articles/docker-core-technology-preview/zh/resources/0731013.jpg" alt="enter image description here"></p>
+
+<p>Docker核心是一个操作系统级虚拟化方法, 理解起来可能并不像VM那样直观。我们从虚拟化方法的四个方面：隔离性、资源限制性、便携性、安全性来详细介绍Docker的技术细节。</p>
+
+<h4 id="(1).隔离性">(1).隔离性</h4>
+
+<p>传统的vm用一个操作系统实现隔离性，而Docker基于LXC(linux container)实现隔离性。LXC是通过kernel namespace实现隔离性的。简单说就是同一个linux操作系统中可以存在多个不同的命名空间(容器)，不同namesapce中可以存在相同的pid、net、ipc、mnt、uts等。</p>
+
+<h4 id="(2).资源限制性">(2).资源限制性</h4>
+
+<p>Docker通过使用cgroups 实现了对资源的配额和度量。 cgroups 的使用非常简单，可实现对单个进程(容器)的资源控制。groups可以限制blkio、cpu、cpuacct、cpuset、devices、freezer、memory、net_cls、ns九大子系统的资源</p>
+
+<h4 id="(3).便携性">(3).便携性</h4>
+
+<p>Docker通过使用AUFS (AnotherUnionFS)实现便携性。AUFS(AnotherUnionFS) 是一种 Union FS, 简单来说就是支持将不同目录挂载到同一个虚拟文件系统下(unite several directories into a single virtual filesystem)的文件系统,  AUFS 里有一个类似分层的概念, 通过将一个 readonly 的 branch 和一个 writeable 的 branch 联合在一起，就可以实现对 readonly 权限的 branch 进行增量的进行修改(不影响 readonly 部分的)。</p>
+
+<p>在Docker利用 union mount 的方式将一个 readwrite 文件系统挂载在 readonly 的rootfs之上，并且允许再次将下层的 FS(file system) 设定为readonly 并且向上叠加, 这样一组readonly和一个writeable的结构构成一个container的运行时态, 每一个FS被称作一个FS层。如下图:</p>
+
+<p><img src="http://infoqstatic.com/resource/articles/docker-core-technology-preview/zh/resources/0731016.png" alt="enter image description here"></p>
+
+<h4 id="(4).安全性">(4).安全性</h4>
+
+<p>关于安全性相关文章请参考<a href="http://docs.docker.com/articles/security/">Docker官方文档</a>。</p>
+
+<hr>
+
+<h3 id="2.构建镜像">2.构建镜像</h3>
+
+<p>Docker需要linux kernel 3.8以上，安装过程非常简单，在此不再赘述，详细步骤参考<a href="http://docs.docker.com/installation/ubuntulinux/">官方安装文档</a>。</p>
+
+<p>在Docker中开发者可以打包他们的应用以及依赖环境到一镜像中，并可以在任意docke容器中运行这个镜像。在docker的<a href="https://registry.hub.docker.com/">官方register</a>中，有各种操作系统的镜像，我们可以基于这些镜像构建自己的镜像。构建镜像的有两种方法。</p>
+
+<h4 id="(1).通过dockerfile创建镜像">(1).通过Dockerfile创建镜像</h4>
+
+<p>Dockerfile基本上是自解释的，从一个基础镜像开始，通过RUN命令在基本镜像上安装环境，然后通过CMD命令指定镜像启动的命令。下面的Dockerfile从ubuntu14.04镜像开始，安装并配置好sshd服务。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">FROM     ubuntu:14.04
+MAINTAINER Thatcher R. Peskens &quot;thatcher@dotcloud.com&quot;
+RUN apt-get update &amp;&amp; apt-get install -y openssh-server
+RUN mkdir /var/run/sshd
+RUN echo &#39;root:screencast&#39; | chpasswd
+RUN sed -i &#39;s/PermitRootLogin without-password/PermitRootLogin yes/&#39; /etc/ssh/sshd_config
+
+EXPOSE 22
+CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
+</code></pre></div>
+<p>编辑好Dockerfile后，可以通过docker build命令生成image。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker build -t test_sshd .
+</code></pre></div>
+<p>然后可以通过如下命令查看刚才生成的镜像。运行image的命令请参考docker<a href="http://docs.docker.com/reference/commandline/cli/">官方文档</a>。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker images
+</code></pre></div>
+<h4 id="(2).通过commit创建镜像">(2).通过commit创建镜像</h4>
+
+<p>我们可以先以交互的方式启动一个操作系统镜像，然后在其中做各种修改，最后通过commit命令提交。具体步骤如下：
+首先通过交互的方式启动一个镜像，这样会进入镜像操作系统shell中：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker run -t -i utuntu
+</code></pre></div>
+<p>然后在镜像操作系统中做各种修改，退出镜像操作系统。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">root@040acbb6c8c:/# exit
+</code></pre></div>
+<p>记下镜像标志：040acbb6c8c，最后通过commit命令提交刚才所做的修改。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker commit -m &#39;your commit message&#39; -a &#39;your author info&#39; 040acbb6c8c your-image-name
+</code></pre></div>
+<p>这样一个新的image就生成了。通过以下命令就可以查看刚才生成的镜像了。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker images
+</code></pre></div>
+<hr>
+
+<h3 id="3.运行镜像">3.运行镜像</h3>
+
+<p>镜像的运行还是比较简单的，比如如下命令运行ubuntu镜像并用echo输出hello world。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker run ubuntu echo &#39;hello world&#39;
+</code></pre></div>
+<p>这条命令使用ubuntu镜像，如果本地docker镜像库中没有ubuntu镜像，会首先从docker的官方register中下载ubuntu镜像。echo输出完成后，改镜像就执行完成并退出了。</p>
+
+<p>如何让一个镜像在docker容器中长期运行呢？比如如下命令启动一个带有sshd服务的镜像，并长期运行。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker run -d ubuntu-sshd /bin/bash -c ‘sshd -D’
+</code></pre></div>
+<p>两个方面保证了该镜像在容器中长期运行，第一是run命令的-d参数，表示容器以detach的方式运行；第二是镜像初始化脚本中sshd的-D参数，-D参数表示sshd以非daemonized，非detach的方式运行。镜像运行后，可以通过</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker ps
+</code></pre></div>
+<p>查看运行的容器实例。并通过</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker inspect
+</code></pre></div>
+<p>查看容器的ip地址等信息。docker运行image相关的参数有很多，包括容器和宿主机器之间的端口映射等参数，本文都没有涉及，请参考官方手册。</p>
+
+<hr>
+
+<p>关于docker的虚拟化相关讨论问题可参考<a href="http://www.geekbus.cn/docker-core-technology-preview/">这篇文章</a>。</br></p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#docker" title="Pages tagged docker" class="tag">docker</a></span>
+        <span><a href="/docker-tutorial/" rel="bookmark" title="docker原理与示例">docker原理与示例</a> was published on <span class="entry-date date published updated"><time datetime="2014-10-04T00:00:00+08:00">October 04, 2014</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2014-10-04">10/04/2014</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/unicode-regular-expressions/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
+          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
+            <span>Published on October 24, 2014</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+<!--高速版，加载速度快，使用前需测试页面的兼容性-->
+<div id="SOHUCS" class="entry-content"></div>
+<script>
+  (function(){
+    var appid = 'cyrgTvN9G',
+    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
+    var doc = document,
+    s = doc.createElement('script'),
+    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
+    s.type = 'text/javascript';
+    s.charset = 'utf-8';
+    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
+    h.insertBefore(s,h.firstChild);
+    window.SCS_NO_IFRAME = true;
+  })()
+</script>       
+
+	        
+
+</body>
+</html>

@@ -1,0 +1,377 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>积木小站</title>
+<meta name="description" content="this is a tech blog by foio">
+<meta name="keywords" content="tech, blog, modern">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="积木小站">
+<meta property="og:description" content="this is a tech blog by foio">
+<meta property="og:url" content="/page9/index.html">
+<meta property="og:site_name" content="积木小站">
+
+
+
+
+
+<link rel="canonical" href="/page9/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+</head>
+
+<body id="post-index" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+<div class="entry-header">
+  
+  
+  <div class="header-title">
+    <div class="header-title-wrap">
+      <h1>积木小站</h1>
+      <h2></h2>
+    </div><!-- /.header-title-wrap -->
+  </div><!-- /.header-title -->
+</div><!-- /.entry-header -->
+
+<div id="main" role="main">
+  
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-25T00:00:00+08:00"><a href="/varnish/">July 25, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/varnish/" rel="bookmark" title="使用varnish缓存静态内容" itemprop="url">使用varnish缓存静态内容</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>Varnish是一款高性能的开源HTTP加速器，一般用来和Nginx、Apache等搭配使用，组建一个高效率的Web服务器。varnish是一个cache型的HTTP反向代理。</p>
+
+<p>常见的工作方式是：某个负责接受新HTTP连接的线程开始等待用户，如果有新的HTTP连接过来，它总负责接收，然后叫醒某个等待中的线程。Worker线程读入HTTP请求的URI，查找已有的object，如果命中则直接返回并回复用户。如果没有命中，则需要将所请求的内容，从后端服务器中取过来，存到缓存中，然后再回复。</p>
+
+<p>典型的结构如下：</p>
+
+<figure>
+    <img src="/images/varnish.jpg"/>
+</figure>
+
+<p>本文将简单介绍ubuntu server下安装和配置varnish的方法。</p>
+
+<h2 id="安装varnish">安装varnish</h2>
+
+<p>使用ubuntu软件包管理工具安装varnish。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">apt-get install varnish
+</code></pre></div>
+<h2 id="配置varnish">配置varnish</h2>
+
+<h3 id="1.-/etc/default/varnish">1. /etc/default/varnish</h3>
+<div class="highlight"><pre><code class="language-text" data-lang="text">DAEMON_OPTS=&quot;-a :80 \                                             
+             -T localhost:6082 \
+             -f /etc/varnish/default.vcl \
+             -S /etc/varnish/secret \
+             -s malloc,100m&quot;
+</code></pre></div>
+<p>各个字段的含义如下：</p>
+
+<blockquote>
+<p><code>-a :80</code>表示监听端口为80,<code>-T
+ localhost:6082</code>表示控制端口为本机6082,即可以通过localhost:6802访问varnish的控制信息,
+ <code>-f /etc/varnish/default.vcl</code>表示将请求forword到由vcl配置的机器,
+ <code>-s malloc,100m</code> 表示使用100m的内存</p>
+</blockquote>
+
+<h3 id="2.-/etc/varnish/default.vcl">2.  /etc/varnish/default.vcl</h3>
+<div class="highlight"><pre><code class="language-text" data-lang="text">backend default {
+    .host = &quot;127.0.0.1&quot;;
+    .port = &quot;8080&quot;;
+}
+</code></pre></div>
+<p>backend default定义默认的后端服务器的ip和端口，也即nginx监听的端口。当然vcl可以定义各种复杂的转发策略，这个超出了本文的范围。配置好后可以重新启动varnish了</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">/etc/init.d/varnish restart
+ * Stopping HTTP accelerator varnishd      [ok]
+ * Starting HTTP accelerator varnishd      [ok]
+</code></pre></div>
+<h2 id="测试varnish">测试varnish</h2>
+
+<p>配置好varnish后，浏览站点，发现HTTP Response头中多了:</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">X-Varnish   1666066465 1666066458
+</code></pre></div>
+<p>上面的头信息表示varnish正常工作了。我们也可以使用varnish提供的命令行工具<code>varnishstat</code>分析varnish的缓存状态,可以使用<code>varnishlog</code>查看varnish的和客户端以及后端的通信信息。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-20T00:00:00+08:00"><a href="/mysql-master-slave/">July 20, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/mysql-master-slave/" rel="bookmark" title="mysql读写分离机制" itemprop="url">mysql读写分离机制</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>Mysql是这个世界上最通用的数据库了，很多优点集于一身：开源、高效、免费等。但是对于生成实践中的高并发、高可用性、安全性等要求，单台mysql往往无法满足。</p>
+
+<h1 id="master-slave">master-slave</h1>
+
+<p>一般可以通过主从读写分离来提升数据库的并发能力。</p>
+
+<p>常见的部署如下：</p>
+
+<p><img src="http://heylinux.com/wp-content/uploads/2011/06/mysql-master-salve-proxy.jpg" alt="enter image description here"></p>
+
+<p>这种架构满足了生产环境的需要，但是却大大增加了开发复杂度，作为一名研发人员要在业务代码中考虑读写分离以及由此引发的更加复杂的事务操作，不得不说很糟糕。为了解决这种问题，可以引入中间层proxy。</p>
+
+<hr>
+
+<h1 id="mysql-proxy">mysql proxy</h1>
+
+<p>mysql proxy实现了mysql client和mysql server的标准通信协议。因此对研发人员来说使用mysql  proxy和使用单机的msyql没有区别，他们甚至感觉不到proxy的存在。mysql proxy实现了读写分离、连接池、负载均衡。
+下图是一个简单的proxy示意图，其中关键点在于：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">将写和事务性语句分发到master，将读分发的slave
+</code></pre></div>
+<p><img src="http://jan.kneschke.de/assets/projects/mysql/mysql-proxy-types-trx-splitting.png" alt="enter image description here"></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+
+<div class="pagination">
+  
+    
+      <a href="/page8" class="btn">Previous</a>
+    
+  
+  <ul class="inline-list">
+    <li>
+      
+      <a href="/">1</a>
+      
+    </li>
+    
+      <li>
+        
+          <a href="/page2">2</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page3">3</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page4">4</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page5">5</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page6">6</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page7">7</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page8">8</a>
+        
+      </li>
+    
+      <li>
+        
+          <span class="current-page">9</span>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page10">10</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page11">11</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page12">12</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page13">13</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page14">14</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page15">15</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page16">16</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page17">17</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page18">18</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page19">19</a>
+        
+      </li>
+    
+  </ul>
+  
+    <a href="/page10" class="btn">Next</a>
+  
+</div><!-- /.pagination -->
+
+</div><!-- /#main -->
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+
+          
+
+</body>
+</html>
