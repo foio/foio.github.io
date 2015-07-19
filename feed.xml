@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2015-01-02T18:42:35+08:00</updated>
+<updated>2015-07-19T21:21:00+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -14,10 +14,128 @@
 
 
 <entry>
+  <title type="html"><![CDATA[jQuery的ready事件实现原理]]></title>
+ <link rel="alternate" type="text/html" href="/jquery-ready-load/" />
+  <id>/jquery-ready-load</id>
+  <updated>2015-03-13T00:00:00-00:00</updated>
+  <published>2015-03-13T00:00:00+08:00</published>
+  
+  <author>
+    <name>foio</name>
+    <uri></uri>
+    <email>syszhpe@gmail.com</email>
+  </author>
+  <content type="html">&lt;p&gt;大家在面试的过程中，经常会被问到一个问题：ready与load那一个先执行，那一个后执行？答案是ready先执行，load后执行。&lt;/p&gt;
+
+&lt;p&gt;DOM文档加载的步骤：
+要想理解为什么ready先执行，load后执行就要先了解下DOM文档加载的步骤：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;(1) 解析HTML结构。
+(2) 加载外部脚本和样式表文件。
+(3) 解析并执行脚本代码。
+(4) 构造HTML DOM模型。//ready
+(5) 加载图片等外部文件。
+(6) 页面加载完毕。//load&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;从上面的描述中大家应该已经理解了吧，ready在第（4）步完成之后就执行了，但是load要在第（6）步完成之后才执行。&lt;/p&gt;
+
+&lt;p&gt;所以有如下结论：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;ready与load的区别就在于资源文件的加载，ready构建了基本的DOM结构，所以对于代码来说应该越快加载越好。在一个高速浏览的时代，没人愿意等待答案。假如一个网站页面加载超过4秒，不好意思，你1/4的用户将面临着流失，所以对于框架来说用户体验是至关重要的，我们应该越早处理DOM越好，我们不需要等到图片资源都加载后才去处理框架的加载，图片资源过多load事件就会迟迟不会触发。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;我们经常使如下jQuery语句,用于在页面dom结构刚刚加载完成时,执行代码.&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;//普通方式&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ready&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;//your code here&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;//简写方式&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;//your code here&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;那么jquery的ready函数是如何实现的呢? 它时如何保证ready在load之前执行的呢?&lt;/p&gt;
+
+&lt;h3 id=&quot;1-现代浏览器通过domcontentloaded事件实现&quot;&gt;1. 现代浏览器通过DOMContentLoaded事件实现&lt;/h3&gt;
+
+&lt;p&gt;当HTML文档下载并解析完成以后，就会在document对象上触发DOMContentLoaded事件。这时，仅仅完成了HTML文档的解析（整张页面的DOM生成），所有外部资源（样式表、脚本、iframe等等）可能还没有下载结束。也就是说，这个事件比load事件，发生时间早得多。&lt;/p&gt;
+
+&lt;p&gt;因此可以通过如下方式实现jQuery的ready函数.&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;addEventListener&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;DOMContentLoaded&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;//your code here&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;但是对于IE8以及以下的浏览器,世界就没有那么友好了. &lt;/p&gt;
+
+&lt;h3 id=&quot;2-低版本浏览器通过readystatechange事件实现&quot;&gt;2. 低版本浏览器通过readystatechange事件实现?&lt;/h3&gt;
+
+&lt;p&gt;写过AJAX原生代码的童鞋都知道, readystatechange用于表示XMLHttpRequest的状态发生改变,当readyState=2时表示AJAX执行成功. readystatechange也会在dom状态发生变化时触发.&lt;/p&gt;
+
+&lt;p&gt;因此可以通过如下方式实现jQuery的ready函数.&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;onreadystatechange&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;readyState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;interactive&amp;quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;readyState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;complete&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;initApplication&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;但是readyState为interactive时, DOM结构并没有稳定, 此时依然会有脚本修改DOM元素,导致执行事件太早. readyState为complete时, 图片已经加载完毕, 所以complete虽然在window.onload前执行, 导致执行事件太晚.
+让我们看看jQuery的源码时如何实现的.&lt;/p&gt;
+
+&lt;h3 id=&quot;3-jquery在低版本浏览器上是如何实现ready方法的&quot;&gt;3. jQuery在低版本浏览器上是如何实现ready方法的&lt;/h3&gt;
+
+&lt;p&gt;jQuery源码中使用了Diego Perini 在 2007 年的时候报告的一种检测 IE 是否加载完成的方式的方法. 该方法通过使用 doScroll 方法调用，可以看下这哥们的&lt;a href=&quot;http://javascript.nwbox.com/IEContentLoaded/&quot;&gt;博客&lt;/a&gt;。&lt;/p&gt;
+
+&lt;p&gt;原理就是对于 IE 在非 iframe 内时，只有不断地通过能否执行 doScroll 判断 DOM 是否加载完毕。在上述中间隔 50 毫秒尝试去执行 doScroll，注意，由于页面没有加载完成的时候，调用 doScroll 会导致异常，所以使用了 try -catch 来捕获异常。&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;// 用于保证事件在onload之前执行&lt;/span&gt;
+&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;attachEvent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;onreadystatechange&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;completed&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;// 如果是IE且不是iframe就通过不停的检查doScroll来判断dom结构是否ready&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;frameElement&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;documentElement&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;doScroll&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;doScrollCheck&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;jQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;isReady&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;//ready方法没有执行过&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;// 检查是否可以向左scroll滑动,当dom结构还没有解析完成时会抛出异常&lt;/span&gt;
+                &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;doScroll&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;left&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;c1&quot;&gt;//递归调用,直到当dom结构解析完成&lt;/span&gt;
+                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;setTimeout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;doScrollCheck&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;//没有发现异常,表示dom结构解析完成,删除之前绑定的onreadystatechange事件&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;detach&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+
+            &lt;span class=&quot;c1&quot;&gt;//执行jQuery的ready方法&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;jQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ready&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;})();&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;当然,通过检查doScroll的方法也不是完美的, 这种实现的jQuery的ready方法执行时,readyState可能为interactive, 也可能为complete.  也即没法保证dom加载完成后立刻执行, 但是一定会在DOM结构稳定后, 且图片加载完毕前执行.&lt;/p&gt;
+
+&lt;hr&gt;
+
+&lt;p&gt;参考文档&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState&quot;&gt;MDN里面关于Document.readyState的文档&lt;/a&gt;, &lt;a href=&quot;http://www.cnblogs.com/zhangziqiu/archive/2011/06/27/domready.html&quot;&gt;一篇关于dom ready的博客&lt;/a&gt;&lt;/p&gt;
+
+  &lt;p&gt;&lt;a href=&quot;/jquery-ready-load/&quot;&gt;jQuery的ready事件实现原理&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on March 13, 2015.&lt;/p&gt;</content>
+</entry>
+
+
+<entry>
   <title type="html"><![CDATA[关于mongo原子操作的探讨]]></title>
  <link rel="alternate" type="text/html" href="/mongo-atom/" />
   <id>/mongo-atom</id>
-  <updated>2015-1-2T00:00:00-00:00</updated>
+  <updated>2014-01-02T00:00:00-00:00</updated>
   <published>2015-01-02T00:00:00+08:00</published>
   
   <author>
@@ -26,30 +144,30 @@
     <email>syszhpe@gmail.com</email>
   </author>
   <content type="html">&lt;blockquote&gt;
-&lt;p&gt;众所周知，Redis采用的是异步I/O非阻塞的单进程模型，每一条Redis命令都是原子性的。那么mongoDB呢？    mongo有哪些原子操作呢？有哪些实现事务性操作的技巧呢？&lt;/p&gt;
+&lt;p&gt;众所周知，Redis采用的是异步I/O非阻塞的单进程模型，每一条Redis命令都是原子性的。那么mongoDB呢？ mongo有哪些原子操作呢？有哪些实现事务性操作的技巧呢？&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;h3 id=&quot;1.对单个文档进行原子性修改&quot;&gt;1.对单个文档进行原子性修改&lt;/h3&gt;
+&lt;h3 id=&quot;1-对单个文档的原子性修改&quot;&gt;1.对单个文档的原子性修改&lt;/h3&gt;
 
 &lt;p&gt;mongoDB保证了对单个document的多个filed的原子性修改。如果需要对单个文档进行原子性的CAS操作(check and set)，可以使用findAndModify操作。&lt;/p&gt;
 
 &lt;p&gt;比如下面就是一条原子性的CAS操作，首先选择_id为123的文档（注意这里只选择了一个文档），然后对计数器count加1，将status字段变为true，并返回修改后的结果。&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;db.colleciton.findAndModify({query:{_id:&amp;#39;123&amp;#39;},$inc:{count:1},$update:{status:true}},new:true);
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id=&quot;2.对多个文档使用$isolate操作符&quot;&gt;2.对多个文档使用$isolate操作符&lt;/h3&gt;
 
-&lt;p&gt;$isolate操作符可以对多个文档的修改提供隔离性。针对其他线程的并发写操作，$isolate保证了提交前其他线程无法修改对应的文档。针对其他线程的读操作，$isolate保证了其他线程读取不到未提交的数据。&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nx&quot;&gt;db&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;colleciton&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;findAndModify&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;query&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;_id&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;123&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;$inc&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;count&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;$update&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;status&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}},&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;new&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;但是$isolate有验证的性能问题，因为这种情况下线程持有锁的时间较长，严重的影响mongo的并发性。另外，$isolate也无法保证多个文档修改的一致性(all-or-nothing)，$isolate失败是可能只修改了部分文档。&lt;/p&gt;
+&lt;h3 id=&quot;2-对多个文档使用-isolate操作符&quot;&gt;2.对多个文档使用$isolate操作符&lt;/h3&gt;
 
-&lt;h3 id=&quot;3.从语义层面实现事务性操作&quot;&gt;3.从语义层面实现事务性操作&lt;/h3&gt;
+&lt;p&gt;&lt;code&gt;$isolate&lt;/code&gt;操作符可以对多个文档的修改提供隔离性。针对其他线程的并发写操作，&lt;code&gt;$isolate&lt;/code&gt;保证了提交前其他线程无法修改对应的文档。针对其他线程的读操作，&lt;code&gt;$isolate&lt;/code&gt;保证了其他线程读取不到未提交的数据。&lt;/p&gt;
 
-&lt;p&gt;mongoDB官方提供了一种做法，即&lt;a href=&quot;http://docs.mongodb.org/manual/tutorial/perform-two-phase-commits/&quot;&gt;两阶段提交&lt;/a&gt;(two-phase commit)，基本的原理就是利用了写操作的幂等性。具体实现可以看官网的详细讲解。但是利用幂等性来实现事务性有一个重要的前置条件：&lt;strong&gt;业务不在乎中间态的不一致&lt;/strong&gt;。幂等性可以保证最终的一致性，但是会出现中间的不一致状态。&lt;/p&gt;
+&lt;p&gt;但是&lt;code&gt;$isolate&lt;/code&gt;有验证的性能问题，因为这种情况下线程持有锁的时间较长，严重的影响mongo的并发性。另外，&lt;code&gt;$isolate&lt;/code&gt;也无法保证多个文档修改的一致性(all-or-nothing)，$isolate失败是可能只修改了部分文档。&lt;/p&gt;
+
+&lt;h3 id=&quot;3-从语意层面实现事务性操作&quot;&gt;3.从语意层面实现事务性操作&lt;/h3&gt;
+
+&lt;p&gt;mongoDB官方提供了一种做法，即两阶段提交(two-phase commit)，基本的原理就是利用了写操作的幂等性。具体实现可以看官网的详细讲解。但是利用幂等性来实现事务性有一个重要的前置条件：业务不在乎中间态的不一致。幂等性可以保证最终的一致性，但是会出现中间的不一致状态。&lt;/p&gt;
 
 &lt;hr&gt;
 
-&lt;p&gt;参考资料：
-(1)&lt;a href=&quot;http://docs.mongodb.org/manual/core/write-operations-atomicity/&quot;&gt;mongoDB原子性与实务&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;参考资料: (1) &lt;a href=&quot;http://docs.mongodb.org/manual/core/write-operations-atomicity/&quot;&gt;mongoDB原子性与实务&lt;/a&gt;&lt;/p&gt;
 
   &lt;p&gt;&lt;a href=&quot;/mongo-atom/&quot;&gt;关于mongo原子操作的探讨&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on January 02, 2015.&lt;/p&gt;</content>
 </entry>
@@ -57,9 +175,9 @@
 
 <entry>
   <title type="html"><![CDATA[hive自定义函数]]></title>
- <link rel="alternate" type="text/html" href="/hive-udf/" />
-  <id>/hive-udf</id>
-  <updated>2014-11-10T00:00:00-00:00</updated>
+ <link rel="alternate" type="text/html" href="/hive-function/" />
+  <id>/hive-function</id>
+  <updated>2014-12-10T00:00:00-00:00</updated>
   <published>2014-12-10T00:00:00+08:00</published>
   
   <author>
@@ -68,10 +186,10 @@
     <email>syszhpe@gmail.com</email>
   </author>
   <content type="html">&lt;blockquote&gt;
-&lt;p&gt;Hive可以将类sql查询语句转换成Hadoop的map reduce任务，让熟悉关系型数据库的人也可以利用hadoop的强大并行计算能力。Hive提供了强大的&lt;a href=&quot;https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF&quot;&gt;内置函数&lt;/a&gt;支持，但是总有一些特殊情况，内置函数无法覆盖，这就要求我们对定义自己的函数。接下来我们通过一个例子看一下如何自定义hive函数。&lt;/p&gt;
+&lt;p&gt;Hive可以将类sql查询语句转换成Hadoop的map reduce任务，让熟悉关系型数据库的人也可以利用hadoop的强大并行计算能力。Hive提供了强大的内置函数支持，但是总有一些特殊情况，内置函数无法覆盖，这就要求我们对定义自己的函数。接下来我们通过一个例子看一下如何自定义hive函数。&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;h3 id=&quot;1.-自定义函数的实现&quot;&gt;1. 自定义函数的实现&lt;/h3&gt;
+&lt;h3 id=&quot;1-自定义函数的实现&quot;&gt;1. 自定义函数的实现&lt;/h3&gt;
 
 &lt;p&gt;假设我们的关系型数据库中user表有一个status字段，代表着用户的活跃等级，取值为1~10，活跃度一次递增。现在我们要根据status字段将用户分为3个活跃度等级。Hive显然没有这种与业务逻辑强耦合的内置函数，但这不应该成为阻碍我们使用Hive的理由。下面的扩展函数就可以满足需求。&lt;/p&gt;
 
@@ -94,90 +212,42 @@
    &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;
 &lt;span class=&quot;o&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;从上面的例子可以看出实现自定义的hive函数还是相当简单的。就是继承&lt;code&gt;org.apache.hadoop.hive.ql.exec.UDF&lt;/code&gt; 并实现execute函数。&lt;/p&gt;
+&lt;p&gt;从上面的例子可以看出实现自定义的hive函数还是相当简单的。就是继承org.apache.hadoop.hive.ql.exec.UDF 并实现execute函数。&lt;/p&gt;
 
-&lt;h3 id=&quot;2.-自定义函数的使用&quot;&gt;2. 自定义函数的使用&lt;/h3&gt;
+&lt;h3 id=&quot;2-自定义函数的使用&quot;&gt;2. 自定义函数的使用&lt;/h3&gt;
 
 &lt;p&gt;定义为自定义函数后该如何使用呢？其实也是相关简单的。假设包含自定义函数的jar包为mydf.jar。&lt;/p&gt;
 
-&lt;h4 id=&quot;(1).在hive-shell中加载&quot;&gt;(1).在hive shell中加载&lt;/h4&gt;
+&lt;h4 id=&quot;1-在hive-shell中加载&quot;&gt;(1).在hive shell中加载&lt;/h4&gt;
 
-&lt;p&gt;首先加载jar包，并创建临时函数&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;%&amp;gt; hive
-hive&amp;gt; ADD JAR /path/to/mydf.jar;
-hive&amp;gt; create temporary function userStatus as &amp;#39;com.test.example.UserStatus&amp;#39;;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;首先加载jar包，并创建临时函数\&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;o&quot;&gt;%&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;hive&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;hive&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ADD&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;JAR&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;path&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;to&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;mydf&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;jar&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;hive&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;create&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;temporary&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;userStatus&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;as&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;com&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;test&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;example&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;na&quot;&gt;UserStatus&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;然后就可以直接使用了&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;hive&amp;gt; select userStatus(4);
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-java&quot; data-lang=&quot;java&quot;&gt;&lt;span class=&quot;n&quot;&gt;hive&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;select&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;userStatus&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;4&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
 &lt;p&gt;但是每次使用都要加载一次，太费劲了。有没有别的方法呢。&lt;/p&gt;
 
-&lt;h4 id=&quot;(2).在.hiverc中加载&quot;&gt;(2).在.hiverc中加载&lt;/h4&gt;
+&lt;h4 id=&quot;2-在-hiverc中加载&quot;&gt;(2).在.hiverc中加载&lt;/h4&gt;
 
 &lt;p&gt;编辑home目录下的.hiverc文件，如果没有这个文件就新建一个。将加载jar包的命令写入.hiverc文件，启动hive shell时会自动执行.hiverc文件，不需要每个shell都load一遍。&lt;/p&gt;
 
 &lt;hr&gt;
 
-&lt;p&gt;参考资料：
-&lt;a href=&quot;https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF&quot;&gt;hive内置函数&lt;/a&gt;
-，&lt;a href=&quot;https://github.com/foio/hive-extension-examples&quot;&gt;hive自定义函数maven项目&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;参考资料: &lt;a href=&quot;https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF&quot;&gt;hive内置函数&lt;/a&gt;, &lt;a href=&quot;https://github.com/foio/hive-extension-examples&quot;&gt;hive自定义函数demo&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/hive-udf/&quot;&gt;hive自定义函数&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on December 10, 2014.&lt;/p&gt;</content>
-</entry>
-
-
-<entry>
-  <title type="html"><![CDATA[PHP扩展问题定位经验小结]]></title>
- <link rel="alternate" type="text/html" href="/php-ext-exp/" />
-  <id>/php-ext-exp</id>
-  <updated>2014-10-24T00:00:00-00:00</updated>
-  <published>2014-10-24T00:00:00+08:00</published>
-  
-  <author>
-    <name>foio</name>
-    <uri></uri>
-    <email>syszhpe@gmail.com</email>
-  </author>
-  <content type="html">&lt;h3 id=&quot;使用debug版的php&quot;&gt;使用debug版的PHP&lt;/h3&gt;
-
-&lt;p&gt;编译PHP时加上参数：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;./configure  --enable-debug
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;hr&gt;
-
-&lt;h3 id=&quot;使用core文件&quot;&gt;使用core文件&lt;/h3&gt;
-
-&lt;p&gt;取消core文件大小限制&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;ulimit -c unlimited
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;通过修改/proc/sys/kernel/core_pattern可以控制core文件保存位置和文件格式&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;echo &amp;quot;/tmp/corefile/core-%e-%p-%t&amp;quot; &amp;gt; /proc/sys/kernel/core_pattern
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;使用corefile定位扩展中的问题&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;gdb php -c corefile //线上出错的文件和行号
-bt //显示错误处的函数调用栈
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;hr&gt;
-
-&lt;h3 id=&quot;在程序中打印日志&quot;&gt;在程序中打印日志&lt;/h3&gt;
-
-&lt;p&gt;可以使用php_printf(用法同c语言的printf)打印原始变量的值。&lt;/p&gt;
-
-&lt;hr&gt;
-
-&lt;h3 id=&quot;使用php内置server&quot;&gt;使用PHP内置server&lt;/h3&gt;
-
-&lt;p&gt;PHP5.4之后内置了server，极大的方便了扩展的开发。&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;$ php -S localhost:8000   //在当前文件夹下启动server，默认会寻找index.php
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-  &lt;p&gt;&lt;a href=&quot;/php-ext-exp/&quot;&gt;PHP扩展问题定位经验小结&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 24, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/hive-function/&quot;&gt;hive自定义函数&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on December 10, 2014.&lt;/p&gt;</content>
 </entry>
 
 
 <entry>
   <title type="html"><![CDATA[php扩展中autoload的实现]]></title>
- <link rel="alternate" type="text/html" href="/php-ext-autoload/" />
-  <id>/php-ext-autoload</id>
+ <link rel="alternate" type="text/html" href="/php-extension-autoload/" />
+  <id>/php-extension-autoload</id>
   <updated>2014-10-23T00:00:00-00:00</updated>
   <published>2014-10-23T00:00:00+08:00</published>
   
@@ -186,53 +256,51 @@ bt //显示错误处的函数调用栈
     <uri></uri>
     <email>syszhpe@gmail.com</email>
   </author>
-  <content type="html">&lt;p&gt;我们在写web应用程序时通常对每个类都建立一个 PHP 源文件。为了使用这些源文件，我们就需要在每个脚本开头写大量的的包含语句(include,require)。在 PHP 5 中，不再需要这样了。我们可&lt;code&gt;__autoload()&lt;/code&gt;函数和&lt;code&gt;spl_autoload_register&lt;/code&gt;函数实现实现自己的加载源文件的机制，它们会在试图使用尚未被定义的类时自动调用。通过调用这些函数，脚本引擎在 PHP 出错失败前有了最后一个机会加载所需的类。本文的主要目标是讲述如何在扩展中用C语言实现自动加载源文件的机制，但是在这之前我们先熟悉一下在PHP脚本中实现自动加载的方法。&lt;/p&gt;
+  <content type="html">&lt;p&gt;我们在写web应用程序时通常对每个类都建立一个 PHP 源文件。为了使用这些源文件，我们就需要在每个脚本开头写大量的的包含语句(include,require)。在 PHP 5 中，不再需要这样了。我们可__autoload()函数和spl_autoload_register函数实现实现自己的加载源文件的机制，它们会在试图使用尚未被定义的类时自动调用。通过调用这些函数，脚本引擎在 PHP 出错失败前有了最后一个机会加载所需的类。本文的主要目标是讲述如何在扩展中用C语言实现自动加载源文件的机制，但是在这之前我们先熟悉一下在PHP脚本中实现自动加载的方法。&lt;/p&gt;
 
-&lt;h3 id=&quot;在脚本中实现自动加载&quot;&gt;在脚本中实现自动加载&lt;/h3&gt;
-
-&lt;hr&gt;
+&lt;h3 id=&quot;1-在php脚本中实现自动加载&quot;&gt;1. 在php脚本中实现自动加载&lt;/h3&gt;
 
 &lt;p&gt;在 PHP 5 中我们可以定义一个 __autoload() 函数，它会在试图使用尚未被定义的类时自动调用，这样我们就可以定义一些自己的加载规则了。&lt;/p&gt;
 
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;__autoload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$class_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;require_once&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$class_name&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;.php&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;?&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;php&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;__autoload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;class_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;n&quot;&gt;require_once&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;class_name&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;php&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 
-&lt;span class=&quot;nv&quot;&gt;$obj&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MyClass1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-&lt;span class=&quot;nv&quot;&gt;$obj2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;MyClass2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;&lt;span class=&quot;x&quot;&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;obj&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MyClass1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;obj2&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;MyClass2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;?&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;使用spl_autoload_register我们可以一次注册多个加载函数，PHP会在试图使用尚未被定义的类时按注册顺序调用。&lt;/p&gt;
+&lt;p&gt;使用&lt;code&gt;spl_autoload_register&lt;/code&gt;我们可以一次注册多个加载函数，PHP会在试图使用尚未被定义的类时按注册顺序调用。&lt;/p&gt;
 
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;autoload_services&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$class_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;?&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;php&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;autoload_services&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;class_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;services/&amp;#39;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$class_name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;.php&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;file_exists&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;services&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;class_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;php&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file_exists&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;require_once&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;require_once&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;autoload_vos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$class_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;autoload_vos&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;class_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;vos/&amp;#39;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$class_name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;.php&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;file_exists&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
+    &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;vos&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;/&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;class_name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt; &lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;php&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file_exists&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;require_once&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;n&quot;&gt;require_once&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;file&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;nb&quot;&gt;spl_autoload_register&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;autoload_services&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-&lt;span class=&quot;nb&quot;&gt;spl_autoload_register&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;autoload_vos&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-&lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;&lt;span class=&quot;x&quot;&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;span class=&quot;n&quot;&gt;spl_autoload_register&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;autoload_services&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;n&quot;&gt;spl_autoload_register&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;autoload_vos&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;o&quot;&gt;?&amp;gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;hr&gt;
+&lt;h3 id=&quot;2-在php扩展中实现自动加载&quot;&gt;2. 在php扩展中实现自动加载&lt;/h3&gt;
 
-&lt;h3 id=&quot;在php扩展中实现自动加载&quot;&gt;在php扩展中实现自动加载&lt;/h3&gt;
+&lt;p&gt;最近在写一个php扩展，其中一个功能就是实现类的自动加载，其实也是通过在内核中调用&lt;code&gt;spl_autoload_register&lt;/code&gt;函数来实现。使用zend API调用&lt;code&gt;spl_autoload_register&lt;/code&gt;函数还是相对简单的，下面我们主要讲一下如何在内核中实现&lt;code&gt;inclue/require/include_once/require_once&lt;/code&gt;等指令的功能。其实&lt;code&gt;inclue/require/include_once/require_once&lt;/code&gt;等指令主要是读入文件编译并执行，下面的方法就是完成了这些操作，代码中有详细的注释。&lt;/p&gt;
 
-&lt;hr&gt;
+&lt;h4 id=&quot;1-在hive-shell中加载&quot;&gt;(1).在hive shell中加载&lt;/h4&gt;
 
-&lt;p&gt;最近在写一个php扩展，其中一个功能就是实现类的自动加载，其实也是通过在内核中调用&lt;code&gt;spl_autoload_register&lt;/code&gt;函数来实现。使用zend API调用spl_autoload_register函数还是相对简单的，下面我们主要讲一下如何在内核中实现inclue/require/include_once/require_once等指令的功能。其实inclue/require/include_once/require_once等指令主要是读入文件编译并执行，下面的方法就是完成了这些操作，代码中有详细的注释。&lt;/p&gt;
+&lt;p&gt;首先加载jar包，并创建临时函数\&lt;/p&gt;
 
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;cm&quot;&gt;/*&lt;/span&gt;
 &lt;span class=&quot;cm&quot;&gt;*  loader_import首先将PHP源文件编译成op_array，然后依次执行op_array中的opcode&lt;/span&gt;
@@ -307,13 +375,10 @@ bt //显示错误处的函数调用栈
 
 &lt;hr&gt;
 
-&lt;h3 id=&quot;其他资料&quot;&gt;其他资料&lt;/h3&gt;
+&lt;p&gt;学习php扩展开发需要你对zend API以及PHP内核比较熟悉，推荐以下参考资料
+ &lt;a href=&quot;http://www.walu.cc/phpbook/index.md&quot;&gt;php扩展入门博客&lt;/a&gt;&lt;/p&gt;
 
-&lt;p&gt;学习php扩展开发需要你对zend API以及PHP内核比较熟悉，推荐一下参考资料
-&lt;a href=&quot;http://www.walu.cc/phpbook/index.md&quot;&gt;http://www.walu.cc/phpbook/index.md&lt;/a&gt;
-&lt;a href=&quot;http://www.php-internals.com/book/&quot;&gt;http://www.php-internals.com/book/&lt;/a&gt;&lt;/p&gt;
-
-  &lt;p&gt;&lt;a href=&quot;/php-ext-autoload/&quot;&gt;php扩展中autoload的实现&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 23, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/php-extension-autoload/&quot;&gt;php扩展中autoload的实现&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 23, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -331,9 +396,7 @@ bt //显示错误处的函数调用栈
   </author>
   <content type="html">&lt;p&gt;Hash表对PHP的重要性是每个phper都非常清楚地。但是PHP却有一个与Hash表相关的致命漏洞，我们完全可以通过PHP的Hash冲突漏洞进行DDoS攻击，可以轻易的搞挂一台服务器。那么是什么导致PHP的Hash冲突呢？如何构造Hash冲突？&lt;/p&gt;
 
-&lt;hr&gt;
-
-&lt;h3 id=&quot;php的hashtab实现方式&quot;&gt;PHP的Hashtab实现方式&lt;/h3&gt;
+&lt;h3 id=&quot;1-php的hashtab实现方式&quot;&gt;1. PHP的Hashtab实现方式&lt;/h3&gt;
 
 &lt;p&gt;PHP中的哈希表实现在源代码的Zend/zend_hash.c中，Zend/zend_hash.h中描述了Hashtab的结构体，从中我们可以大概了解Hashtab的实现机制。&lt;/p&gt;
 
@@ -355,17 +418,15 @@ bt //显示错误处的函数调用栈
 &lt;span class=&quot;cp&quot;&gt;#endif&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;HashTable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;从结构体&lt;code&gt;_hashtable&lt;/code&gt;中我们可以看出，PHP内核是使用常用的拉链法实现Hash表的，其中&lt;code&gt;Bucket **arBuckets&lt;/code&gt;存储了实际的数据。&lt;/p&gt;
+&lt;p&gt;从结构体_hashtable中我们可以看出，PHP内核是使用常用的拉链法实现Hash表的，其中Bucket **arBuckets存储了实际的数据。&lt;/p&gt;
 
 &lt;p&gt;&lt;img src=&quot;http://www.php-internals.com/images/book/chapt03/03-01-02-zend_hashtable.png&quot; alt=&quot;php内核hash表数据结构&quot;&gt;&lt;/p&gt;
 
 &lt;p&gt;其实PHP的Hash冲突漏洞就是利用在极端情况下，拉链法的Hashtab会退化为单链表的漏洞。由于Hash函数是公开的，因此经过精心的构造，是可以构造出导致Hash退化为链表的数据的。&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;http://cms.csdnimg.cn/article/201410/16/543fda7865385.jpg&quot; alt=&quot;极端情况下退化为单链表&quot;&gt;&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;http://cms.csdnimg.cn/article/201410/16/543fda7865385.jpg&quot; alt=&quot;php hash表退化为单链表&quot;&gt;&lt;/p&gt;
 
-&lt;hr&gt;
-
-&lt;h3 id=&quot;本地实现php的hash漏洞攻击&quot;&gt;本地实现PHP的Hash漏洞攻击&lt;/h3&gt;
+&lt;h3 id=&quot;2-本地实现php的hash漏洞攻击&quot;&gt;2. 本地实现PHP的Hash漏洞攻击&lt;/h3&gt;
 
 &lt;p&gt;在我们使用数组时，PHP内核都是通过把数组内容插入到一个Hash表实现的，但对于关联数组(字符串下标)和索引数组(整数下标)的处理方法是不同的。关联数组使用如下函数将数据添加的Hash表:&lt;/p&gt;
 
@@ -385,8 +446,7 @@ bt //显示错误处的函数调用栈
 &lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;由于实现较为简单，大部分攻击是通过构造索引数组来实现的，只要使
-公式&lt;code&gt;h &amp;amp; ht-&amp;gt;nTableMask&lt;/code&gt;得到同样的值即可，其中&lt;code&gt;ht-&amp;gt;nTableMask&lt;/code&gt;在_zend_hash_init函数中赋值：&lt;code&gt;ht-&amp;gt;nTableMask = ht-&amp;gt;nTableSize - 1&lt;/code&gt;。&lt;/p&gt;
+&lt;p&gt;由于实现较为简单，大部分攻击是通过构造索引数组来实现的，只要使 公式&lt;code&gt;h &amp;amp; ht-&amp;gt;nTableMask&lt;/code&gt;得到同样的值即可，其中&lt;code&gt;ht-&amp;gt;nTableMask&lt;/code&gt;在&lt;code&gt;zend_hash_init&lt;/code&gt;函数中赋值：&lt;code&gt;ht-&amp;gt;nTableMask = ht-&amp;gt;nTableSize - 1&lt;/code&gt;。&lt;/p&gt;
 
 &lt;p&gt;有了以上基础知识，我们就可以构利用Hash冲突漏洞了。先直接上代码：&lt;/p&gt;
 
@@ -398,103 +458,27 @@ bt //显示错误处的函数调用栈
          &lt;span class=&quot;nv&quot;&gt;$array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
  &lt;span class=&quot;nv&quot;&gt;$endTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;microtime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
- &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$endTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$startTime&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;PHP_EOL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
- &lt;span class=&quot;cp&quot;&gt;?&amp;gt;&lt;/span&gt;&lt;span class=&quot;x&quot;&gt;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+ &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$endTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$startTime&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;PHP_EOL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;p&gt;这段代码创建了一个包含2&lt;sup&gt;16&lt;/sup&gt; 个元素的索引数组，下标依次为:&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;0,2^16,2*2^16,......,n*2^16,......,(2^16-1)*2^16
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;这时&lt;code&gt;ht-&amp;gt;nTableMask=2^16-1&lt;/code&gt;，转换为二进制就是&lt;code&gt;1111 1111 1111
-1111&lt;/code&gt;。而以上数组中的任意一个下标h和ht-&amp;gt;nTableMask进行与运算都得0，&lt;code&gt;nIndex = h &amp;amp; ht-&amp;gt;nTableMask =
-0&lt;/code&gt;。即所有的下标都得到同样的Hash值，这时Hash表就退化为链表了。事实上，这段代码在我的电脑里运行耗时40多秒。多恐怖啊。&lt;/p&gt;
+&lt;p&gt;这段代码创建了一个包含216 个元素的索引数组，下标依次为:&lt;/p&gt;
 
-&lt;hr&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,......,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,......,(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;h3 id=&quot;常见的hash冲突攻击形式&quot;&gt;常见的Hash冲突攻击形式&lt;/h3&gt;
+&lt;p&gt;这时&lt;code&gt;ht-&amp;gt;nTableMask=2^16-1&lt;/code&gt;，转换为二进制就是&lt;code&gt;1111 1111 1111 1111&lt;/code&gt;。而以上数组中的任意一个下标h和&lt;code&gt;ht-&amp;gt;nTableMask&lt;/code&gt;进行与运算都得0，&lt;code&gt;nIndex = h &amp;amp; ht-&amp;gt;nTableMask = 0&lt;/code&gt;。即所有的下标都得到同样的Hash值，这时Hash表就退化为链表了。事实上，这段代码在我的电脑里运行耗时40多秒。多恐怖啊。&lt;/p&gt;
+
+&lt;h3 id=&quot;3-常见的hash冲突攻击形式&quot;&gt;3.常见的Hash冲突攻击形式&lt;/h3&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;POST攻击：
-PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造一个无限大的哈希冲突的值，则可以拖垮服务器。&lt;/p&gt;
+&lt;p&gt;POST攻击： PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造一个无限大的哈希冲突的值，则可以拖垮服务器。&lt;/p&gt;
 &lt;/blockquote&gt;
 
 &lt;p&gt;PHP5.3.9以后的版本可以通过php.ini设置GET/POST/COOKIE 的最大输入变量数。默认为1000。但这种方法是无法完全避免攻击的，我们也可以在POST的变量值上做手脚，即反序列化攻击。&lt;/p&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;反序列化攻击：
-如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。
-到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据&lt;/p&gt;
+&lt;p&gt;反序列化攻击： 如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。 到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据&lt;/p&gt;
 &lt;/blockquote&gt;
 
   &lt;p&gt;&lt;a href=&quot;/php-hash/&quot;&gt;理解PHP的Hash冲突漏洞&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 19, 2014.&lt;/p&gt;</content>
-</entry>
-
-
-<entry>
-  <title type="html"><![CDATA[solr4.10搜索结果评分算法简介]]></title>
- <link rel="alternate" type="text/html" href="/solr-scoring/" />
-  <id>/solr-scoring</id>
-  <updated>2014-10-10T00:00:00-00:00</updated>
-  <published>2014-10-10T00:00:00+08:00</published>
-  
-  <author>
-    <name>foio</name>
-    <uri></uri>
-    <email>syszhpe@gmail.com</email>
-  </author>
-  <content type="html">&lt;p&gt;solr4.10使用lucene4.10作为其搜索核心，lucene4.10的排序算法综合使用量&lt;a href=&quot;http://en.wikipedia.org/wiki/Vector_space_model&quot;&gt;向量空间模型&lt;/a&gt;和&lt;a href=&quot;http://en.wikipedia.org/wiki/Standard_Boolean_model&quot;&gt;布尔模型&lt;/a&gt;。lucene4.10的搜索结果排序算法可以用如下公式描述：&lt;/p&gt;
-
-&lt;figure style=&quot;margin:0 auto;width:620px&quot;&gt;
-    &lt;img src=&quot;/images/lucene_score.jpg&quot;/&gt;
-&lt;/figure&gt;
-
-&lt;p&gt;下面我们分别就公司的各个项进行解释。&lt;/p&gt;
-
-&lt;h4 id=&quot;1.-词条频率&quot;&gt;1. 词条频率&lt;/h4&gt;
-
-&lt;p&gt;&lt;code&gt;tf(t in d)&lt;/code&gt;定义为词条t在文档d中出现的评频率。文档d中出现词条t的次数越多，则评分越多。默认实现是：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;tf(t in d) = frequency½
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h4 id=&quot;2.逆文档频率&quot;&gt;2.逆文档频率&lt;/h4&gt;
-
-&lt;p&gt;&lt;code&gt;idf(t)&lt;/code&gt;定义为出现词条t的文档数量占比的倒数。默认实现是：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;idf(t) = 1 + log ( numDocs/docFreq+1 )
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h4 id=&quot;3.协同因子&quot;&gt;3.协同因子&lt;/h4&gt;
-
-&lt;p&gt;&lt;code&gt;coord(q,d)&lt;/code&gt;定义为查询q中词条在文档d中出现的次数。文档中出现查询词条越多，评分越高。&lt;/p&gt;
-
-&lt;h4 id=&quot;4.查询标准&quot;&gt;4.查询标准&lt;/h4&gt;
-
-&lt;p&gt;&lt;code&gt;queryNorm(q)&lt;/code&gt;主要用于查询(query)之间比较，不影响文档的排序。因为一个查询(query)的所有文档使用同样的因子。&lt;code&gt;queryNorm(q)&lt;/code&gt;使用如下公式计算，&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;queryNorm(q) = queryNorm(sumOfSquaredWeights) = 1/sumOfSquaredWeights½
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;其中的&lt;code&gt;sumOfSquaredWeights&lt;/code&gt;与查询中每个词条的权重的平方和有关可以用如下公式表示。&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;sumOfSquaredWeights = q.getBoost()2 · ∑  (idf(t) · t.getBoost())2
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h4 id=&quot;5.-词条权重&quot;&gt;5. 词条权重&lt;/h4&gt;
-
-&lt;p&gt;&lt;code&gt;t.getBoost()&lt;/code&gt;用于设置查询(query)中某个词条的权重，只在查询时起作用。&lt;/p&gt;
-
-&lt;h4 id=&quot;6.-其他因子&quot;&gt;6. 其他因子&lt;/h4&gt;
-
-&lt;p&gt;&lt;code&gt;norm(t,d)&lt;/code&gt;定义了文档权重和文档长度信息。其中文档权重表示在建立索引时给予每个文档或者每个域不同的权重；而长度因子表示文档的域在分词后包含的词条总数，文档的域的长度也少，得分越高。其中可以用如下公式表示：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;norm(t,d) = lengthNorm · ∏   f.boost()
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;hr&gt;
-
-&lt;p&gt;总结一下：lucene4.10的排序结果与如下因素有关:&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;1.单个文档中出现搜索语句中所有词条的频率；即&lt;code&gt;tf(t in d)&lt;/code&gt;,&lt;code&gt;coord(q,d)&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;2.搜索语句中词条在全部文档中出现的频率；即&lt;code&gt;idf(t)&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;3.词条权重，文档权重；即&lt;code&gt;t.getBoost()&lt;/code&gt;，&lt;code&gt;q.getBoost()&lt;/code&gt;，&lt;code&gt;f.boost()&lt;/code&gt;&lt;/p&gt;
-
-&lt;p&gt;4.文档域长度；即&lt;code&gt;lengthNorm&lt;/code&gt;&lt;/p&gt;
-&lt;/blockquote&gt;
-
-  &lt;p&gt;&lt;a href=&quot;/solr-scoring/&quot;&gt;solr4.10搜索结果评分算法简介&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 10, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -692,7 +676,7 @@ sortMissingLast=&amp;quot;true&amp;quot; omitNorms=&amp;quot;true&amp;quot;&amp;
 
 
 <entry>
-  <title type="html"><![CDATA[docker原理与示例]]></title>
+  <title type="html"><![CDATA[docker初探]]></title>
  <link rel="alternate" type="text/html" href="/docker-tutorial/" />
   <id>/docker-tutorial</id>
   <updated>2014-10-04T00:00:00-00:00</updated>
@@ -707,7 +691,7 @@ sortMissingLast=&amp;quot;true&amp;quot; omitNorms=&amp;quot;true&amp;quot;&amp;
 
 &lt;hr&gt;
 
-&lt;h3 id=&quot;1.原理篇&quot;&gt;1.原理篇&lt;/h3&gt;
+&lt;h3 id=&quot;1-原理篇&quot;&gt;1.原理篇&lt;/h3&gt;
 
 &lt;p&gt;Docker可以把应用程序和它所依赖的从操作系统到软件包的环境打包成一个镜像文件。听起来好像一个典型的虚拟机，但是Docker要比虚拟机轻量的多。那么，Docker和一个完全的虚拟机有何区别？Docker是如何做到提供一个完整的文件系统，独立的网络环境等等这些功能，同时还没有如此庞大？&lt;/p&gt;
 
@@ -717,15 +701,15 @@ sortMissingLast=&amp;quot;true&amp;quot; omitNorms=&amp;quot;true&amp;quot;&amp;
 
 &lt;p&gt;Docker核心是一个操作系统级虚拟化方法, 理解起来可能并不像VM那样直观。我们从虚拟化方法的四个方面：隔离性、资源限制性、便携性、安全性来详细介绍Docker的技术细节。&lt;/p&gt;
 
-&lt;h4 id=&quot;(1).隔离性&quot;&gt;(1).隔离性&lt;/h4&gt;
+&lt;h4 id=&quot;1-隔离性&quot;&gt;(1).隔离性&lt;/h4&gt;
 
 &lt;p&gt;传统的vm用一个操作系统实现隔离性，而Docker基于LXC(linux container)实现隔离性。LXC是通过kernel namespace实现隔离性的。简单说就是同一个linux操作系统中可以存在多个不同的命名空间(容器)，不同namesapce中可以存在相同的pid、net、ipc、mnt、uts等。&lt;/p&gt;
 
-&lt;h4 id=&quot;(2).资源限制性&quot;&gt;(2).资源限制性&lt;/h4&gt;
+&lt;h4 id=&quot;2-资源限制性&quot;&gt;(2).资源限制性&lt;/h4&gt;
 
 &lt;p&gt;Docker通过使用cgroups 实现了对资源的配额和度量。 cgroups 的使用非常简单，可实现对单个进程(容器)的资源控制。groups可以限制blkio、cpu、cpuacct、cpuset、devices、freezer、memory、net_cls、ns九大子系统的资源&lt;/p&gt;
 
-&lt;h4 id=&quot;(3).便携性&quot;&gt;(3).便携性&lt;/h4&gt;
+&lt;h4 id=&quot;3-便携性&quot;&gt;(3).便携性&lt;/h4&gt;
 
 &lt;p&gt;Docker通过使用AUFS (AnotherUnionFS)实现便携性。AUFS(AnotherUnionFS) 是一种 Union FS, 简单来说就是支持将不同目录挂载到同一个虚拟文件系统下(unite several directories into a single virtual filesystem)的文件系统,  AUFS 里有一个类似分层的概念, 通过将一个 readonly 的 branch 和一个 writeable 的 branch 联合在一起，就可以实现对 readonly 权限的 branch 进行增量的进行修改(不影响 readonly 部分的)。&lt;/p&gt;
 
@@ -733,19 +717,19 @@ sortMissingLast=&amp;quot;true&amp;quot; omitNorms=&amp;quot;true&amp;quot;&amp;
 
 &lt;p&gt;&lt;img src=&quot;http://infoqstatic.com/resource/articles/docker-core-technology-preview/zh/resources/0731016.png&quot; alt=&quot;enter image description here&quot;&gt;&lt;/p&gt;
 
-&lt;h4 id=&quot;(4).安全性&quot;&gt;(4).安全性&lt;/h4&gt;
+&lt;h4 id=&quot;4-安全性&quot;&gt;(4).安全性&lt;/h4&gt;
 
 &lt;p&gt;关于安全性相关文章请参考&lt;a href=&quot;http://docs.docker.com/articles/security/&quot;&gt;Docker官方文档&lt;/a&gt;。&lt;/p&gt;
 
 &lt;hr&gt;
 
-&lt;h3 id=&quot;2.构建镜像&quot;&gt;2.构建镜像&lt;/h3&gt;
+&lt;h3 id=&quot;2-构建镜像&quot;&gt;2.构建镜像&lt;/h3&gt;
 
 &lt;p&gt;Docker需要linux kernel 3.8以上，安装过程非常简单，在此不再赘述，详细步骤参考&lt;a href=&quot;http://docs.docker.com/installation/ubuntulinux/&quot;&gt;官方安装文档&lt;/a&gt;。&lt;/p&gt;
 
 &lt;p&gt;在Docker中开发者可以打包他们的应用以及依赖环境到一镜像中，并可以在任意docke容器中运行这个镜像。在docker的&lt;a href=&quot;https://registry.hub.docker.com/&quot;&gt;官方register&lt;/a&gt;中，有各种操作系统的镜像，我们可以基于这些镜像构建自己的镜像。构建镜像的有两种方法。&lt;/p&gt;
 
-&lt;h4 id=&quot;(1).通过dockerfile创建镜像&quot;&gt;(1).通过Dockerfile创建镜像&lt;/h4&gt;
+&lt;h4 id=&quot;1-通过dockerfile创建镜像&quot;&gt;(1).通过Dockerfile创建镜像&lt;/h4&gt;
 
 &lt;p&gt;Dockerfile基本上是自解释的，从一个基础镜像开始，通过RUN命令在基本镜像上安装环境，然后通过CMD命令指定镜像启动的命令。下面的Dockerfile从ubuntu14.04镜像开始，安装并配置好sshd服务。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;FROM     ubuntu:14.04
@@ -764,7 +748,7 @@ CMD [&amp;quot;/usr/sbin/sshd&amp;quot;, &amp;quot;-D&amp;quot;]
 &lt;p&gt;然后可以通过如下命令查看刚才生成的镜像。运行image的命令请参考docker&lt;a href=&quot;http://docs.docker.com/reference/commandline/cli/&quot;&gt;官方文档&lt;/a&gt;。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;sudo docker images
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h4 id=&quot;(2).通过commit创建镜像&quot;&gt;(2).通过commit创建镜像&lt;/h4&gt;
+&lt;h4 id=&quot;2-通过commit创建镜像&quot;&gt;(2).通过commit创建镜像&lt;/h4&gt;
 
 &lt;p&gt;我们可以先以交互的方式启动一个操作系统镜像，然后在其中做各种修改，最后通过commit命令提交。具体步骤如下：
 首先通过交互的方式启动一个镜像，这样会进入镜像操作系统shell中：&lt;/p&gt;
@@ -781,7 +765,7 @@ CMD [&amp;quot;/usr/sbin/sshd&amp;quot;, &amp;quot;-D&amp;quot;]
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;hr&gt;
 
-&lt;h3 id=&quot;3.运行镜像&quot;&gt;3.运行镜像&lt;/h3&gt;
+&lt;h3 id=&quot;3-运行镜像&quot;&gt;3.运行镜像&lt;/h3&gt;
 
 &lt;p&gt;镜像的运行还是比较简单的，比如如下命令运行ubuntu镜像并用echo输出hello world。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;sudo docker run ubuntu echo &amp;#39;hello world&amp;#39;
@@ -803,7 +787,7 @@ CMD [&amp;quot;/usr/sbin/sshd&amp;quot;, &amp;quot;-D&amp;quot;]
 
 &lt;p&gt;关于docker的虚拟化相关讨论问题可参考&lt;a href=&quot;http://www.geekbus.cn/docker-core-technology-preview/&quot;&gt;这篇文章&lt;/a&gt;。&lt;/br&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/docker-tutorial/&quot;&gt;docker原理与示例&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 04, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/docker-tutorial/&quot;&gt;docker初探&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 04, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -823,7 +807,7 @@ CMD [&amp;quot;/usr/sbin/sshd&amp;quot;, &amp;quot;-D&amp;quot;]
 
 &lt;hr&gt;
 
-&lt;h3 id=&quot;1.unicode的编码特点&quot;&gt;1.Unicode的编码特点&lt;/h3&gt;
+&lt;h3 id=&quot;1-unicode的编码特点&quot;&gt;1.Unicode的编码特点&lt;/h3&gt;
 
 &lt;p&gt;每一个Unicode字符都对应一个唯一的Unicode编码，一种语言的Unicode编码是在一个连续区间内的，除了这些基本特征外，Unicode编码还有三种属性Property、 Block、Script。我们可以用&lt;code&gt;\p&lt;/code&gt;引用Unicode的属性，&lt;/p&gt;
 
@@ -849,7 +833,7 @@ Arabic
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;hr&gt;
 
-&lt;h3 id=&quot;2.unicode正则应用案例&quot;&gt;2.Unicode正则应用案例&lt;/h3&gt;
+&lt;h3 id=&quot;2-unicode正则应用案例&quot;&gt;2.Unicode正则应用案例&lt;/h3&gt;
 
 &lt;ul&gt;
 &lt;li&gt;匹配单个Unicode字符，下面例子去掉&amp;quot;发&amp;quot;字。&lt;/li&gt;
@@ -897,7 +881,7 @@ Arabic
 
 &lt;hr&gt;
 
-&lt;h3 id=&quot;1.lex&quot;&gt;1.lex&lt;/h3&gt;
+&lt;h3 id=&quot;1-lex&quot;&gt;1.lex&lt;/h3&gt;
 
 &lt;p&gt;lex是一种词法分析器，可以识别文本中的词汇模式，模式可以用正则表达式表示。通过lex编译l文件(词法文件)就可以生产对应的c代码，然后编译连接c代码就可以生成词法分析器了。&lt;/p&gt;
 
@@ -934,7 +918,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 
 &lt;hr&gt;
 
-&lt;h3 id=&quot;2.yacc&quot;&gt;2.yacc&lt;/h3&gt;
+&lt;h3 id=&quot;2-yacc&quot;&gt;2.yacc&lt;/h3&gt;
 
 &lt;p&gt;Yacc( Yet Another Compiler Compiler)。 Yacc 的 GNU 版叫做 Bison。它是一种工具，将一种编程语言的语法翻译成针对此种语言的 Yacc 语法解析器。从上文中我们可以知道lex可以参数一系列标记，如果我们想当某个标记序列出现时执行某一动作，该怎么实现呢？Yacc该出场了。通过yacc编译y文件(语法文件)就可以产生对应的c程序了；生成的c代码通过编译链接就可以生产语法分析器了。但是，语法分析的前提是词法分析，因此我们需要lex出现输入文件并生成标记。在讲解y文件(语法文件)之前我们假设以及存在如下l文件(词法文件)：&lt;/p&gt;
 
@@ -1008,7 +992,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 输入：target temperature 22
 输出：New temperature set!
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id=&quot;3.lex与yacc结合&quot;&gt;3.lex与yacc结合&lt;/h3&gt;
+&lt;h3 id=&quot;3-lex与yacc结合&quot;&gt;3.lex与yacc结合&lt;/h3&gt;
 
 &lt;p&gt;也许你已经注意到了，l文件的definitions部分往往要包含#include &amp;quot;y.tab.h&amp;quot;。而y.tab.h是yacc对y文件编译后产生的c源文见。因此y文件必须限于l文件进行编译成c源文件，然后将l文件产生的c文件和y文件产生的c文件编译连接生产语法解析器。具体步骤见图：&lt;/p&gt;
 
@@ -1094,7 +1078,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 
 &lt;hr&gt;
 
-&lt;h3 id=&quot;1.cgi模式&quot;&gt;1.cgi模式&lt;/h3&gt;
+&lt;h3 id=&quot;1-cgi模式&quot;&gt;1.cgi模式&lt;/h3&gt;
 
 &lt;p&gt;cgi模式下，&lt;em&gt;sapi_module_struct的实例定义在cgi&lt;/em&gt;main.c中。&lt;/p&gt;
 
@@ -1131,7 +1115,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 
 &lt;p&gt;可以看到，cgi模式下的&lt;code&gt;char *(*read_cookies)(TSRMLS_D)&lt;/code&gt;最终为从环境变量中读取HTTP_COOKIE。&lt;/p&gt;
 
-&lt;h3 id=&quot;2.cli-模式&quot;&gt;2.cli 模式&lt;/h3&gt;
+&lt;h3 id=&quot;2-cli-模式&quot;&gt;2.cli 模式&lt;/h3&gt;
 
 &lt;p&gt;cgi模式下，&lt;em&gt;sapi_module_struct的实例定义在php&lt;/em&gt;cli.c&lt;/p&gt;
 
@@ -1266,7 +1250,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 
 &lt;h2 id=&quot;1-数据库操作场景&quot;&gt;1 数据库操作场景&lt;/h2&gt;
 
-&lt;h3 id=&quot;1.1-字符串变量注入&quot;&gt;1.1 字符串变量注入&lt;/h3&gt;
+&lt;h3 id=&quot;1-1-字符串变量注入&quot;&gt;1.1 字符串变量注入&lt;/h3&gt;
 
 &lt;p&gt;比如如下php代码：。&lt;/p&gt;
 
@@ -1277,7 +1261,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 
 &lt;p&gt;这段代码没有对不可信输入做检查，当&lt;code&gt;$_POST[&amp;#39;user&amp;#39;] = &amp;quot;&amp;#39; OR &amp;#39;&amp;#39; = &amp;#39;&amp;quot;&lt;/code&gt;且&lt;code&gt;$_POST[&amp;#39;password&amp;#39;] = &amp;quot;&amp;#39; OR &amp;#39;&amp;#39; = &amp;#39;&amp;quot;&lt;/code&gt;，实际的sql为：&lt;code&gt;select * from user where name = &amp;#39;&amp;#39; OR &amp;#39;&amp;#39; = &amp;#39;&amp;#39; and password = &amp;#39;&amp;#39; OR &amp;#39;&amp;#39; = &amp;#39;&amp;#39;&lt;/code&gt;，这样的sql就可能将所有的数据库中用户信息泄露。&lt;/p&gt;
 
-&lt;h3 id=&quot;1.2-整形注入&quot;&gt;1.2 整形注入&lt;/h3&gt;
+&lt;h3 id=&quot;1-2-整形注入&quot;&gt;1.2 整形注入&lt;/h3&gt;
 
 &lt;p&gt;比如如下php代码：。&lt;/p&gt;
 
@@ -1295,7 +1279,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 
 &lt;h2 id=&quot;2-文件操作场景&quot;&gt;2 文件操作场景&lt;/h2&gt;
 
-&lt;h3 id=&quot;2.1-文件名安全问题&quot;&gt;2.1 文件名安全问题&lt;/h3&gt;
+&lt;h3 id=&quot;2-1-文件名安全问题&quot;&gt;2.1 文件名安全问题&lt;/h3&gt;
 
 &lt;p&gt;如下php代码段：&lt;/p&gt;
 
@@ -1306,7 +1290,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 
 &lt;p&gt;include,include_once,require,requre_once这些函数的本质是载入php文件并执行，因此使用这些函数时务必非常小心。这段代码非常不安全，比如&lt;code&gt;$_GET[&amp;#39;file&amp;#39;]=&amp;quot;../../../../../../../../etc/passwd%00.php&amp;quot;&lt;/code&gt;时，将会打开敏感文件/etc/passwd，因为&lt;code&gt;%00&lt;/code&gt;是&lt;code&gt;\0&lt;/code&gt;url编码后的值，对于操作系统而言相当于字符串的结束符。&lt;/p&gt;
 
-&lt;h3 id=&quot;2.2-文件读写安全问题&quot;&gt;2.2 文件读写安全问题&lt;/h3&gt;
+&lt;h3 id=&quot;2-2-文件读写安全问题&quot;&gt;2.2 文件读写安全问题&lt;/h3&gt;
 
 &lt;p&gt;如下php代码段：&lt;/p&gt;
 
@@ -1392,18 +1376,18 @@ expect：从进程接收字符串
 spawn：启动新的进程
 interact：允许用户交互
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id=&quot;1.-send命令&quot;&gt;1. send命令&lt;/h3&gt;
+&lt;h3 id=&quot;1-send命令&quot;&gt;1. send命令&lt;/h3&gt;
 
 &lt;p&gt;send命令接收一个字符串参数，并将该参数发送到进程。&lt;/p&gt;
 
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;n&quot;&gt;expect1&lt;/span&gt;&lt;span class=&quot;mf&quot;&gt;.1&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;send&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;hello world&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\n&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt;
 &lt;span class=&quot;n&quot;&gt;hello&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;world&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-&lt;h3 id=&quot;2.-expect命令&quot;&gt;2. expect命令&lt;/h3&gt;
+&lt;h3 id=&quot;2-expect命令&quot;&gt;2. expect命令&lt;/h3&gt;
 
 &lt;hr&gt;
 
-&lt;h4 id=&quot;(1)基础知识&quot;&gt;(1)基础知识&lt;/h4&gt;
+&lt;h4 id=&quot;1-基础知识&quot;&gt;(1)基础知识&lt;/h4&gt;
 
 &lt;p&gt;expect命令和send命令正好相反，expect通常是用来等待一个进程的反馈。expect可以接收一个字符串参数，也可以接收正则表达式参数。和上文的send命令结合，现在我们可以看一个最简单的交互式的例子：&lt;/p&gt;
 
@@ -1430,7 +1414,7 @@ I only expect: hi
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;hr&gt;
 
-&lt;h4 id=&quot;(2)模式-动作&quot;&gt;(2)模式-动作&lt;/h4&gt;
+&lt;h4 id=&quot;2-模式-动作&quot;&gt;(2)模式-动作&lt;/h4&gt;
 
 &lt;p&gt;expect最常用的语法是来自tcl语言的模式-动作。这种语法极其灵活，下面我们就各种语法分别说明。&lt;/p&gt;
 
@@ -1456,7 +1440,7 @@ I only expect: hi
 
 &lt;hr&gt;
 
-&lt;h3 id=&quot;3.-spawn命令&quot;&gt;3. spawn命令&lt;/h3&gt;
+&lt;h3 id=&quot;3-spawn命令&quot;&gt;3. spawn命令&lt;/h3&gt;
 
 &lt;p&gt;上文的所有demo都是和标准输入输出进行交互，但是我们跟希望他可以和某一个进程进行交互。spawm命令就是用来启动新的进程的。spawn后的send和expect命令都是和spawn打开的进程进行交互的。结合上文的send和expect命令我们可以看一下更复杂的程序段了。&lt;/p&gt;
 
@@ -1475,7 +1459,7 @@ I only expect: hi
 
 &lt;hr&gt;
 
-&lt;h3 id=&quot;4.interact&quot;&gt;4.interact&lt;/h3&gt;
+&lt;h3 id=&quot;4-interact&quot;&gt;4.interact&lt;/h3&gt;
 
 &lt;p&gt;到现在为止，我们已经可以结合spawn、expect、send自动化的完成很多任务了。但是，如何让人在适当的时候干预这个过程了。比如下载完ftp文件时，仍然可以停留在ftp命令行状态，以便手动的执行后续命令。interact可以达到这些目的。下面的demo在自动登录ftp后，允许用户交互。&lt;/p&gt;
 
@@ -1624,7 +1608,7 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;h2 id=&quot;配置varnish&quot;&gt;配置varnish&lt;/h2&gt;
 
-&lt;h3 id=&quot;1.-/etc/default/varnish&quot;&gt;1. /etc/default/varnish&lt;/h3&gt;
+&lt;h3 id=&quot;1-etc-default-varnish&quot;&gt;1. /etc/default/varnish&lt;/h3&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;DAEMON_OPTS=&amp;quot;-a :80 \                                             
              -T localhost:6082 \
              -f /etc/varnish/default.vcl \
@@ -1640,7 +1624,7 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
  &lt;code&gt;-s malloc,100m&lt;/code&gt; 表示使用100m的内存&lt;/p&gt;
 &lt;/blockquote&gt;
 
-&lt;h3 id=&quot;2.-/etc/varnish/default.vcl&quot;&gt;2.  /etc/varnish/default.vcl&lt;/h3&gt;
+&lt;h3 id=&quot;2-etc-varnish-default-vcl&quot;&gt;2.  /etc/varnish/default.vcl&lt;/h3&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;backend default {
     .host = &amp;quot;127.0.0.1&amp;quot;;
     .port = &amp;quot;8080&amp;quot;;
@@ -1714,7 +1698,7 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
   </author>
   <content type="html">&lt;p&gt;mysql日志主要包括：错误日志、查询日志、慢查询日志、二进制日志。本文将依次讲解这些日志如何配置、使用。&lt;/p&gt;
 
-&lt;h2 id=&quot;1.-错误日志&quot;&gt;1. 错误日志&lt;/h2&gt;
+&lt;h2 id=&quot;1-错误日志&quot;&gt;1. 错误日志&lt;/h2&gt;
 
 &lt;hr&gt;
 
@@ -1749,7 +1733,7 @@ log_error = /var/log/mysql/error.log
 140716 20:24:13 [Note] Event Scheduler: Loaded 0 events
 140716 20:24:13 [Note] /usr/sbin/mysqld: ready for connections.
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;2.-查询日志&quot;&gt;2. 查询日志&lt;/h2&gt;
+&lt;h2 id=&quot;2-查询日志&quot;&gt;2. 查询日志&lt;/h2&gt;
 
 &lt;hr&gt;
 
@@ -1774,7 +1758,7 @@ general_log             = 1
             9 Query select title,url from hot_articles limit 60 ,10
             9 Quit
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;3.-慢查询日志&quot;&gt;3. 慢查询日志&lt;/h2&gt;
+&lt;h2 id=&quot;3-慢查询日志&quot;&gt;3. 慢查询日志&lt;/h2&gt;
 
 &lt;hr&gt;
 
@@ -1811,7 +1795,7 @@ use test;
 SET timestamp=1405514879;
 select url,url_token from articles where url_md5 = &amp;#39;817563bd7ef4b2a476f1f55d0b558cd1&amp;#39;;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;4.-二进制日志&quot;&gt;4. 二进制日志&lt;/h2&gt;
+&lt;h2 id=&quot;4-二进制日志&quot;&gt;4. 二进制日志&lt;/h2&gt;
 
 &lt;hr&gt;
 
@@ -1832,7 +1816,7 @@ max_binlog_size         = 100M
 +------------------+-----------+
 4 rows in set (0.00 sec)
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id=&quot;4.1-查看二进制日志&quot;&gt;4.1 查看二进制日志&lt;/h3&gt;
+&lt;h3 id=&quot;4-1-查看二进制日志&quot;&gt;4.1 查看二进制日志&lt;/h3&gt;
 
 &lt;p&gt;可以通过&lt;code&gt;show master status&lt;/code&gt;和&lt;code&gt;show binlog events&lt;/code&gt;查询定位binlog信息：&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;#使用show master status查看下一条binlog的偏移起始位置：
@@ -1877,7 +1861,7 @@ End_log_pos: 1274
        Info: COMMIT /* xid=137 */
 4 rows in set (0.00 sec)
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id=&quot;4.2-使用二进制日志恢复数据&quot;&gt;4.2 使用二进制日志恢复数据&lt;/h3&gt;
+&lt;h3 id=&quot;4-2-使用二进制日志恢复数据&quot;&gt;4.2 使用二进制日志恢复数据&lt;/h3&gt;
 
 &lt;p&gt;使用mysql的命令行工具，可以方便的将binlog中的sql语句导出，导出后的sql语句可以方便的用于恢复数据库。具体格式可以参考&lt;code&gt;mysqlbinlog --help&lt;/code&gt;的输出，下面是两个最常用的例子：&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;#将mysql中的命令点870到命令点1274之间的sql语句导出到文件中
@@ -2001,6 +1985,32 @@ hairColor       1.4545          2     1.1429
 &lt;/blockquote&gt;
 
   &lt;p&gt;&lt;a href=&quot;/weka-kmeans/&quot;&gt;weka kmeans算法测试&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on July 16, 2014.&lt;/p&gt;</content>
+</entry>
+
+
+<entry>
+  <title type="html"><![CDATA[kpusher,推送网页到kindle]]></title>
+ <link rel="alternate" type="text/html" href="/kpusher/" />
+  <id>/kpusher</id>
+  <updated>2014-07-13T00:00:00-00:00</updated>
+  <published>2014-07-14T00:00:00+08:00</published>
+  
+  <author>
+    <name>foio</name>
+    <uri></uri>
+    <email>syszhpe@gmail.com</email>
+  </author>
+  <content type="html">&lt;p&gt;上网时经常会发现精彩的内容，但是有没有时间阅读，这种情况下，我习惯将文章推送到kindle，稍后有时间时再细读。用了很多浏览器插件，从&amp;quot;push to kindle&amp;quot;到&amp;quot;send to kindle&amp;quot;，发现这些插件在GFW内都有些水土不服，巨慢无比。&lt;/p&gt;
+
+&lt;p&gt;最近用周末时间，写了一个功能类似的插件&lt;a href=&quot;http://kpusher.xuanhao360.com/&quot;&gt;kpusher&lt;/a&gt;，firefox和chrome都有。&lt;/p&gt;
+
+&lt;p&gt;工作原理如下：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;将当前网页地址发送到服务器，服务器抓取当前网页内容并格式化，生成电子书，然后推送到kindle邮箱，kindle邮箱需要简单的配置一下，这个玩kindle的人都懂，用起来很方便，更重要的是快，快，快。推荐一下，这个也支持多看系统的哦。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+  &lt;p&gt;&lt;a href=&quot;/kpusher/&quot;&gt;kpusher,推送网页到kindle&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on July 14, 2014.&lt;/p&gt;</content>
 </entry>
 
 </feed>

@@ -105,34 +105,26 @@
         <loc>/page18/index.html</loc>
     </url>
     
-    <url>
-        <loc>/page19/index.html</loc>
-    </url>
-    
 
+    
+    <url>
+        <loc>/jquery-ready-load/</loc>
+    </url>
     
     <url>
         <loc>/mongo-atom/</loc>
     </url>
     
     <url>
-        <loc>/hive-udf/</loc>
+        <loc>/hive-function/</loc>
     </url>
     
     <url>
-        <loc>/php-ext-exp/</loc>
-    </url>
-    
-    <url>
-        <loc>/php-ext-autoload/</loc>
+        <loc>/php-extension-autoload/</loc>
     </url>
     
     <url>
         <loc>/php-hash/</loc>
-    </url>
-    
-    <url>
-        <loc>/solr-scoring/</loc>
     </url>
     
     <url>

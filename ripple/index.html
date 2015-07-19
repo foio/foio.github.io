@@ -211,20 +211,20 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
           <a href="/varnish/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
-          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+          <h3><a href="/jquery-ready-load/" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a></h3>
+          <p>jQuery的ready事件实现原理 <a href="/jquery-ready-load/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
-            <span>Published on December 10, 2014</span>
+            <h4><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h4>
+            <span>Published on January 02, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
-            <span>Published on October 24, 2014</span>
+            <h4><a href="/hive-function/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
@@ -242,22 +242,15 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-<!--高速版，加载速度快，使用前需测试页面的兼容性-->
-<div id="SOHUCS" class="entry-content"></div>
-<script>
-  (function(){
-    var appid = 'cyrgTvN9G',
-    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
-    var doc = document,
-    s = doc.createElement('script'),
-    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
-    s.type = 'text/javascript';
-    s.charset = 'utf-8';
-    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
-    h.insertBefore(s,h.firstChild);
-    window.SCS_NO_IFRAME = true;
-  })()
-</script>       
+<!--高速版-->
+<div id="SOHUCS"></div>
+<script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+<script type="text/javascript">
+    window.changyan.api.config({
+        appid: 'cyrSKqsGH',
+        conf: 'prod_66e53e0d2e56339a6e0717bac6359450'
+    });
+</script>        
 
 	        
 

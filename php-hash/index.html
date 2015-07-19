@@ -6,7 +6,7 @@
 <head>
 <meta charset="utf-8">
 <title>理解PHP的Hash冲突漏洞 &#8211; 积木小站</title>
-<meta name="description" content="理解PHP的Hash冲突">
+<meta name="description" content="理解PHP的Hash冲突漏洞">
 <meta name="keywords" content="php">
 
 
@@ -15,7 +15,7 @@
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
 <meta property="og:title" content="理解PHP的Hash冲突漏洞">
-<meta property="og:description" content="理解PHP的Hash冲突">
+<meta property="og:description" content="理解PHP的Hash冲突漏洞">
 <meta property="og:url" content="/php-hash/">
 <meta property="og:site_name" content="积木小站">
 
@@ -129,9 +129,7 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-content">
       <p>Hash表对PHP的重要性是每个phper都非常清楚地。但是PHP却有一个与Hash表相关的致命漏洞，我们完全可以通过PHP的Hash冲突漏洞进行DDoS攻击，可以轻易的搞挂一台服务器。那么是什么导致PHP的Hash冲突呢？如何构造Hash冲突？</p>
 
-<hr>
-
-<h3 id="php的hashtab实现方式">PHP的Hashtab实现方式</h3>
+<h3 id="1-php的hashtab实现方式">1. PHP的Hashtab实现方式</h3>
 
 <p>PHP中的哈希表实现在源代码的Zend/zend_hash.c中，Zend/zend_hash.h中描述了Hashtab的结构体，从中我们可以大概了解Hashtab的实现机制。</p>
 
@@ -153,17 +151,15 @@ rel="stylesheet" type="text/css" -->
 <span class="cp">#endif</span>
 <span class="p">}</span> <span class="n">HashTable</span><span class="p">;</span></code></pre></div>
 
-<p>从结构体<code>_hashtable</code>中我们可以看出，PHP内核是使用常用的拉链法实现Hash表的，其中<code>Bucket **arBuckets</code>存储了实际的数据。</p>
+<p>从结构体_hashtable中我们可以看出，PHP内核是使用常用的拉链法实现Hash表的，其中Bucket **arBuckets存储了实际的数据。</p>
 
 <p><img src="http://www.php-internals.com/images/book/chapt03/03-01-02-zend_hashtable.png" alt="php内核hash表数据结构"></p>
 
 <p>其实PHP的Hash冲突漏洞就是利用在极端情况下，拉链法的Hashtab会退化为单链表的漏洞。由于Hash函数是公开的，因此经过精心的构造，是可以构造出导致Hash退化为链表的数据的。</p>
 
-<p><img src="http://cms.csdnimg.cn/article/201410/16/543fda7865385.jpg" alt="极端情况下退化为单链表"></p>
+<p><img src="http://cms.csdnimg.cn/article/201410/16/543fda7865385.jpg" alt="php hash表退化为单链表"></p>
 
-<hr>
-
-<h3 id="本地实现php的hash漏洞攻击">本地实现PHP的Hash漏洞攻击</h3>
+<h3 id="2-本地实现php的hash漏洞攻击">2. 本地实现PHP的Hash漏洞攻击</h3>
 
 <p>在我们使用数组时，PHP内核都是通过把数组内容插入到一个Hash表实现的，但对于关联数组(字符串下标)和索引数组(整数下标)的处理方法是不同的。关联数组使用如下函数将数据添加的Hash表:</p>
 
@@ -183,8 +179,7 @@ rel="stylesheet" type="text/css" -->
 <span class="p">...</span>
 <span class="p">}</span></code></pre></div>
 
-<p>由于实现较为简单，大部分攻击是通过构造索引数组来实现的，只要使
-公式<code>h &amp; ht-&gt;nTableMask</code>得到同样的值即可，其中<code>ht-&gt;nTableMask</code>在_zend_hash_init函数中赋值：<code>ht-&gt;nTableMask = ht-&gt;nTableSize - 1</code>。</p>
+<p>由于实现较为简单，大部分攻击是通过构造索引数组来实现的，只要使 公式<code>h &amp; ht-&gt;nTableMask</code>得到同样的值即可，其中<code>ht-&gt;nTableMask</code>在<code>zend_hash_init</code>函数中赋值：<code>ht-&gt;nTableMask = ht-&gt;nTableSize - 1</code>。</p>
 
 <p>有了以上基础知识，我们就可以构利用Hash冲突漏洞了。先直接上代码：</p>
 
@@ -196,31 +191,24 @@ rel="stylesheet" type="text/css" -->
          <span class="nv">$array</span><span class="p">[</span><span class="nv">$key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
  <span class="p">}</span>
  <span class="nv">$endTime</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
- <span class="k">echo</span> <span class="nv">$endTime</span> <span class="o">-</span> <span class="nv">$startTime</span> <span class="p">,</span><span class="nx">PHP_EOL</span><span class="p">;</span>
- <span class="cp">?&gt;</span><span class="x"></span></code></pre></div>
+ <span class="k">echo</span> <span class="nv">$endTime</span> <span class="o">-</span> <span class="nv">$startTime</span> <span class="p">,</span><span class="nx">PHP_EOL</span><span class="p">;</span></code></pre></div>
 
-<p>这段代码创建了一个包含2<sup>16</sup> 个元素的索引数组，下标依次为:</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">0,2^16,2*2^16,......,n*2^16,......,(2^16-1)*2^16
-</code></pre></div>
-<p>这时<code>ht-&gt;nTableMask=2^16-1</code>，转换为二进制就是<code>1111 1111 1111
-1111</code>。而以上数组中的任意一个下标h和ht-&gt;nTableMask进行与运算都得0，<code>nIndex = h &amp; ht-&gt;nTableMask =
-0</code>。即所有的下标都得到同样的Hash值，这时Hash表就退化为链表了。事实上，这段代码在我的电脑里运行耗时40多秒。多恐怖啊。</p>
+<p>这段代码创建了一个包含216 个元素的索引数组，下标依次为:</p>
 
-<hr>
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="p">,......,</span><span class="n">n</span><span class="o">*</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="p">,......,(</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span></code></pre></div>
 
-<h3 id="常见的hash冲突攻击形式">常见的Hash冲突攻击形式</h3>
+<p>这时<code>ht-&gt;nTableMask=2^16-1</code>，转换为二进制就是<code>1111 1111 1111 1111</code>。而以上数组中的任意一个下标h和<code>ht-&gt;nTableMask</code>进行与运算都得0，<code>nIndex = h &amp; ht-&gt;nTableMask = 0</code>。即所有的下标都得到同样的Hash值，这时Hash表就退化为链表了。事实上，这段代码在我的电脑里运行耗时40多秒。多恐怖啊。</p>
+
+<h3 id="3-常见的hash冲突攻击形式">3.常见的Hash冲突攻击形式</h3>
 
 <blockquote>
-<p>POST攻击：
-PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造一个无限大的哈希冲突的值，则可以拖垮服务器。</p>
+<p>POST攻击： PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造一个无限大的哈希冲突的值，则可以拖垮服务器。</p>
 </blockquote>
 
 <p>PHP5.3.9以后的版本可以通过php.ini设置GET/POST/COOKIE 的最大输入变量数。默认为1000。但这种方法是无法完全避免攻击的，我们也可以在POST的变量值上做手脚，即反序列化攻击。</p>
 
 <blockquote>
-<p>反序列化攻击：
-如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。
-到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据</p>
+<p>反序列化攻击： 如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。 到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据</p>
 </blockquote>
 
       <footer class="entry-meta">
@@ -236,23 +224,23 @@ PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造
     <div class="read-more">
       
         <div class="read-more-header">
-          <a href="/solr-scoring/" class="read-more-btn">Read More</a>
+          <a href="/solr-ik/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
-          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+          <h3><a href="/jquery-ready-load/" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a></h3>
+          <p>jQuery的ready事件实现原理 <a href="/jquery-ready-load/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
-            <span>Published on December 10, 2014</span>
+            <h4><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h4>
+            <span>Published on January 02, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
-            <span>Published on October 24, 2014</span>
+            <h4><a href="/hive-function/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
@@ -270,22 +258,15 @@ PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-<!--高速版，加载速度快，使用前需测试页面的兼容性-->
-<div id="SOHUCS" class="entry-content"></div>
-<script>
-  (function(){
-    var appid = 'cyrgTvN9G',
-    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
-    var doc = document,
-    s = doc.createElement('script'),
-    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
-    s.type = 'text/javascript';
-    s.charset = 'utf-8';
-    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
-    h.insertBefore(s,h.firstChild);
-    window.SCS_NO_IFRAME = true;
-  })()
-</script>       
+<!--高速版-->
+<div id="SOHUCS"></div>
+<script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+<script type="text/javascript">
+    window.changyan.api.config({
+        appid: 'cyrSKqsGH',
+        conf: 'prod_66e53e0d2e56339a6e0717bac6359450'
+    });
+</script>        
 
 	        
 

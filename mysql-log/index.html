@@ -129,7 +129,7 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-content">
       <p>mysql日志主要包括：错误日志、查询日志、慢查询日志、二进制日志。本文将依次讲解这些日志如何配置、使用。</p>
 
-<h2 id="1.-错误日志">1. 错误日志</h2>
+<h2 id="1-错误日志">1. 错误日志</h2>
 
 <hr>
 
@@ -164,7 +164,7 @@ log_error = /var/log/mysql/error.log
 140716 20:24:13 [Note] Event Scheduler: Loaded 0 events
 140716 20:24:13 [Note] /usr/sbin/mysqld: ready for connections.
 </code></pre></div>
-<h2 id="2.-查询日志">2. 查询日志</h2>
+<h2 id="2-查询日志">2. 查询日志</h2>
 
 <hr>
 
@@ -189,7 +189,7 @@ general_log             = 1
             9 Query select title,url from hot_articles limit 60 ,10
             9 Quit
 </code></pre></div>
-<h2 id="3.-慢查询日志">3. 慢查询日志</h2>
+<h2 id="3-慢查询日志">3. 慢查询日志</h2>
 
 <hr>
 
@@ -226,7 +226,7 @@ use test;
 SET timestamp=1405514879;
 select url,url_token from articles where url_md5 = &#39;817563bd7ef4b2a476f1f55d0b558cd1&#39;;
 </code></pre></div>
-<h2 id="4.-二进制日志">4. 二进制日志</h2>
+<h2 id="4-二进制日志">4. 二进制日志</h2>
 
 <hr>
 
@@ -247,7 +247,7 @@ max_binlog_size         = 100M
 +------------------+-----------+
 4 rows in set (0.00 sec)
 </code></pre></div>
-<h3 id="4.1-查看二进制日志">4.1 查看二进制日志</h3>
+<h3 id="4-1-查看二进制日志">4.1 查看二进制日志</h3>
 
 <p>可以通过<code>show master status</code>和<code>show binlog events</code>查询定位binlog信息：</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">#使用show master status查看下一条binlog的偏移起始位置：
@@ -292,7 +292,7 @@ End_log_pos: 1274
        Info: COMMIT /* xid=137 */
 4 rows in set (0.00 sec)
 </code></pre></div>
-<h3 id="4.2-使用二进制日志恢复数据">4.2 使用二进制日志恢复数据</h3>
+<h3 id="4-2-使用二进制日志恢复数据">4.2 使用二进制日志恢复数据</h3>
 
 <p>使用mysql的命令行工具，可以方便的将binlog中的sql语句导出，导出后的sql语句可以方便的用于恢复数据库。具体格式可以参考<code>mysqlbinlog --help</code>的输出，下面是两个最常用的例子：</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">#将mysql中的命令点870到命令点1274之间的sql语句导出到文件中
@@ -316,20 +316,20 @@ mysqlbinlog --start-datetime=&quot;2012-07-16 00:00:00&quot; --stop-datetime=&qu
           <a href="/weka-kmeans/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
-          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+          <h3><a href="/jquery-ready-load/" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a></h3>
+          <p>jQuery的ready事件实现原理 <a href="/jquery-ready-load/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
-            <span>Published on December 10, 2014</span>
+            <h4><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h4>
+            <span>Published on January 02, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
-            <span>Published on October 24, 2014</span>
+            <h4><a href="/hive-function/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
@@ -347,22 +347,15 @@ mysqlbinlog --start-datetime=&quot;2012-07-16 00:00:00&quot; --stop-datetime=&qu
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-<!--高速版，加载速度快，使用前需测试页面的兼容性-->
-<div id="SOHUCS" class="entry-content"></div>
-<script>
-  (function(){
-    var appid = 'cyrgTvN9G',
-    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
-    var doc = document,
-    s = doc.createElement('script'),
-    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
-    s.type = 'text/javascript';
-    s.charset = 'utf-8';
-    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
-    h.insertBefore(s,h.firstChild);
-    window.SCS_NO_IFRAME = true;
-  })()
-</script>       
+<!--高速版-->
+<div id="SOHUCS"></div>
+<script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+<script type="text/javascript">
+    window.changyan.api.config({
+        appid: 'cyrSKqsGH',
+        conf: 'prod_66e53e0d2e56339a6e0717bac6359450'
+    });
+</script>        
 
 	        
 

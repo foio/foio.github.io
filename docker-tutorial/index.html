@@ -5,7 +5,7 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>docker原理与示例 &#8211; 积木小站</title>
+<title>docker初探 &#8211; 积木小站</title>
 <meta name="description" content="docker安装php,ssh,nginx服务">
 <meta name="keywords" content="docker">
 
@@ -14,7 +14,7 @@
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="docker原理与示例">
+<meta property="og:title" content="docker初探">
 <meta property="og:description" content="docker安装php,ssh,nginx服务">
 <meta property="og:url" content="/docker-tutorial/">
 <meta property="og:site_name" content="积木小站">
@@ -114,7 +114,7 @@ rel="stylesheet" type="text/css" -->
     <header class="header-title">
       <div class="header-title-wrap">
         
-          <h1 class="entry-title"><a href="/docker-tutorial/" rel="bookmark" title="docker原理与示例">docker原理与示例</a></h1>
+          <h1 class="entry-title"><a href="/docker-tutorial/" rel="bookmark" title="docker初探">docker初探</a></h1>
         
         <h2>October 04, 2014</h2>
         
@@ -131,7 +131,7 @@ rel="stylesheet" type="text/css" -->
 
 <hr>
 
-<h3 id="1.原理篇">1.原理篇</h3>
+<h3 id="1-原理篇">1.原理篇</h3>
 
 <p>Docker可以把应用程序和它所依赖的从操作系统到软件包的环境打包成一个镜像文件。听起来好像一个典型的虚拟机，但是Docker要比虚拟机轻量的多。那么，Docker和一个完全的虚拟机有何区别？Docker是如何做到提供一个完整的文件系统，独立的网络环境等等这些功能，同时还没有如此庞大？</p>
 
@@ -141,15 +141,15 @@ rel="stylesheet" type="text/css" -->
 
 <p>Docker核心是一个操作系统级虚拟化方法, 理解起来可能并不像VM那样直观。我们从虚拟化方法的四个方面：隔离性、资源限制性、便携性、安全性来详细介绍Docker的技术细节。</p>
 
-<h4 id="(1).隔离性">(1).隔离性</h4>
+<h4 id="1-隔离性">(1).隔离性</h4>
 
 <p>传统的vm用一个操作系统实现隔离性，而Docker基于LXC(linux container)实现隔离性。LXC是通过kernel namespace实现隔离性的。简单说就是同一个linux操作系统中可以存在多个不同的命名空间(容器)，不同namesapce中可以存在相同的pid、net、ipc、mnt、uts等。</p>
 
-<h4 id="(2).资源限制性">(2).资源限制性</h4>
+<h4 id="2-资源限制性">(2).资源限制性</h4>
 
 <p>Docker通过使用cgroups 实现了对资源的配额和度量。 cgroups 的使用非常简单，可实现对单个进程(容器)的资源控制。groups可以限制blkio、cpu、cpuacct、cpuset、devices、freezer、memory、net_cls、ns九大子系统的资源</p>
 
-<h4 id="(3).便携性">(3).便携性</h4>
+<h4 id="3-便携性">(3).便携性</h4>
 
 <p>Docker通过使用AUFS (AnotherUnionFS)实现便携性。AUFS(AnotherUnionFS) 是一种 Union FS, 简单来说就是支持将不同目录挂载到同一个虚拟文件系统下(unite several directories into a single virtual filesystem)的文件系统,  AUFS 里有一个类似分层的概念, 通过将一个 readonly 的 branch 和一个 writeable 的 branch 联合在一起，就可以实现对 readonly 权限的 branch 进行增量的进行修改(不影响 readonly 部分的)。</p>
 
@@ -157,19 +157,19 @@ rel="stylesheet" type="text/css" -->
 
 <p><img src="http://infoqstatic.com/resource/articles/docker-core-technology-preview/zh/resources/0731016.png" alt="enter image description here"></p>
 
-<h4 id="(4).安全性">(4).安全性</h4>
+<h4 id="4-安全性">(4).安全性</h4>
 
 <p>关于安全性相关文章请参考<a href="http://docs.docker.com/articles/security/">Docker官方文档</a>。</p>
 
 <hr>
 
-<h3 id="2.构建镜像">2.构建镜像</h3>
+<h3 id="2-构建镜像">2.构建镜像</h3>
 
 <p>Docker需要linux kernel 3.8以上，安装过程非常简单，在此不再赘述，详细步骤参考<a href="http://docs.docker.com/installation/ubuntulinux/">官方安装文档</a>。</p>
 
 <p>在Docker中开发者可以打包他们的应用以及依赖环境到一镜像中，并可以在任意docke容器中运行这个镜像。在docker的<a href="https://registry.hub.docker.com/">官方register</a>中，有各种操作系统的镜像，我们可以基于这些镜像构建自己的镜像。构建镜像的有两种方法。</p>
 
-<h4 id="(1).通过dockerfile创建镜像">(1).通过Dockerfile创建镜像</h4>
+<h4 id="1-通过dockerfile创建镜像">(1).通过Dockerfile创建镜像</h4>
 
 <p>Dockerfile基本上是自解释的，从一个基础镜像开始，通过RUN命令在基本镜像上安装环境，然后通过CMD命令指定镜像启动的命令。下面的Dockerfile从ubuntu14.04镜像开始，安装并配置好sshd服务。</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">FROM     ubuntu:14.04
@@ -188,7 +188,7 @@ CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
 <p>然后可以通过如下命令查看刚才生成的镜像。运行image的命令请参考docker<a href="http://docs.docker.com/reference/commandline/cli/">官方文档</a>。</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker images
 </code></pre></div>
-<h4 id="(2).通过commit创建镜像">(2).通过commit创建镜像</h4>
+<h4 id="2-通过commit创建镜像">(2).通过commit创建镜像</h4>
 
 <p>我们可以先以交互的方式启动一个操作系统镜像，然后在其中做各种修改，最后通过commit命令提交。具体步骤如下：
 首先通过交互的方式启动一个镜像，这样会进入镜像操作系统shell中：</p>
@@ -205,7 +205,7 @@ CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
 </code></pre></div>
 <hr>
 
-<h3 id="3.运行镜像">3.运行镜像</h3>
+<h3 id="3-运行镜像">3.运行镜像</h3>
 
 <p>镜像的运行还是比较简单的，比如如下命令运行ubuntu镜像并用echo输出hello world。</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker run ubuntu echo &#39;hello world&#39;
@@ -229,7 +229,7 @@ CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
 
       <footer class="entry-meta">
         <span class="entry-tags"><a href="/tags/#docker" title="Pages tagged docker" class="tag">docker</a></span>
-        <span><a href="/docker-tutorial/" rel="bookmark" title="docker原理与示例">docker原理与示例</a> was published on <span class="entry-date date published updated"><time datetime="2014-10-04T00:00:00+08:00">October 04, 2014</time></span></span>
+        <span><a href="/docker-tutorial/" rel="bookmark" title="docker初探">docker初探</a> was published on <span class="entry-date date published updated"><time datetime="2014-10-04T00:00:00+08:00">October 04, 2014</time></span></span>
         (revised: <span class="entry-date date modified"><time datetime="2014-10-04">10/04/2014</time></span>)
         <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
         
@@ -243,20 +243,20 @@ CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
           <a href="/unicode-regular-expressions/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
-          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+          <h3><a href="/jquery-ready-load/" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a></h3>
+          <p>jQuery的ready事件实现原理 <a href="/jquery-ready-load/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
-            <span>Published on December 10, 2014</span>
+            <h4><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h4>
+            <span>Published on January 02, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
-            <span>Published on October 24, 2014</span>
+            <h4><a href="/hive-function/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
@@ -274,22 +274,15 @@ CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-<!--高速版，加载速度快，使用前需测试页面的兼容性-->
-<div id="SOHUCS" class="entry-content"></div>
-<script>
-  (function(){
-    var appid = 'cyrgTvN9G',
-    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
-    var doc = document,
-    s = doc.createElement('script'),
-    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
-    s.type = 'text/javascript';
-    s.charset = 'utf-8';
-    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
-    h.insertBefore(s,h.firstChild);
-    window.SCS_NO_IFRAME = true;
-  })()
-</script>       
+<!--高速版-->
+<div id="SOHUCS"></div>
+<script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+<script type="text/javascript">
+    window.changyan.api.config({
+        appid: 'cyrSKqsGH',
+        conf: 'prod_66e53e0d2e56339a6e0717bac6359450'
+    });
+</script>        
 
 	        
 

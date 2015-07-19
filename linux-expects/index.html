@@ -145,18 +145,18 @@ expect：从进程接收字符串
 spawn：启动新的进程
 interact：允许用户交互
 </code></pre></div>
-<h3 id="1.-send命令">1. send命令</h3>
+<h3 id="1-send命令">1. send命令</h3>
 
 <p>send命令接收一个字符串参数，并将该参数发送到进程。</p>
 
 <div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect1</span><span class="mf">.1</span><span class="o">&gt;</span> <span class="n">send</span> <span class="s">&quot;hello world</span><span class="se">\n</span><span class="s">&quot;</span>
 <span class="n">hello</span> <span class="n">world</span></code></pre></div>
 
-<h3 id="2.-expect命令">2. expect命令</h3>
+<h3 id="2-expect命令">2. expect命令</h3>
 
 <hr>
 
-<h4 id="(1)基础知识">(1)基础知识</h4>
+<h4 id="1-基础知识">(1)基础知识</h4>
 
 <p>expect命令和send命令正好相反，expect通常是用来等待一个进程的反馈。expect可以接收一个字符串参数，也可以接收正则表达式参数。和上文的send命令结合，现在我们可以看一个最简单的交互式的例子：</p>
 
@@ -183,7 +183,7 @@ I only expect: hi
 </code></pre></div>
 <hr>
 
-<h4 id="(2)模式-动作">(2)模式-动作</h4>
+<h4 id="2-模式-动作">(2)模式-动作</h4>
 
 <p>expect最常用的语法是来自tcl语言的模式-动作。这种语法极其灵活，下面我们就各种语法分别说明。</p>
 
@@ -209,7 +209,7 @@ I only expect: hi
 
 <hr>
 
-<h3 id="3.-spawn命令">3. spawn命令</h3>
+<h3 id="3-spawn命令">3. spawn命令</h3>
 
 <p>上文的所有demo都是和标准输入输出进行交互，但是我们跟希望他可以和某一个进程进行交互。spawm命令就是用来启动新的进程的。spawn后的send和expect命令都是和spawn打开的进程进行交互的。结合上文的send和expect命令我们可以看一下更复杂的程序段了。</p>
 
@@ -228,7 +228,7 @@ I only expect: hi
 
 <hr>
 
-<h3 id="4.interact">4.interact</h3>
+<h3 id="4-interact">4.interact</h3>
 
 <p>到现在为止，我们已经可以结合spawn、expect、send自动化的完成很多任务了。但是，如何让人在适当的时候干预这个过程了。比如下载完ftp文件时，仍然可以停留在ftp命令行状态，以便手动的执行后续命令。interact可以达到这些目的。下面的demo在自动登录ftp后，允许用户交互。</p>
 
@@ -274,20 +274,20 @@ I only expect: hi
           <a href="/ripple/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
-          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+          <h3><a href="/jquery-ready-load/" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a></h3>
+          <p>jQuery的ready事件实现原理 <a href="/jquery-ready-load/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
-            <span>Published on December 10, 2014</span>
+            <h4><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h4>
+            <span>Published on January 02, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
-            <span>Published on October 24, 2014</span>
+            <h4><a href="/hive-function/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
@@ -305,22 +305,15 @@ I only expect: hi
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-<!--高速版，加载速度快，使用前需测试页面的兼容性-->
-<div id="SOHUCS" class="entry-content"></div>
-<script>
-  (function(){
-    var appid = 'cyrgTvN9G',
-    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
-    var doc = document,
-    s = doc.createElement('script'),
-    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
-    s.type = 'text/javascript';
-    s.charset = 'utf-8';
-    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
-    h.insertBefore(s,h.firstChild);
-    window.SCS_NO_IFRAME = true;
-  })()
-</script>       
+<!--高速版-->
+<div id="SOHUCS"></div>
+<script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+<script type="text/javascript">
+    window.changyan.api.config({
+        appid: 'cyrSKqsGH',
+        conf: 'prod_66e53e0d2e56339a6e0717bac6359450'
+    });
+</script>        
 
 	        
 

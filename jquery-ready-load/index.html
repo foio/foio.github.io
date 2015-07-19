@@ -5,25 +5,25 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>积木小站</title>
-<meta name="description" content="this is a tech blog by foio">
-<meta name="keywords" content="tech, blog, modern">
+<title>jQuery的ready事件实现原理 &#8211; 积木小站</title>
+<meta name="description" content="jQuery的ready事件实现原理">
+<meta name="keywords" content="jquery javascript">
 
 
 
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="积木小站">
-<meta property="og:description" content="this is a tech blog by foio">
-<meta property="og:url" content="/index.html">
+<meta property="og:title" content="jQuery的ready事件实现原理">
+<meta property="og:description" content="jQuery的ready事件实现原理">
+<meta property="og:url" content="/jquery-ready-load/">
 <meta property="og:site_name" content="积木小站">
 
 
 
 
 
-<link rel="canonical" href="/">
+<link rel="canonical" href="/jquery-ready-load/">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
 
 
@@ -59,9 +59,13 @@ rel="stylesheet" type="text/css" -->
 
 
 
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
 </head>
 
-<body id="post-index" >
+<body id="post" >
 
 <!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
 <nav id="dl-menu" class="dl-menuwrapper" role="navigation">
@@ -103,37 +107,27 @@ rel="stylesheet" type="text/css" -->
 </nav><!-- /.dl-menuwrapper -->
 
 
-<div class="entry-header">
-  
-  
-  <div class="header-title">
-    <div class="header-title-wrap">
-      <h1>积木小站</h1>
-      <h2></h2>
-    </div><!-- /.header-title-wrap -->
-  </div><!-- /.header-title -->
-</div><!-- /.entry-header -->
+
 
 <div id="main" role="main">
-  
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-03-13T00:00:00+08:00"><a href="/jquery-ready-load/">March 13, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
         
-        Reading time ~1 minute
-      </span><!-- /.entry-reading-time -->
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/jquery-ready-load/" rel="bookmark" title="jQuery的ready事件实现原理" itemprop="url">jQuery的ready事件实现原理</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>大家在面试的过程中，经常会被问到一个问题：ready与load那一个先执行，那一个后执行？答案是ready先执行，load后执行。</p>
+          <h1 class="entry-title"><a href="/jquery-ready-load/" rel="bookmark" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a></h1>
+        
+        <h2>March 13, 2015</h2>
+        
+        <p class="entry-reading-time">
+          <i class="fa fa-clock-o"></i>
+          
+          Reading time ~1 minute
+        </p><!-- /.entry-reading-time -->
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>大家在面试的过程中，经常会被问到一个问题：ready与load那一个先执行，那一个后执行？答案是ready先执行，load后执行。</p>
 
 <p>DOM文档加载的步骤：
 要想理解为什么ready先执行，load后执行就要先了解下DOM文档加载的步骤：</p>
@@ -235,175 +229,42 @@ rel="stylesheet" type="text/css" -->
 
 <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState">MDN里面关于Document.readyState的文档</a>, <a href="http://www.cnblogs.com/zhangziqiu/archive/2011/06/27/domready.html">一篇关于dom ready的博客</a></p>
 
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-01-02T00:00:00+08:00"><a href="/mongo-atom/">January 02, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#jquery javascript" title="Pages tagged jquery javascript" class="tag">jquery javascript</a></span>
+        <span><a href="/jquery-ready-load/" rel="bookmark" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a> was published on <span class="entry-date date published updated"><time datetime="2015-03-13T00:00:00+08:00">March 13, 2015</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2015-03-13">03/13/2015</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+    
+    
+    <div class="read-more">
       
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
-        
-        Reading time ~1 minute
-      </span><!-- /.entry-reading-time -->
+        <div class="read-more-header">
+          <a href="/mongo-atom/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
+          <p>关于mongo原子操作的探讨 <a href="/mongo-atom/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
       
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/mongo-atom/" rel="bookmark" title="关于mongo原子操作的探讨" itemprop="url">关于mongo原子操作的探讨</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <blockquote>
-<p>众所周知，Redis采用的是异步I/O非阻塞的单进程模型，每一条Redis命令都是原子性的。那么mongoDB呢？ mongo有哪些原子操作呢？有哪些实现事务性操作的技巧呢？</p>
-</blockquote>
-
-<h3 id="1-对单个文档的原子性修改">1.对单个文档的原子性修改</h3>
-
-<p>mongoDB保证了对单个document的多个filed的原子性修改。如果需要对单个文档进行原子性的CAS操作(check and set)，可以使用findAndModify操作。</p>
-
-<p>比如下面就是一条原子性的CAS操作，首先选择_id为123的文档（注意这里只选择了一个文档），然后对计数器count加1，将status字段变为true，并返回修改后的结果。</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">db</span><span class="p">.</span><span class="nx">colleciton</span><span class="p">.</span><span class="nx">findAndModify</span><span class="p">({</span><span class="nx">query</span><span class="o">:</span><span class="p">{</span><span class="nx">_id</span><span class="o">:</span><span class="s1">&#39;123&#39;</span><span class="p">},</span><span class="nx">$inc</span><span class="o">:</span><span class="p">{</span><span class="nx">count</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span><span class="nx">$update</span><span class="o">:</span><span class="p">{</span><span class="nx">status</span><span class="o">:</span><span class="kc">true</span><span class="p">}},</span><span class="k">new</span><span class="o">:</span><span class="kc">true</span><span class="p">);</span></code></pre></div>
-
-<h3 id="2-对多个文档使用-isolate操作符">2.对多个文档使用$isolate操作符</h3>
-
-<p><code>$isolate</code>操作符可以对多个文档的修改提供隔离性。针对其他线程的并发写操作，<code>$isolate</code>保证了提交前其他线程无法修改对应的文档。针对其他线程的读操作，<code>$isolate</code>保证了其他线程读取不到未提交的数据。</p>
-
-<p>但是<code>$isolate</code>有验证的性能问题，因为这种情况下线程持有锁的时间较长，严重的影响mongo的并发性。另外，<code>$isolate</code>也无法保证多个文档修改的一致性(all-or-nothing)，$isolate失败是可能只修改了部分文档。</p>
-
-<h3 id="3-从语意层面实现事务性操作">3.从语意层面实现事务性操作</h3>
-
-<p>mongoDB官方提供了一种做法，即两阶段提交(two-phase commit)，基本的原理就是利用了写操作的幂等性。具体实现可以看官网的详细讲解。但是利用幂等性来实现事务性有一个重要的前置条件：业务不在乎中间态的不一致。幂等性可以保证最终的一致性，但是会出现中间的不一致状态。</p>
-
-<hr>
-
-<p>参考资料: (1) <a href="http://docs.mongodb.org/manual/core/write-operations-atomicity/">mongoDB原子性与实务</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-
-<div class="pagination">
-  
-    Previous
-  
-  <ul class="inline-list">
-    <li>
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/hive-function/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/php-extension-autoload/" title="php扩展中autoload的实现">php扩展中autoload的实现</a></h4>
+            <span>Published on October 23, 2014</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
       
-        <span class="current-page">1</span>
-      
-    </li>
-    
-      <li>
-        
-          <a href="/page2">2</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page3">3</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page4">4</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page5">5</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page6">6</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page7">7</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page8">8</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page9">9</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page10">10</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page11">11</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page12">12</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page13">13</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page14">14</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page15">15</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page16">16</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page17">17</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page18">18</a>
-        
-      </li>
-    
-  </ul>
-  
-    <a href="/page2" class="btn">Next</a>
-  
-</div><!-- /.pagination -->
-
+    </div><!-- /.read-more -->
+  </article>
 </div><!-- /#main -->
 
 <div class="footer-wrapper">
@@ -415,8 +276,17 @@ rel="stylesheet" type="text/css" -->
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
+<!--高速版-->
+<div id="SOHUCS"></div>
+<script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+<script type="text/javascript">
+    window.changyan.api.config({
+        appid: 'cyrSKqsGH',
+        conf: 'prod_66e53e0d2e56339a6e0717bac6359450'
+    });
+</script>        
 
-          
+	        
 
 </body>
 </html>

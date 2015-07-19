@@ -141,7 +141,7 @@ rel="stylesheet" type="text/css" -->
 
 <p>主要有两个步骤：</p>
 
-<h4 id="1.配置nginx重写规则">1.配置nginx重写规则</h4>
+<h4 id="1-配置nginx重写规则">1.配置nginx重写规则</h4>
 <div class="highlight"><pre><code class="language-text" data-lang="text">#保证php-fpm找到codeIgniter框架index.php
 location /ci/ {
     if (!-e $request_filename) {
@@ -155,7 +155,7 @@ location /ci/index.php {
     fastcgi_param  SCRIPT_FILENAME    /var/www/ci/index.php;  # 这个是关键，手动设置SCRIPT_FILENAME，可以保证php-fpm找到ci的index.php
 }
 </code></pre></div>
-<h4 id="2.配置codeigniter框架">2.配置codeIgniter框架</h4>
+<h4 id="2-配置codeigniter框架">2.配置codeIgniter框架</h4>
 <div class="highlight"><pre><code class="language-text" data-lang="text">#保证codeIgniter框架可以正确的解析出controller和method
 #修改CodeIgniter使用REQUEST_URI来处理mvc参数，而不是默认的AUTO
 /*
@@ -202,20 +202,20 @@ $config[&#39;uri_protocol&#39;] = &#39;REQUEST_URI&#39;;
           <a href="" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
-          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+          <h3><a href="/jquery-ready-load/" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a></h3>
+          <p>jQuery的ready事件实现原理 <a href="/jquery-ready-load/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
-            <span>Published on December 10, 2014</span>
+            <h4><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h4>
+            <span>Published on January 02, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
-            <span>Published on October 24, 2014</span>
+            <h4><a href="/hive-function/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
@@ -233,22 +233,15 @@ $config[&#39;uri_protocol&#39;] = &#39;REQUEST_URI&#39;;
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-<!--高速版，加载速度快，使用前需测试页面的兼容性-->
-<div id="SOHUCS" class="entry-content"></div>
-<script>
-  (function(){
-    var appid = 'cyrgTvN9G',
-    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
-    var doc = document,
-    s = doc.createElement('script'),
-    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
-    s.type = 'text/javascript';
-    s.charset = 'utf-8';
-    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
-    h.insertBefore(s,h.firstChild);
-    window.SCS_NO_IFRAME = true;
-  })()
-</script>       
+<!--高速版-->
+<div id="SOHUCS"></div>
+<script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+<script type="text/javascript">
+    window.changyan.api.config({
+        appid: 'cyrSKqsGH',
+        conf: 'prod_66e53e0d2e56339a6e0717bac6359450'
+    });
+</script>        
 
 	        
 

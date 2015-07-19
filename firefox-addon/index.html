@@ -139,7 +139,7 @@ rel="stylesheet" type="text/css" -->
 
 <hr>
 
-<h1 id="1.环境篇">1.环境篇</h1>
+<h1 id="1-环境篇">1.环境篇</h1>
 
 <p>下载python2.5、2.6或者2.7，firefox，<a href="https://ftp.mozilla.org/pub/mozilla.org/labs/jetpack/addon-sdk-1.16.zip">Add-ons SDK</a> 。确保python在系统的path中。解压下载的sdk的zip文件，在命令行模式下运行：</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">cd add-ons 
@@ -154,9 +154,9 @@ cfg
 
 <hr>
 
-<h1 id="2.工具篇">2.工具篇</h1>
+<h1 id="2-工具篇">2.工具篇</h1>
 
-<h1 id="(1)-用cfx-init产生扩展的基本框架">(1) 用cfx init产生扩展的基本框架</h1>
+<h1 id="1-用cfx-init产生扩展的基本框架">(1) 用cfx init产生扩展的基本框架</h1>
 
 <p>工欲善其事，必先利其器，好的工具能够大幅度提高开发效率。我要介绍的工具是cfx。</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">mkdir my-addon
@@ -176,7 +176,7 @@ try &quot;cfx test&quot; and then &quot;cfx run&quot;. Have fun!&quot;
 </code></pre></div>
 <hr>
 
-<h1 id="(2)实现扩展的具体逻辑">(2)实现扩展的具体逻辑</h1>
+<h1 id="2-实现扩展的具体逻辑">(2)实现扩展的具体逻辑</h1>
 
 <p>扩展的具体逻辑在lib/main.js中。假如我们的想在浏览器的工具栏上实现一个button，点击后在新的tab页面中打开www.baidu.com。具体的逻辑代码如下：</p>
 
@@ -195,13 +195,13 @@ try &quot;cfx test&quot; and then &quot;cfx run&quot;. Have fun!&quot;
 
 <hr>
 
-<h1 id="(3)浏览器中测试">(3)浏览器中测试</h1>
+<h1 id="3-浏览器中测试">(3)浏览器中测试</h1>
 
 <p>使用cfx run在firefox中测试开发中扩展，cfx run命令会启动firefox并安装该插件。</p>
 
 <hr>
 
-<h1 id="(4)打包">(4)打包</h1>
+<h1 id="4-打包">(4)打包</h1>
 
 <p>使用cfx xpi打包插件为xpi包。打包后的xpi文件就可以直接使用浏览器安装了。</p>
 
@@ -223,20 +223,20 @@ try &quot;cfx test&quot; and then &quot;cfx run&quot;. Have fun!&quot;
           <a href="/firefox-profile/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h3>
-          <p>mongo原子操作 <a href="/mongo-atom/">Continue reading</a></p>
+          <h3><a href="/jquery-ready-load/" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a></h3>
+          <p>jQuery的ready事件实现原理 <a href="/jquery-ready-load/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/hive-udf/" title="hive自定义函数">hive自定义函数</a></h4>
-            <span>Published on December 10, 2014</span>
+            <h4><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h4>
+            <span>Published on January 02, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/php-ext-exp/" title="PHP扩展问题定位经验小结">PHP扩展问题定位经验小结</a></h4>
-            <span>Published on October 24, 2014</span>
+            <h4><a href="/hive-function/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
@@ -254,22 +254,15 @@ try &quot;cfx test&quot; and then &quot;cfx run&quot;. Have fun!&quot;
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-<!--高速版，加载速度快，使用前需测试页面的兼容性-->
-<div id="SOHUCS" class="entry-content"></div>
-<script>
-  (function(){
-    var appid = 'cyrgTvN9G',
-    conf = 'prod_e42e502ec2a5653d7d595968a1a242c1';
-    var doc = document,
-    s = doc.createElement('script'),
-    h = doc.getElementsByTagName('head')[0] || doc.head || doc.documentElement;
-    s.type = 'text/javascript';
-    s.charset = 'utf-8';
-    s.src =  'http://assets.changyan.sohu.com/upload/changyan.js?conf='+ conf +'&appid=' + appid;
-    h.insertBefore(s,h.firstChild);
-    window.SCS_NO_IFRAME = true;
-  })()
-</script>       
+<!--高速版-->
+<div id="SOHUCS"></div>
+<script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+<script type="text/javascript">
+    window.changyan.api.config({
+        appid: 'cyrSKqsGH',
+        conf: 'prod_66e53e0d2e56339a6e0717bac6359450'
+    });
+</script>        
 
 	        
 
