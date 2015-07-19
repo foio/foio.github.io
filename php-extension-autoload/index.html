@@ -133,37 +133,37 @@ rel="stylesheet" type="text/css" -->
 
 <p>在 PHP 5 中我们可以定义一个 __autoload() 函数，它会在试图使用尚未被定义的类时自动调用，这样我们就可以定义一些自己的加载规则了。</p>
 
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">&lt;?</span><span class="n">php</span>
-<span class="n">function</span> <span class="n">__autoload</span><span class="p">(</span><span class="err">$</span><span class="n">class_name</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">require_once</span> <span class="err">$</span><span class="n">class_name</span> <span class="p">.</span> <span class="err">&#39;</span><span class="p">.</span><span class="n">php</span><span class="err">&#39;</span><span class="p">;</span>
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
+<span class="k">function</span> <span class="nf">__autoload</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">require_once</span> <span class="nv">$class_name</span> <span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
 <span class="p">}</span>
 
-<span class="err">$</span><span class="n">obj</span>  <span class="o">=</span> <span class="n">new</span> <span class="n">MyClass1</span><span class="p">();</span>
-<span class="err">$</span><span class="n">obj2</span> <span class="o">=</span> <span class="n">new</span> <span class="n">MyClass2</span><span class="p">();</span>
-<span class="o">?&gt;</span></code></pre></div>
+<span class="nv">$obj</span>  <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass1</span><span class="p">();</span>
+<span class="nv">$obj2</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass2</span><span class="p">();</span>
+<span class="cp">?&gt;</span><span class="x"></span></code></pre></div>
 
 <p>使用<code>spl_autoload_register</code>我们可以一次注册多个加载函数，PHP会在试图使用尚未被定义的类时按注册顺序调用。</p>
 
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">&lt;?</span><span class="n">php</span>
-<span class="n">function</span> <span class="n">autoload_services</span><span class="p">(</span><span class="err">$</span><span class="n">class_name</span><span class="p">)</span>
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
+<span class="k">function</span> <span class="nf">autoload_services</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span>
 <span class="p">{</span>
-    <span class="err">$</span><span class="n">file</span> <span class="o">=</span> <span class="err">&#39;</span><span class="n">services</span><span class="o">/</span><span class="err">&#39;</span> <span class="p">.</span> <span class="err">$</span><span class="n">class_name</span><span class="p">.</span> <span class="err">&#39;</span><span class="p">.</span><span class="n">php</span><span class="err">&#39;</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">file_exists</span><span class="p">(</span><span class="err">$</span><span class="n">file</span><span class="p">))</span>
+    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">&#39;services/&#39;</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="nv">$file</span><span class="p">))</span>
     <span class="p">{</span>
-        <span class="n">require_once</span><span class="p">(</span><span class="err">$</span><span class="n">file</span><span class="p">);</span>
+        <span class="k">require_once</span><span class="p">(</span><span class="nv">$file</span><span class="p">);</span>
     <span class="p">}</span>
 <span class="p">}</span>
-<span class="n">function</span> <span class="n">autoload_vos</span><span class="p">(</span><span class="err">$</span><span class="n">class_name</span><span class="p">)</span>
+<span class="k">function</span> <span class="nf">autoload_vos</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span>
 <span class="p">{</span>
-    <span class="err">$</span><span class="n">file</span> <span class="o">=</span> <span class="err">&#39;</span><span class="n">vos</span><span class="o">/</span><span class="err">&#39;</span> <span class="p">.</span> <span class="err">$</span><span class="n">class_name</span><span class="p">.</span> <span class="err">&#39;</span><span class="p">.</span><span class="n">php</span><span class="err">&#39;</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">file_exists</span><span class="p">(</span><span class="err">$</span><span class="n">file</span><span class="p">))</span>
+    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">&#39;vos/&#39;</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="nv">$file</span><span class="p">))</span>
     <span class="p">{</span>
-        <span class="n">require_once</span><span class="p">(</span><span class="err">$</span><span class="n">file</span><span class="p">);</span>
+        <span class="k">require_once</span><span class="p">(</span><span class="nv">$file</span><span class="p">);</span>
     <span class="p">}</span>
 <span class="p">}</span>
-<span class="n">spl_autoload_register</span><span class="p">(</span><span class="err">&#39;</span><span class="n">autoload_services</span><span class="err">&#39;</span><span class="p">);</span>
-<span class="n">spl_autoload_register</span><span class="p">(</span><span class="err">&#39;</span><span class="n">autoload_vos</span><span class="err">&#39;</span><span class="p">);</span>
-<span class="o">?&gt;</span></code></pre></div>
+<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">&#39;autoload_services&#39;</span><span class="p">);</span>
+<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">&#39;autoload_vos&#39;</span><span class="p">);</span>
+<span class="cp">?&gt;</span><span class="x"></span></code></pre></div>
 
 <h3 id="2-在php扩展中实现自动加载">2. 在php扩展中实现自动加载</h3>
 
