@@ -105,7 +105,15 @@
         <loc>/page18/index.html</loc>
     </url>
     
+    <url>
+        <loc>/page19/index.html</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/jquery-callback/</loc>
+    </url>
     
     <url>
         <loc>/jquery-ready-load/</loc>

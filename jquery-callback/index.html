@@ -5,25 +5,25 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>积木小站</title>
-<meta name="description" content="this is a tech blog by foio">
-<meta name="keywords" content="tech, blog, modern">
+<title>jQuery的回调模块实现原理 &#8211; 积木小站</title>
+<meta name="description" content="jQuery的回调实现原理">
+<meta name="keywords" content="jquery javascript">
 
 
 
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="积木小站">
-<meta property="og:description" content="this is a tech blog by foio">
-<meta property="og:url" content="/index.html">
+<meta property="og:title" content="jQuery的回调模块实现原理">
+<meta property="og:description" content="jQuery的回调实现原理">
+<meta property="og:url" content="/jquery-callback/">
 <meta property="og:site_name" content="积木小站">
 
 
 
 
 
-<link rel="canonical" href="/">
+<link rel="canonical" href="/jquery-callback/">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木小站 Feed">
 
 
@@ -59,9 +59,13 @@ rel="stylesheet" type="text/css" -->
 
 
 
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
 </head>
 
-<body id="post-index" >
+<body id="post" >
 
 <!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
 <nav id="dl-menu" class="dl-menuwrapper" role="navigation">
@@ -103,37 +107,27 @@ rel="stylesheet" type="text/css" -->
 </nav><!-- /.dl-menuwrapper -->
 
 
-<div class="entry-header">
-  
-  
-  <div class="header-title">
-    <div class="header-title-wrap">
-      <h1>积木小站</h1>
-      <h2></h2>
-    </div><!-- /.header-title-wrap -->
-  </div><!-- /.header-title -->
-</div><!-- /.entry-header -->
+
 
 <div id="main" role="main">
-  
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-04-12T00:00:00+08:00"><a href="/jquery-callback/">April 12, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
         
-        Reading time ~5 minutes
-      </span><!-- /.entry-reading-time -->
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/jquery-callback/" rel="bookmark" title="jQuery的回调模块实现原理" itemprop="url">jQuery的回调模块实现原理</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>jQuery的回调系统时jQuery的基本功能之一,用于支撑jQuery的<code>ajax()</code>方法的实现和对promise规范的实现。jQuery提供了<code>callback</code>方法用于实现各种复杂回调功能.</p>
+          <h1 class="entry-title"><a href="/jquery-callback/" rel="bookmark" title="jQuery的回调模块实现原理">jQuery的回调模块实现原理</a></h1>
+        
+        <h2>April 12, 2015</h2>
+        
+        <p class="entry-reading-time">
+          <i class="fa fa-clock-o"></i>
+          
+          Reading time ~5 minutes
+        </p><!-- /.entry-reading-time -->
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>jQuery的回调系统时jQuery的基本功能之一,用于支撑jQuery的<code>ajax()</code>方法的实现和对promise规范的实现。jQuery提供了<code>callback</code>方法用于实现各种复杂回调功能.</p>
 
 <h3 id="1-基本用法以及特殊参数">1.基本用法以及特殊参数</h3>
 
@@ -333,257 +327,42 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 
 <p><a href="https://api.jquery.com/jQuery.Callbacks/">jQuery的callback方法文档</a></p>
 
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-03-13T00:00:00+08:00"><a href="/jquery-ready-load/">March 13, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#jquery javascript" title="Pages tagged jquery javascript" class="tag">jquery javascript</a></span>
+        <span><a href="/jquery-callback/" rel="bookmark" title="jQuery的回调模块实现原理">jQuery的回调模块实现原理</a> was published on <span class="entry-date date published updated"><time datetime="2015-04-12T00:00:00+08:00">April 12, 2015</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2015-04-12">04/12/2015</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+    
+    
+    <div class="read-more">
       
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
-        
-        Reading time ~1 minute
-      </span><!-- /.entry-reading-time -->
+        <div class="read-more-header">
+          <a href="/jquery-ready-load/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/jquery-ready-load/" title="jQuery的ready事件实现原理">jQuery的ready事件实现原理</a></h3>
+          <p>jQuery的ready事件实现原理 <a href="/jquery-ready-load/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
       
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/jquery-ready-load/" rel="bookmark" title="jQuery的ready事件实现原理" itemprop="url">jQuery的ready事件实现原理</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>大家在面试的过程中，经常会被问到一个问题：ready与load那一个先执行，那一个后执行？答案是ready先执行，load后执行。</p>
-
-<p>DOM文档加载的步骤：
-要想理解为什么ready先执行，load后执行就要先了解下DOM文档加载的步骤：</p>
-
-<blockquote>
-<p>(1) 解析HTML结构。
-(2) 加载外部脚本和样式表文件。
-(3) 解析并执行脚本代码。
-(4) 构造HTML DOM模型。//ready
-(5) 加载图片等外部文件。
-(6) 页面加载完毕。//load</p>
-</blockquote>
-
-<p>从上面的描述中大家应该已经理解了吧，ready在第（4）步完成之后就执行了，但是load要在第（6）步完成之后才执行。</p>
-
-<p>所以有如下结论：</p>
-
-<blockquote>
-<p>ready与load的区别就在于资源文件的加载，ready构建了基本的DOM结构，所以对于代码来说应该越快加载越好。在一个高速浏览的时代，没人愿意等待答案。假如一个网站页面加载超过4秒，不好意思，你1/4的用户将面临着流失，所以对于框架来说用户体验是至关重要的，我们应该越早处理DOM越好，我们不需要等到图片资源都加载后才去处理框架的加载，图片资源过多load事件就会迟迟不会触发。</p>
-</blockquote>
-
-<p>我们经常使如下jQuery语句,用于在页面dom结构刚刚加载完成时,执行代码.</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//普通方式</span>
-<span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//your code here</span>
-<span class="p">});</span>
-<span class="c1">//简写方式</span>
-<span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//your code here</span>
-<span class="p">});</span></code></pre></div>
-
-<p>那么jquery的ready函数是如何实现的呢? 它时如何保证ready在load之前执行的呢?</p>
-
-<h3 id="1-现代浏览器通过domcontentloaded事件实现">1. 现代浏览器通过DOMContentLoaded事件实现</h3>
-
-<p>当HTML文档下载并解析完成以后，就会在document对象上触发DOMContentLoaded事件。这时，仅仅完成了HTML文档的解析（整张页面的DOM生成），所有外部资源（样式表、脚本、iframe等等）可能还没有下载结束。也就是说，这个事件比load事件，发生时间早得多。</p>
-
-<p>因此可以通过如下方式实现jQuery的ready函数.</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s2">&quot;DOMContentLoaded&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">//your code here</span>
-<span class="p">});</span></code></pre></div>
-
-<p>但是对于IE8以及以下的浏览器,世界就没有那么友好了. </p>
-
-<h3 id="2-低版本浏览器通过readystatechange事件实现">2. 低版本浏览器通过readystatechange事件实现?</h3>
-
-<p>写过AJAX原生代码的童鞋都知道, readystatechange用于表示XMLHttpRequest的状态发生改变,当readyState=2时表示AJAX执行成功. readystatechange也会在dom状态发生变化时触发.</p>
-
-<p>因此可以通过如下方式实现jQuery的ready函数.</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;interactive&quot;</span> <span class="o">||</span> <span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;complete&quot;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">initApplication</span><span class="p">();</span>
-  <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
-
-<p>但是readyState为interactive时, DOM结构并没有稳定, 此时依然会有脚本修改DOM元素,导致执行事件太早. readyState为complete时, 图片已经加载完毕, 所以complete虽然在window.onload前执行, 导致执行事件太晚.
-让我们看看jQuery的源码时如何实现的.</p>
-
-<h3 id="3-jquery在低版本浏览器上是如何实现ready方法的">3. jQuery在低版本浏览器上是如何实现ready方法的</h3>
-
-<p>jQuery源码中使用了Diego Perini 在 2007 年的时候报告的一种检测 IE 是否加载完成的方式的方法. 该方法通过使用 doScroll 方法调用，可以看下这哥们的<a href="http://javascript.nwbox.com/IEContentLoaded/">博客</a>。</p>
-
-<p>原理就是对于 IE 在非 iframe 内时，只有不断地通过能否执行 doScroll 判断 DOM 是否加载完毕。在上述中间隔 50 毫秒尝试去执行 doScroll，注意，由于页面没有加载完成的时候，调用 doScroll 会导致异常，所以使用了 try -catch 来捕获异常。</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// 用于保证事件在onload之前执行</span>
-<span class="nb">document</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span> <span class="s2">&quot;onreadystatechange&quot;</span><span class="p">,</span> <span class="nx">completed</span> <span class="p">);</span>
-<span class="c1">// 如果是IE且不是iframe就通过不停的检查doScroll来判断dom结构是否ready</span>
-<span class="kd">var</span> <span class="nx">top</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-<span class="k">try</span> <span class="p">{</span>
-    <span class="nx">top</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">frameElement</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="nb">document</span><span class="p">.</span><span class="nx">documentElement</span><span class="p">;</span>
-<span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{}</span>
-<span class="k">if</span> <span class="p">(</span> <span class="nx">top</span> <span class="o">&amp;&amp;</span> <span class="nx">top</span><span class="p">.</span><span class="nx">doScroll</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="p">(</span><span class="kd">function</span> <span class="nx">doScrollCheck</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="nx">jQuery</span><span class="p">.</span><span class="nx">isReady</span> <span class="p">)</span> <span class="p">{</span><span class="c1">//ready方法没有执行过</span>
-            <span class="k">try</span> <span class="p">{</span>
-                <span class="c1">// 检查是否可以向左scroll滑动,当dom结构还没有解析完成时会抛出异常</span>
-                <span class="nx">top</span><span class="p">.</span><span class="nx">doScroll</span><span class="p">(</span><span class="s2">&quot;left&quot;</span><span class="p">);</span>
-            <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
-                <span class="c1">//递归调用,直到当dom结构解析完成</span>
-                <span class="k">return</span> <span class="nx">setTimeout</span><span class="p">(</span> <span class="nx">doScrollCheck</span><span class="p">,</span> <span class="mi">50</span> <span class="p">);</span>
-            <span class="p">}</span>
-            <span class="c1">//没有发现异常,表示dom结构解析完成,删除之前绑定的onreadystatechange事件</span>
-            <span class="nx">detach</span><span class="p">();</span>
-
-            <span class="c1">//执行jQuery的ready方法</span>
-            <span class="nx">jQuery</span><span class="p">.</span><span class="nx">ready</span><span class="p">();</span>
-        <span class="p">}</span>
-    <span class="p">})();</span>
-<span class="p">}</span></code></pre></div>
-
-<p>当然,通过检查doScroll的方法也不是完美的, 这种实现的jQuery的ready方法执行时,readyState可能为interactive, 也可能为complete.  也即没法保证dom加载完成后立刻执行, 但是一定会在DOM结构稳定后, 且图片加载完毕前执行.</p>
-
-<hr>
-
-<p>参考文档</p>
-
-<p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState">MDN里面关于Document.readyState的文档</a>, <a href="http://www.cnblogs.com/zhangziqiu/archive/2011/06/27/domready.html">一篇关于dom ready的博客</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-
-<div class="pagination">
-  
-    Previous
-  
-  <ul class="inline-list">
-    <li>
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/mongo-atom/" title="关于mongo原子操作的探讨">关于mongo原子操作的探讨</a></h4>
+            <span>Published on January 02, 2015</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/hive-function/" title="hive自定义函数">hive自定义函数</a></h4>
+            <span>Published on December 10, 2014</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
       
-        <span class="current-page">1</span>
-      
-    </li>
-    
-      <li>
-        
-          <a href="/page2">2</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page3">3</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page4">4</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page5">5</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page6">6</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page7">7</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page8">8</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page9">9</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page10">10</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page11">11</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page12">12</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page13">13</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page14">14</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page15">15</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page16">16</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page17">17</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page18">18</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page19">19</a>
-        
-      </li>
-    
-  </ul>
-  
-    <a href="/page2" class="btn">Next</a>
-  
-</div><!-- /.pagination -->
-
+    </div><!-- /.read-more -->
+  </article>
 </div><!-- /#main -->
 
 <div class="footer-wrapper">
@@ -595,7 +374,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-          
+	        
 
 </body>
 </html>
