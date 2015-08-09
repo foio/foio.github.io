@@ -112,6 +112,10 @@
 
     
     <url>
+        <loc>/javascript-memoryleak/</loc>
+    </url>
+    
+    <url>
         <loc>/jquery-callback/</loc>
     </url>
     

@@ -119,6 +119,81 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-12-10T00:00:00+08:00"><a href="/hive-function/">December 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/hive-function/" rel="bookmark" title="hive自定义函数" itemprop="url">hive自定义函数</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <blockquote>
+<p>Hive可以将类sql查询语句转换成Hadoop的map reduce任务，让熟悉关系型数据库的人也可以利用hadoop的强大并行计算能力。Hive提供了强大的内置函数支持，但是总有一些特殊情况，内置函数无法覆盖，这就要求我们对定义自己的函数。接下来我们通过一个例子看一下如何自定义hive函数。</p>
+</blockquote>
+
+<h3 id="1-自定义函数的实现">1. 自定义函数的实现</h3>
+
+<p>假设我们的关系型数据库中user表有一个status字段，代表着用户的活跃等级，取值为1~10，活跃度一次递增。现在我们要根据status字段将用户分为3个活跃度等级。Hive显然没有这种与业务逻辑强耦合的内置函数，但这不应该成为阻碍我们使用Hive的理由。下面的扩展函数就可以满足需求。</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">test</span><span class="o">.</span><span class="na">example</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.hive.ql.exec.Description</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.hive.ql.exec.UDF</span><span class="o">;</span>
+<span class="kn">import</span> <span class="nn">org.apache.hadoop.io.Text</span><span class="o">;</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserStatus</span> <span class="kd">extends</span> <span class="n">UDF</span> <span class="o">{</span>
+   <span class="kd">public</span> <span class="n">Text</span> <span class="nf">evaluate</span><span class="o">(</span><span class="n">Text</span> <span class="n">input</span><span class="o">)</span> <span class="o">{</span>
+     <span class="k">if</span><span class="o">(</span><span class="n">input</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+     <span class="kt">int</span> <span class="n">status</span><span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">input</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
+     <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span> <span class="mi">3</span><span class="o">){</span>
+         <span class="k">return</span> <span class="k">new</span> <span class="nf">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+     <span class="o">}</span><span class="k">else</span> <span class="nf">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">7</span><span class="o">){</span>
+         <span class="k">return</span> <span class="k">new</span> <span class="nf">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">2</span><span class="o">));</span>
+     <span class="o">}</span><span class="k">else</span> <span class="nf">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">7</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">10</span><span class="o">){</span>
+         <span class="k">return</span> <span class="k">new</span> <span class="nf">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">3</span><span class="o">));</span>
+     <span class="o">}</span>
+     <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
+   <span class="o">}</span>
+<span class="o">}</span></code></pre></div>
+
+<p>从上面的例子可以看出实现自定义的hive函数还是相当简单的。就是继承org.apache.hadoop.hive.ql.exec.UDF 并实现execute函数。</p>
+
+<h3 id="2-自定义函数的使用">2. 自定义函数的使用</h3>
+
+<p>定义为自定义函数后该如何使用呢？其实也是相关简单的。假设包含自定义函数的jar包为mydf.jar。</p>
+
+<h4 id="1-在hive-shell中加载">(1).在hive shell中加载</h4>
+
+<p>首先加载jar包，并创建临时函数\</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="o">%&gt;</span> <span class="n">hive</span>
+<span class="n">hive</span><span class="o">&gt;</span> <span class="n">ADD</span> <span class="n">JAR</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">mydf</span><span class="o">.</span><span class="na">jar</span><span class="o">;</span>
+<span class="n">hive</span><span class="o">&gt;</span> <span class="n">create</span> <span class="n">temporary</span> <span class="n">function</span> <span class="n">userStatus</span> <span class="n">as</span> <span class="err">&#39;</span><span class="n">com</span><span class="o">.</span><span class="na">test</span><span class="o">.</span><span class="na">example</span><span class="o">.</span><span class="na">UserStatus</span><span class="err">&#39;</span><span class="o">;</span></code></pre></div>
+
+<p>然后就可以直接使用了</p>
+
+<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">hive</span><span class="o">&gt;</span> <span class="n">select</span> <span class="nf">userStatus</span><span class="o">(</span><span class="mi">4</span><span class="o">);</span></code></pre></div>
+
+<p>但是每次使用都要加载一次，太费劲了。有没有别的方法呢。</p>
+
+<h4 id="2-在-hiverc中加载">(2).在.hiverc中加载</h4>
+
+<p>编辑home目录下的.hiverc文件，如果没有这个文件就新建一个。将加载jar包的命令写入.hiverc文件，启动hive shell时会自动执行.hiverc文件，不需要每个shell都load一遍。</p>
+
+<hr>
+
+<p>参考资料: <a href="https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF">hive内置函数</a>, <a href="https://github.com/foio/hive-extension-examples">hive自定义函数demo</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-10-23T00:00:00+08:00"><a href="/php-extension-autoload/">October 23, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
       <span class="entry-reading-time pull-right">
@@ -254,110 +329,6 @@ rel="stylesheet" type="text/css" -->
 
 <p>学习php扩展开发需要你对zend API以及PHP内核比较熟悉，推荐以下参考资料
  <a href="http://www.walu.cc/phpbook/index.md">php扩展入门博客</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-10-19T00:00:00+08:00"><a href="/php-hash/">October 19, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
-        
-        Reading time ~2 minutes
-      </span><!-- /.entry-reading-time -->
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/php-hash/" rel="bookmark" title="理解PHP的Hash冲突漏洞" itemprop="url">理解PHP的Hash冲突漏洞</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>Hash表对PHP的重要性是每个phper都非常清楚地。但是PHP却有一个与Hash表相关的致命漏洞，我们完全可以通过PHP的Hash冲突漏洞进行DDoS攻击，可以轻易的搞挂一台服务器。那么是什么导致PHP的Hash冲突呢？如何构造Hash冲突？</p>
-
-<h3 id="1-php的hashtab实现方式">1. PHP的Hashtab实现方式</h3>
-
-<p>PHP中的哈希表实现在源代码的Zend/zend_hash.c中，Zend/zend_hash.h中描述了Hashtab的结构体，从中我们可以大概了解Hashtab的实现机制。</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_hashtable</span> <span class="p">{</span> 
-    <span class="n">uint</span> <span class="n">nTableSize</span><span class="p">;</span>        <span class="c1">// hash Bucket的大小，最小为8，以2x增长。</span>
-    <span class="n">uint</span> <span class="n">nTableMask</span><span class="p">;</span>        <span class="c1">// nTableSize-1 ， 索引取值的优化</span>
-    <span class="n">uint</span> <span class="n">nNumOfElements</span><span class="p">;</span>    <span class="c1">// hash Bucket中当前存在的元素个数，count()函数会直接返回此值 </span>
-    <span class="n">ulong</span> <span class="n">nNextFreeElement</span><span class="p">;</span> <span class="c1">// 下一个数字索引的位置</span>
-    <span class="n">Bucket</span> <span class="o">*</span><span class="n">pInternalPointer</span><span class="p">;</span>   <span class="c1">// 当前遍历的指针（foreach比for快的原因之一）</span>
-    <span class="n">Bucket</span> <span class="o">*</span><span class="n">pListHead</span><span class="p">;</span>          <span class="c1">// 存储数组头元素指针</span>
-    <span class="n">Bucket</span> <span class="o">*</span><span class="n">pListTail</span><span class="p">;</span>          <span class="c1">// 存储数组尾元素指针</span>
-    <span class="n">Bucket</span> <span class="o">**</span><span class="n">arBuckets</span><span class="p">;</span>         <span class="c1">// 存储hash数组</span>
-    <span class="kt">dtor_func_t</span> <span class="n">pDestructor</span><span class="p">;</span>    <span class="c1">// 在删除元素时执行的回调函数，用于资源的释放</span>
-    <span class="n">zend_bool</span> <span class="n">persistent</span><span class="p">;</span>       <span class="c1">//指出了Bucket内存分配的方式。如果persisient为TRUE，则使用操作系统本身的内存分配函数为Bucket分配内存，否则使用PHP的内存分配函数。</span>
-    <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">nApplyCount</span><span class="p">;</span> <span class="c1">// 标记当前hash Bucket被递归访问的次数（防止多次递归）</span>
-    <span class="n">zend_bool</span> <span class="n">bApplyProtection</span><span class="p">;</span><span class="c1">// 标记当前hash桶允许不允许多次访问，不允许时，最多只能递归3次</span>
-<span class="cp">#if ZEND_DEBUG</span>
-    <span class="kt">int</span> <span class="n">inconsistent</span><span class="p">;</span>
-<span class="cp">#endif</span>
-<span class="p">}</span> <span class="n">HashTable</span><span class="p">;</span></code></pre></div>
-
-<p>从结构体_hashtable中我们可以看出，PHP内核是使用常用的拉链法实现Hash表的，其中Bucket **arBuckets存储了实际的数据。</p>
-
-<p><img src="http://www.php-internals.com/images/book/chapt03/03-01-02-zend_hashtable.png" alt="php内核hash表数据结构"></p>
-
-<p>其实PHP的Hash冲突漏洞就是利用在极端情况下，拉链法的Hashtab会退化为单链表的漏洞。由于Hash函数是公开的，因此经过精心的构造，是可以构造出导致Hash退化为链表的数据的。</p>
-
-<p><img src="http://cms.csdnimg.cn/article/201410/16/543fda7865385.jpg" alt="php hash表退化为单链表"></p>
-
-<h3 id="2-本地实现php的hash漏洞攻击">2. 本地实现PHP的Hash漏洞攻击</h3>
-
-<p>在我们使用数组时，PHP内核都是通过把数组内容插入到一个Hash表实现的，但对于关联数组(字符串下标)和索引数组(整数下标)的处理方法是不同的。关联数组使用如下函数将数据添加的Hash表:</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">ZEND_API</span> <span class="kt">int</span> <span class="nf">_zend_hash_add_or_update</span><span class="p">(</span><span class="n">HashTable</span> <span class="o">*</span><span class="n">ht</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arKey</span><span class="p">,</span> <span class="n">uint</span> <span class="n">nKeyLength</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">pData</span><span class="p">,</span> <span class="n">uint</span> <span class="n">nDataSize</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">pDest</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span> <span class="n">ZEND_FILE_LINE_DC</span><span class="p">){</span>
-<span class="p">...</span>
- <span class="n">h</span> <span class="o">=</span> <span class="n">zend_inline_hash_func</span><span class="p">(</span><span class="n">arKey</span><span class="p">,</span> <span class="n">nKeyLength</span><span class="p">);</span><span class="c1">//根据字符串计算Hash值</span>
- <span class="n">nIndex</span> <span class="o">=</span> <span class="n">h</span> <span class="o">&amp;</span> <span class="n">ht</span><span class="o">-&gt;</span><span class="n">nTableMask</span><span class="p">;</span>
-<span class="p">...</span>
-<span class="p">}</span></code></pre></div>
-
-<p>从上述代码中我们可以看出，关联数组需要使用Hash函数根据字符串计算Hash值。而索引数组却直接使用整数下标作为Hash值：</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">ZEND_API</span> <span class="kt">int</span> <span class="nf">_zend_hash_index_update_or_next_insert</span><span class="p">(</span><span class="n">HashTable</span> <span class="o">*</span><span class="n">ht</span><span class="p">,</span> <span class="n">ulong</span> <span class="n">h</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">pData</span><span class="p">,</span> <span class="n">uint</span> <span class="n">nDataSize</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">pDest</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span>
-<span class="n">ZEND_FILE_LINE_DC</span><span class="p">){</span>
-<span class="p">...</span>
-<span class="n">nIndex</span> <span class="o">=</span> <span class="n">h</span> <span class="o">&amp;</span> <span class="n">ht</span><span class="o">-&gt;</span><span class="n">nTableMask</span><span class="p">;</span> <span class="c1">//直接使用下标作为hash值</span>
-<span class="p">...</span>
-<span class="p">}</span></code></pre></div>
-
-<p>由于实现较为简单，大部分攻击是通过构造索引数组来实现的，只要使 公式<code>h &amp; ht-&gt;nTableMask</code>得到同样的值即可，其中<code>ht-&gt;nTableMask</code>在<code>zend_hash_init</code>函数中赋值：<code>ht-&gt;nTableMask = ht-&gt;nTableSize - 1</code>。</p>
-
-<p>有了以上基础知识，我们就可以构利用Hash冲突漏洞了。先直接上代码：</p>
-
-<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
- <span class="nv">$size</span> <span class="o">=</span> <span class="nb">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">16</span><span class="p">);</span>
- <span class="nv">$startTime</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
- <span class="nv">$array</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
- <span class="k">for</span> <span class="p">(</span><span class="nv">$key</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">$maxKey</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nv">$size</span><span class="p">;</span> <span class="nv">$key</span> <span class="o">&lt;=</span> <span class="nv">$maxKey</span><span class="p">;</span> <span class="nv">$key</span> <span class="o">+=</span> <span class="nv">$size</span><span class="p">)</span> <span class="p">{</span>
-         <span class="nv">$array</span><span class="p">[</span><span class="nv">$key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
- <span class="p">}</span>
- <span class="nv">$endTime</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="k">true</span><span class="p">);</span>
- <span class="k">echo</span> <span class="nv">$endTime</span> <span class="o">-</span> <span class="nv">$startTime</span> <span class="p">,</span><span class="nx">PHP_EOL</span><span class="p">;</span></code></pre></div>
-
-<p>这段代码创建了一个包含216 个元素的索引数组，下标依次为:</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="p">,......,</span><span class="n">n</span><span class="o">*</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="p">,......,(</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span></code></pre></div>
-
-<p>这时<code>ht-&gt;nTableMask=2^16-1</code>，转换为二进制就是<code>1111 1111 1111 1111</code>。而以上数组中的任意一个下标h和<code>ht-&gt;nTableMask</code>进行与运算都得0，<code>nIndex = h &amp; ht-&gt;nTableMask = 0</code>。即所有的下标都得到同样的Hash值，这时Hash表就退化为链表了。事实上，这段代码在我的电脑里运行耗时40多秒。多恐怖啊。</p>
-
-<h3 id="3-常见的hash冲突攻击形式">3.常见的Hash冲突攻击形式</h3>
-
-<blockquote>
-<p>POST攻击： PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造一个无限大的哈希冲突的值，则可以拖垮服务器。</p>
-</blockquote>
-
-<p>PHP5.3.9以后的版本可以通过php.ini设置GET/POST/COOKIE 的最大输入变量数。默认为1000。但这种方法是无法完全避免攻击的，我们也可以在POST的变量值上做手脚，即反序列化攻击。</p>
-
-<blockquote>
-<p>反序列化攻击： 如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。 到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据</p>
-</blockquote>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
