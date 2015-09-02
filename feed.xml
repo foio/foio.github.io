@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom" xml:lang="en">
-<title type="text">积木小站</title>
+<title type="text">积木村の研究所</title>
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2015-09-02T16:16:38+08:00</updated>
+<updated>2015-09-02T16:23:02+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -172,7 +172,7 @@
 
 &lt;p&gt;&lt;a href=&quot;/download/sizzle-presentation.pptx&quot;&gt;为了便于理解本文，请下载本文对应的ppt&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/sizzle-research/&quot;&gt;sizzle引擎研究&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on August 26, 2015.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/sizzle-research/&quot;&gt;sizzle引擎研究&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on August 26, 2015.&lt;/p&gt;</content>
 </entry>
 
 
@@ -312,7 +312,7 @@ IE8以下版本的浏览器中造成内存泄露。&lt;/p&gt;
 &lt;p&gt;参考文档
 &lt;a href=&quot;http://javascript.info/tutorial/memory-leaks#ie-lt-8-dom-js-memory-leak&quot;&gt;http://javascript.info/tutorial/memory-leaks#ie-lt-8-dom-js-memory-leak&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/javascript-memoryleak/&quot;&gt;javascript 内存泄露研究&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on May 12, 2015.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/javascript-memoryleak/&quot;&gt;javascript 内存泄露研究&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on May 12, 2015.&lt;/p&gt;</content>
 </entry>
 
 
@@ -528,7 +528,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 
 &lt;p&gt;&lt;a href=&quot;https://api.jquery.com/jQuery.Callbacks/&quot;&gt;jQuery的callback方法文档&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/jquery-callback/&quot;&gt;jQuery的回调模块实现原理&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on April 12, 2015.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/jquery-callback/&quot;&gt;jQuery的回调模块实现原理&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on April 12, 2015.&lt;/p&gt;</content>
 </entry>
 
 
@@ -646,7 +646,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 
 &lt;p&gt;&lt;a href=&quot;https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState&quot;&gt;MDN里面关于Document.readyState的文档&lt;/a&gt;, &lt;a href=&quot;http://www.cnblogs.com/zhangziqiu/archive/2011/06/27/domready.html&quot;&gt;一篇关于dom ready的博客&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/jquery-ready-load/&quot;&gt;jQuery的ready事件实现原理&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on March 13, 2015.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/jquery-ready-load/&quot;&gt;jQuery的ready事件实现原理&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on March 13, 2015.&lt;/p&gt;</content>
 </entry>
 
 
@@ -688,7 +688,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 
 &lt;p&gt;参考资料: (1) &lt;a href=&quot;http://docs.mongodb.org/manual/core/write-operations-atomicity/&quot;&gt;mongoDB原子性与实务&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/mongo-atom/&quot;&gt;关于mongo原子操作的探讨&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on January 02, 2015.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/mongo-atom/&quot;&gt;关于mongo原子操作的探讨&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on January 02, 2015.&lt;/p&gt;</content>
 </entry>
 
 
@@ -759,7 +759,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 
 &lt;p&gt;参考资料: &lt;a href=&quot;https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF&quot;&gt;hive内置函数&lt;/a&gt;, &lt;a href=&quot;https://github.com/foio/hive-extension-examples&quot;&gt;hive自定义函数demo&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/hive-function/&quot;&gt;hive自定义函数&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on December 10, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/hive-function/&quot;&gt;hive自定义函数&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on December 10, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -897,7 +897,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 &lt;p&gt;学习php扩展开发需要你对zend API以及PHP内核比较熟悉，推荐以下参考资料
  &lt;a href=&quot;http://www.walu.cc/phpbook/index.md&quot;&gt;php扩展入门博客&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/php-extension-autoload/&quot;&gt;php扩展中autoload的实现&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 23, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/php-extension-autoload/&quot;&gt;php扩展中autoload的实现&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on October 23, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -997,7 +997,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 &lt;p&gt;反序列化攻击： 如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。 到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据&lt;/p&gt;
 &lt;/blockquote&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/php-hash/&quot;&gt;理解PHP的Hash冲突漏洞&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 19, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/php-hash/&quot;&gt;理解PHP的Hash冲突漏洞&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on October 19, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -1037,7 +1037,7 @@ sortMissingLast=&amp;quot;true&amp;quot; omitNorms=&amp;quot;true&amp;quot;&amp;
     &amp;lt;analyzer type=&amp;quot;query&amp;quot; isMaxWordLength=&amp;quot;true&amp;quot; class=&amp;quot;org.wltea.analyzer.lucene.IKAnalyzer&amp;quot;/&amp;gt;
 &amp;lt;/fieldType&amp;gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-  &lt;p&gt;&lt;a href=&quot;/solr-ik/&quot;&gt;solr4.7配置中文分词器IKAnalyzer踩到的坑&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 07, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/solr-ik/&quot;&gt;solr4.7配置中文分词器IKAnalyzer踩到的坑&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on October 07, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -1190,7 +1190,7 @@ sortMissingLast=&amp;quot;true&amp;quot; omitNorms=&amp;quot;true&amp;quot;&amp;
 
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;n&quot;&gt;zend_vm_stack_free&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;execute_data&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;TSRMLS_CC&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/php-internal-function/&quot;&gt;php内核之函数执行过程&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 05, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/php-internal-function/&quot;&gt;php内核之函数执行过程&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on October 05, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -1306,7 +1306,7 @@ CMD [&amp;quot;/usr/sbin/sshd&amp;quot;, &amp;quot;-D&amp;quot;]
 
 &lt;p&gt;关于docker的虚拟化相关讨论问题可参考&lt;a href=&quot;http://www.geekbus.cn/docker-core-technology-preview/&quot;&gt;这篇文章&lt;/a&gt;。&lt;/br&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/docker-tutorial/&quot;&gt;docker初探&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on October 04, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/docker-tutorial/&quot;&gt;docker初探&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on October 04, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -1380,7 +1380,7 @@ Arabic
 &lt;p&gt;关于uicode编码属性可以参考&lt;a href=&quot;http://www.regular-expressions.info/unicode.html&quot;&gt;这篇文章&lt;/a&gt;。&lt;/br&gt;
 关于Unicode码表可以参考&lt;a href=&quot;http://zh.wikibooks.org/wiki/Unicode&quot;&gt;这里&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/unicode-regular-expressions/&quot;&gt;unicode正则表达式书写技巧&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on September 02, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/unicode-regular-expressions/&quot;&gt;unicode正则表达式书写技巧&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on September 02, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -1525,7 +1525,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 &lt;br /&gt;
 &lt;a href=&quot;http://tldp.org/HOWTO/Lex-YACC-HOWTO-1.html&quot;&gt;http://tldp.org/HOWTO/Lex-YACC-HOWTO-1.html&lt;/a&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/lex-yacc/&quot;&gt;lex与yacc入门示例&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on August 29, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/lex-yacc/&quot;&gt;lex与yacc入门示例&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on August 29, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -1677,7 +1677,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 
 &lt;p&gt;that right! 这就是SAPI的作用。&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/php-sapi/&quot;&gt;理解php内核中SAPI的作用&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on August 27, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/php-sapi/&quot;&gt;理解php内核中SAPI的作用&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on August 27, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -1737,7 +1737,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
      ......
  }
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-  &lt;p&gt;&lt;a href=&quot;/nginx-empty-domain/&quot;&gt;nginx,防止他人域名指向自己机器&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on August 12, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/nginx-empty-domain/&quot;&gt;nginx,防止他人域名指向自己机器&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on August 12, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -1861,7 +1861,7 @@ subroutines 部分用于定义c函数等。&lt;/p&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;设置用户输入生成的最大变量值。防止利用大量无用变量造成php程序hashtable冲突导致占用大量系统资源。建议执行为默认1000个值。 &lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/php-safe/&quot;&gt;php安全问题及场景演示&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on August 10, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/php-safe/&quot;&gt;php安全问题及场景演示&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on August 10, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -2008,7 +2008,7 @@ I only expect: hi
  &lt;span class=&quot;n&quot;&gt;expect&lt;/span&gt;  &lt;span class=&quot;s&quot;&gt;&amp;quot;$*&amp;quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;send&lt;/span&gt; &lt;span class=&quot;s&quot;&gt;&amp;quot;pwd&lt;/span&gt;&lt;span class=&quot;se&quot;&gt;\r&lt;/span&gt;&lt;span class=&quot;s&quot;&gt;&amp;quot;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
  &lt;span class=&quot;n&quot;&gt;interact&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/linux-expects/&quot;&gt;linux expect详解&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on July 30, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/linux-expects/&quot;&gt;linux expect详解&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on July 30, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -2092,7 +2092,7 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
 
 &lt;hr&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/ripple/&quot;&gt;ripple,下一代金融基础设施&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on July 28, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/ripple/&quot;&gt;ripple,下一代金融基础设施&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on July 28, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -2161,7 +2161,7 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;上面的头信息表示varnish正常工作了。我们也可以使用varnish提供的命令行工具&lt;code&gt;varnishstat&lt;/code&gt;分析varnish的缓存状态,可以使用&lt;code&gt;varnishlog&lt;/code&gt;查看varnish的和客户端以及后端的通信信息。&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/varnish/&quot;&gt;使用varnish缓存静态内容&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on July 25, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/varnish/&quot;&gt;使用varnish缓存静态内容&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on July 25, 2014.&lt;/p&gt;</content>
 </entry>
 
 
@@ -2199,7 +2199,7 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;&lt;img src=&quot;http://jan.kneschke.de/assets/projects/mysql/mysql-proxy-types-trx-splitting.png&quot; alt=&quot;enter image description here&quot;&gt;&lt;/p&gt;
 
-  &lt;p&gt;&lt;a href=&quot;/mysql-master-slave/&quot;&gt;mysql读写分离机制&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on July 20, 2014.&lt;/p&gt;</content>
+  &lt;p&gt;&lt;a href=&quot;/mysql-master-slave/&quot;&gt;mysql读写分离机制&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on July 20, 2014.&lt;/p&gt;</content>
 </entry>
 
 </feed>
