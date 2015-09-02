@@ -109,7 +109,15 @@
         <loc>/page19/index.html</loc>
     </url>
     
+    <url>
+        <loc>/page20/index.html</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/sizzle-research/</loc>
+    </url>
     
     <url>
         <loc>/javascript-memoryleak/</loc>

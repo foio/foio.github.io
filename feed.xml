@@ -4,13 +4,176 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2015-08-09T19:53:41+08:00</updated>
+<updated>2015-09-02T16:16:38+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
   <uri>/</uri>
   <email>syszhpe@gmail.com</email>
 </author>
+
+
+<entry>
+  <title type="html"><![CDATA[sizzle引擎研究]]></title>
+ <link rel="alternate" type="text/html" href="/sizzle-research/" />
+  <id>/sizzle-research</id>
+  <updated>2015-08-26T00:00:00-00:00</updated>
+  <published>2015-08-26T00:00:00+08:00</published>
+  
+  <author>
+    <name>foio</name>
+    <uri></uri>
+    <email>syszhpe@gmail.com</email>
+  </author>
+  <content type="html">&lt;p&gt;什么是sizzle？下面时官方的一段解释。&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;A pure-javascript CSS selector engine
+× Standalone(no dependencies)
+× Competitive performance
+× Only 4kB with gzipped
+× Easy to use
+× Css3 support
+× Bla bla ……
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;其实说白了，sizzle就是一个很给力的选择器解析引擎。&lt;/p&gt;
+
+&lt;p&gt;我们为什么需要sizzle呢？其实对现代浏览器来说，document.querySelectorAll就可以解决一切。比如zeptoJs就是用querySelectorAll进行选择器解析的，因为移动端所有浏览器都支撑querySelectorAll。但是对于低版本的IE(&amp;lt;=8)浏览器，不仅不支持querySelectorAll，连getElementById都有bug，因此自己用浏览器原生API解析选择器简直难上加难。好在sizzle引擎帮我们处理了一切。知其然，更要知其所以然。下面让我们看看sizzle引擎内部时如何实现的。&lt;/p&gt;
+
+&lt;p&gt;sizzle解析器的主要有以下几个工作步骤。&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;/images/sizzle-step.jpg&quot;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;接下来我们就依次解析。为了简单，我们在接下来的文章中都使用选择器&lt;code&gt;div input[name=ttt]&lt;/code&gt;作为例子。&lt;/p&gt;
+
+&lt;h3 id=&quot;1-词法分析&quot;&gt;1.词法分析&lt;/h3&gt;
+
+&lt;hr&gt;
+
+&lt;p&gt;词法分析是指我们将文本代码解析为一个个记号(token)，以便后续语法分析使用。&lt;/p&gt;
+
+&lt;h4 id=&quot;1-sizzle的token种类&quot;&gt;(1) sizzle的token种类&lt;/h4&gt;
+
+&lt;p&gt;css选择器的词法分析相对较为简单，不用通过lex等专业工具，简单的正则表达式就搞定了。下面依次是用于切分分组，层级关系，以及单个元素的正则表达式。&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;分组(,):/^[\x20\t\r\n\f]*,[\x20\t\r\n\f]*/
+
+层级关系( &amp;gt;+~):/^[\x20\t\r\n\f]*([&amp;gt;+~]|[\x20\t\r\n\f])[\x20\t\r\n\f]*/
+
+单个元素处理:
+        var characterEncoding = &amp;quot;(?:\\\\.|[\\w-]|[^\\x00-\\xa0])+&amp;quot;
+        var ID = new RegExp(&amp;quot;^#(&amp;quot; + characterEncoding + &amp;quot;)&amp;quot;)
+        var TAG = new RegExp( &amp;quot;^(&amp;quot; + characterEncoding.replace( &amp;quot;w&amp;quot;, &amp;quot;w*&amp;quot; ) + &amp;quot;)&amp;quot; )
+        var Class = new RegExp( &amp;quot;^\\.(&amp;quot; + characterEncoding + &amp;quot;)&amp;quot; )
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h4 id=&quot;2-从左到右扫描生产token集合&quot;&gt;(2)从左到右扫描生产token集合&lt;/h4&gt;
+
+&lt;p&gt;用正则表达式切分出token的过程，如下代码所示。基本原理就是从左到右扫描，用正则切分。&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;//分组&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rcomma&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/^[\x20\t\r\n\f]*,[\x20\t\r\n\f]*/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;//层级&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rcombinators&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;           
+ &lt;span class=&quot;sr&quot;&gt;/^[\x20\t\r\n\f]*([&amp;gt;+~]|[\x20\t\r\n\f])[\x20\t\r\n\f]*/&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;//选择器&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;TAG&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/^((?:\\.|[\w*-]|[^\x00-\xa0])+)/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+  &lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;matchExpr&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;CLASS&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/^\.((?:\\.|[\w-]|[^\x00-\xa0])+)/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+      &lt;span class=&quot;nx&quot;&gt;TAG&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;sr&quot;&gt;/^((?:\\.|[\w*-]|[^\x00-\xa0])+)/&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+  &lt;span class=&quot;c1&quot;&gt;//扫描&lt;/span&gt;
+  &lt;span class=&quot;k&quot;&gt;while&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+      &lt;span class=&quot;c1&quot;&gt;//分组&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rcomma&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;slice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+          &lt;span class=&quot;nx&quot;&gt;groups&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;tokens&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[]));&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;c1&quot;&gt;//层级关系&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rcombinators&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;nx&quot;&gt;matched&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;shift&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+          &lt;span class=&quot;nx&quot;&gt;tokens&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+              &lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;matched&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+              &lt;span class=&quot;nx&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;replace&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;rtrim&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot; &amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+          &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+          &lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;slice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;matched&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;c1&quot;&gt;//选择器&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;type&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;matchExpr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+          &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;matchExpr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;exec&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+              &lt;span class=&quot;nx&quot;&gt;matched&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;shift&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+              &lt;span class=&quot;nx&quot;&gt;tokens&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+                  &lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;matched&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                  &lt;span class=&quot;nx&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+                  &lt;span class=&quot;nx&quot;&gt;matches&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt;
+              &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+              &lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;slice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;matched&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;length&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+          &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;最终生成的token集合如下:&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;matches&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;div&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;],&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;TAG&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;value&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;div“ }, &lt;/span&gt;
+&lt;span class=&quot;s2&quot;&gt;{matches:[“”], type: &amp;quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;, value: &amp;quot;&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&amp;quot;},&lt;/span&gt;
+&lt;span class=&quot;s2&quot;&gt;{matches: [&amp;quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;], type: &amp;quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;TAG&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;, value: &amp;quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;input&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;}, &lt;/span&gt;
+&lt;span class=&quot;s2&quot;&gt;{matches: [&amp;quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;], type: &amp;quot;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ATTR&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&amp;quot;, value: &amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ttt&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;h3 id=&quot;2-过滤函数&quot;&gt;2.过滤函数&lt;/h3&gt;
+
+&lt;hr&gt;
+
+&lt;p&gt;过滤函数用于从浏览器dom模型中找到基本符合css选择器的种子集，sizzle针对每一种token都实现一个过滤函数，如下代码所示：&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;//各种类型的token的过滤器，全部返回闭包函数&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;Expr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;filter&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;ATTR&lt;/span&gt;   &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;operator&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;check&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;closure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;CHILD&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;type&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;what&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;argument&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;first&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;last&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;closure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;CLASS&lt;/span&gt;  &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;className&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;closure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;ID&lt;/span&gt;     &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;closure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;PSEUDO&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;pseudo&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;argument&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;closure&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;nx&quot;&gt;TAG&lt;/span&gt;    &lt;span class=&quot;o&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;nodeNameSelector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;elem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;elem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;nodeName&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;elem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;nodeName&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toLowerCase&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;===&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;nodeNameSelector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+              &lt;span class=&quot;p&quot;&gt;};&lt;/span&gt;
+     &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;p&gt;通过部分过滤函数，我们可以初步得到符合条件的种子集合。如下图&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;/images/sizzle-seed.png&quot;/&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;3-编译函数&quot;&gt;3.编译函数&lt;/h3&gt;
+
+&lt;p&gt;其实sizzle引擎最难的地方就在编译函数。为什么叫做编译呢？抽象的讲，把高级规则转换成底层实现就叫编译；比如高级语言到机器语言的过程就是编译。同样把抽象的css选择语法转变成具体的匹配函数的过程也是编译。
+&lt;figure&gt;
+        &lt;img src=&quot;/images/sizzle-compile-step.png&quot;/&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;p&gt;编译的过程还是比较复杂的，其实就是从左到右扫描css选择表达式，并使用与当前token对应的过滤函组合成最终的超级匹配函数。扫描编译的核心步骤是：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;(1)遇到关系token(+&amp;gt; ~)则依次出栈并根据层级规则合并栈中函数
+(2)其他情况将当前token对应的处理函数压入栈中
+(3)选择器表达式结束后依次出栈并合并栈中函数
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;很难说清楚，高手常常说一图胜千言，我也把扫描编译css选择表达式&lt;code&gt;div [name=ttt]&lt;/code&gt;的过程做成图，希望能够讲清楚。&lt;/p&gt;
+
+&lt;figure&gt;
+        &lt;img src=&quot;/images/sizzle-compile-process.png&quot;/&gt;
+&lt;/figure&gt;
+
+&lt;p&gt;现在假设我们已经通过编译获得了最终的超级匹配函数。那么从种子集中找到结果集就比较简单了。&lt;/p&gt;
+
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;in&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;seed&lt;/span&gt;
+      &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;superMatcher&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)){&lt;/span&gt;
+               &lt;span class=&quot;nx&quot;&gt;resultSet&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;item&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+      &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;resultSet&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+
+&lt;hr&gt;
+
+&lt;p&gt;&lt;a href=&quot;/download/sizzle-presentation.pptx&quot;&gt;为了便于理解本文，请下载本文对应的ppt&lt;/a&gt;&lt;/p&gt;
+
+  &lt;p&gt;&lt;a href=&quot;/sizzle-research/&quot;&gt;sizzle引擎研究&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on August 26, 2015.&lt;/p&gt;</content>
+</entry>
 
 
 <entry>
@@ -2037,195 +2200,6 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
 &lt;p&gt;&lt;img src=&quot;http://jan.kneschke.de/assets/projects/mysql/mysql-proxy-types-trx-splitting.png&quot; alt=&quot;enter image description here&quot;&gt;&lt;/p&gt;
 
   &lt;p&gt;&lt;a href=&quot;/mysql-master-slave/&quot;&gt;mysql读写分离机制&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on July 20, 2014.&lt;/p&gt;</content>
-</entry>
-
-
-<entry>
-  <title type="html"><![CDATA[mysql日志]]></title>
- <link rel="alternate" type="text/html" href="/mysql-log/" />
-  <id>/mysql-log</id>
-  <updated>2014-07-17T00:00:00-00:00</updated>
-  <published>2014-07-17T00:00:00+08:00</published>
-  
-  <author>
-    <name>foio</name>
-    <uri></uri>
-    <email>syszhpe@gmail.com</email>
-  </author>
-  <content type="html">&lt;p&gt;mysql日志主要包括：错误日志、查询日志、慢查询日志、二进制日志。本文将依次讲解这些日志如何配置、使用。&lt;/p&gt;
-
-&lt;h2 id=&quot;1-错误日志&quot;&gt;1. 错误日志&lt;/h2&gt;
-
-&lt;hr&gt;
-
-&lt;p&gt;错误日志主要用于定位mysql启动和运行中的一些问题，错误日志是默认开启的，可以通过&lt;code&gt;show global variables&lt;/code&gt;查看错误日志文件的位置:&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;mysql&amp;gt; show global variables like &amp;#39;%log_error%&amp;#39;;
-
-+---------------+--------------------------+
-| Variable_name | Value                    |
-+---------------+--------------------------+
-| log_error     | /var/log/mysql/error.log |
-+---------------+--------------------------+
-
-1 row in set (0.00 sec)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;也可以通过mysql配置文件my.cnf查看错误日志文件的位置：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;# Error log - should be very few entries.
-log_error = /var/log/mysql/error.log
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;常见的错误日志也包括存储引擎相关的信息，常见的格式如下：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;140716 20:24:11 [Note] Plugin &amp;#39;FEDERATED&amp;#39; is disabled.
-140716 20:24:11 InnoDB: The InnoDB memory heap is disabled
-140716 20:24:11 InnoDB: Mutexes and rw_locks use GCC atomic builtins
-140716 20:24:11 InnoDB: Compressed tables use zlib 1.2.3.4
-140716 20:24:11 InnoDB: Initializing buffer pool, size = 128.0M
-140716 20:24:11 InnoDB: Completed initialization of buffer pool
-140716 20:24:11 InnoDB: highest supported file format is Barracuda.
-140716 20:24:11  InnoDB: Waiting for the background threads to start
-140716 20:24:12 InnoDB: 5.5.37 started; log sequence number 20673572
-140716 20:24:13 [Note] Server hostname (bind-address): &amp;#39;127.0.0.1&amp;#39;; port: 3306
-140716 20:24:13 [Note]   - &amp;#39;127.0.0.1&amp;#39; resolves to &amp;#39;127.0.0.1&amp;#39;;
-140716 20:24:13 [Note] Server socket created on IP: &amp;#39;127.0.0.1&amp;#39;.
-140716 20:24:13 [Note] Event Scheduler: Loaded 0 events
-140716 20:24:13 [Note] /usr/sbin/mysqld: ready for connections.
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;2-查询日志&quot;&gt;2. 查询日志&lt;/h2&gt;
-
-&lt;hr&gt;
-
-&lt;p&gt;查询日志用于记录所用的增删查改信息，由于在并发量大时会产生大量信息，所以默认是关闭的。可以通过&lt;code&gt;show global variables&lt;/code&gt;查看查询日志的位置以及是否开启。&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;mysql&amp;gt; show global variables like &amp;#39;%general_log%&amp;#39;;
-+------------------+----------------------------+
-| Variable_name    | Value                      |
-+------------------+----------------------------+
-| general_log      | OFF                        |
-| general_log_file | /var/lib/mysql/mysql.log |
-+------------------+----------------------------+
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;本例中查询日志是关闭的。我们可以在my.cnf中开启查询日志，开启后会影响mysql服务的性能，所以一般只用在开发环境中。&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;# Be aware that this log type is a performance killer.
-# As of 5.1 you can enable the log at runtime!
-general_log_file        = /var/log/mysql/mysql.log
-general_log             = 1
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;查询日志包括了mysql执行的每一条sql信息以及会话信息，日志格式如下：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;140716 20:33:46     9 Connect   user@localhost on domain
-            9 Query select url,url_token from articles where url_md5 = &amp;#39;c473c205d1ee72cecf2546d332abbbcd&amp;#39;
-            9 Query select title,url from hot_articles limit 60 ,10
-            9 Quit
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;3-慢查询日志&quot;&gt;3. 慢查询日志&lt;/h2&gt;
-
-&lt;hr&gt;
-
-&lt;p&gt;慢查询日志应该是对调试程序最有用的日志了，可以通过慢查询日志找到哪些sql语句是性能瓶颈。一般情况下，正常的web应用时不会出现大量的慢查询日志的，因此强烈建议开启。可以通过&lt;code&gt;show global variables&lt;/code&gt;查看慢查询日志的位置以及是否开启。&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;mysql&amp;gt; SHOW  GLOBAL VARIABLES LIKE &amp;#39;%slow%&amp;#39;;               
-+---------------------+-------------------------------+
-| Variable_name       | Value                         |
-+---------------------+-------------------------------+
-| log_slow_queries    | ON                            |
-| slow_launch_time    | 2                             |
-| slow_query_log      | ON                            |
-| slow_query_log_file | /var/log/mysql/mysql-slow.log |
-+---------------------+-------------------------------+
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;慢查询默认记录超过10秒的查询语句，可以精确到毫秒：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;mysql&amp;gt; SHOW  GLOBAL VARIABLES LIKE &amp;#39;%long_query_tim%&amp;#39;;
-+-----------------+-----------+
-| Variable_name   | Value     |
-+-----------------+-----------+
-| long_query_time | 10.000000 |
-+-----------------+-----------+
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;可以通过在my.cnf中设置慢查询相关选项，比如超时时间、记录无索引查询等：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;# Here you can see queries with especially long duration
-log_slow_queries    = /var/log/mysql/mysql-slow.log
-long_query_time = 10
-log-queries-not-using-indexes
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;常见的慢查询日志格式如下,其中包含用户、查询耗时、sql语句、结果集数量等信息:&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;# Time: 140716 20:47:59
-# User@Host: user[user] @ localhost []
-# Query_time: 12.00012  Lock_time: 0.000136 Rows_sent: 1  Rows_examined: 1
-use test;
-SET timestamp=1405514879;
-select url,url_token from articles where url_md5 = &amp;#39;817563bd7ef4b2a476f1f55d0b558cd1&amp;#39;;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h2 id=&quot;4-二进制日志&quot;&gt;4. 二进制日志&lt;/h2&gt;
-
-&lt;hr&gt;
-
-&lt;p&gt;二进制日志也叫作变更日志，主要用于记录修改数据或有可能引起数据改变的mysql语句，可以在my.cnf中配置二进制日志相关参数，如文件路径、过期时间、文件大小等。也可以从二进制日志中导出sql，用于恢复数据库。&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;log_bin         = /var/log/mysql/mysql-bin.log
-expire_logs_days    = 10
-max_binlog_size         = 100M
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;使用show binary log查看mysql产生的bin log信息，包括文件名、文件大小（单位为字节）等。&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;mysql&amp;gt; show binary logs;
-+------------------+-----------+
-| Log_name         | File_size |
-+------------------+-----------+
-| mysql-bin.000001 |      6252 |
-| mysql-bin.000002 |       295 |
-| mysql-bin.000003 |       126 |
-| mysql-bin.000004 |       107 |
-+------------------+-----------+
-4 rows in set (0.00 sec)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id=&quot;4-1-查看二进制日志&quot;&gt;4.1 查看二进制日志&lt;/h3&gt;
-
-&lt;p&gt;可以通过&lt;code&gt;show master status&lt;/code&gt;和&lt;code&gt;show binlog events&lt;/code&gt;查询定位binlog信息：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;#使用show master status查看下一条binlog的偏移起始位置：
-mysql&amp;gt; show master status;
-+------------------+----------+--------------+------------------+
-| File             | Position | Binlog_Do_DB | Binlog_Ignore_DB |
-+------------------+----------+--------------+------------------+
-| mysql-bin.000004 |      870 |              |                  |
-+------------------+----------+--------------+------------------+
-
-#使用show binlog events查询某条binglog记录
-#语法：show binlog events [int &amp;#39;log_file&amp;#39;] [from position] [limit [offset,] row_count]
-#一下是查看一个完整的事务执行binlog记录
-mysql&amp;gt; show binlog events in &amp;#39;mysql-bin.000004&amp;#39; from 870 limit 4\G;
-*************************** 1. row ***************************
-   Log_name: mysql-bin.000004
-        Pos: 870
- Event_type: Query
-  Server_id: 1
-End_log_pos: 941
-       Info: BEGIN
-*************************** 2. row ***************************
-   Log_name: mysql-bin.000004
-        Pos: 941
- Event_type: Intvar
-  Server_id: 1
-End_log_pos: 969
-       Info: INSERT_ID=277
-*************************** 3. row ***************************
-   Log_name: mysql-bin.000004
-        Pos: 969
- Event_type: Query
-  Server_id: 1
-End_log_pos: 1247
-       Info: use `user`; insert into test (title,url,url_md5,url_token,view_time) values(&amp;#39;test&amp;#39;,&amp;#39;www.baidu.com&amp;#39;,&amp;#39;ae98f26d3b883f80b3eadb8709467607&amp;#39;,&amp;#39;1438524738&amp;#39;,&amp;#39;1405517003&amp;#39;)
-*************************** 4. row ***************************
-   Log_name: mysql-bin.000004
-        Pos: 1247
- Event_type: Xid
-  Server_id: 1
-End_log_pos: 1274
-       Info: COMMIT /* xid=137 */
-4 rows in set (0.00 sec)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h3 id=&quot;4-2-使用二进制日志恢复数据&quot;&gt;4.2 使用二进制日志恢复数据&lt;/h3&gt;
-
-&lt;p&gt;使用mysql的命令行工具，可以方便的将binlog中的sql语句导出，导出后的sql语句可以方便的用于恢复数据库。具体格式可以参考&lt;code&gt;mysqlbinlog --help&lt;/code&gt;的输出，下面是两个最常用的例子：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;#将mysql中的命令点870到命令点1274之间的sql语句导出到文件中
-mysqlbinlog --start-position=870 --stop-position=1274 mysql-bin.000004  &amp;gt; /tmp/mysql_restore.sql 
-#将mysql中的binlog中某段时间内的sql导出，可用于恢复一段时间的数据
-mysqlbinlog --start-datetime=&amp;quot;2012-07-16 00:00:00&amp;quot; --stop-datetime=&amp;quot;2012-07-17 00:00:00&amp;quot; mysql-bin.000004 &amp;gt; /tmp/mysql_restore.sql 
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-  &lt;p&gt;&lt;a href=&quot;/mysql-log/&quot;&gt;mysql日志&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木小站&lt;/a&gt; on July 17, 2014.&lt;/p&gt;</content>
 </entry>
 
 </feed>

@@ -119,6 +119,155 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-08-29T00:00:00+08:00"><a href="/lex-yacc/">August 29, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~2 minutes
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/lex-yacc/" rel="bookmark" title="lex与yacc入门示例" itemprop="url">lex与yacc入门示例</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>Lex 和 Yacc 是 UNIX 两个非常重要的、功能强大的工具。如果能够熟练的熟练掌握 Lex 和 Yacc ，可以轻易的写出<a href="https://github.com/rabishah/Mini-C-Compiler-using-Flex-And-Yacc">c编译器</a>。本文将详细的讨论了这两种工具，包括常规表达式、声明、匹配模式、变量、Yacc 语法和解析器代码。最后，他把 Lex 和 Yacc 结合起来，完成一个示例。</p>
+
+<hr>
+
+<h3 id="1-lex">1.lex</h3>
+
+<p>lex是一种词法分析器，可以识别文本中的词汇模式，模式可以用正则表达式表示。通过lex编译l文件(词法文件)就可以生产对应的c代码，然后编译连接c代码就可以生成词法分析器了。</p>
+
+<p>一个l文件分为三个部分，每部分通过双百分号(%%)分割。如下所示：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">... definitions ...
+%%
+... rules ...
+%%
+... subroutines ...
+</code></pre></div>
+<p>definitions 部分用于定义模式、C语言变量、以及包含c头文件等。
+rules 部分用户定义模式对应的动作。
+subroutines 部分用于定义c函数等。</p>
+
+<p>一个简单的l文件例子，test.l。</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
+    <span class="kt">int</span> <span class="n">yylineno</span><span class="p">;</span>
+<span class="o">%</span><span class="p">}</span>
+<span class="o">%%</span>
+<span class="o">^</span><span class="p">(.</span><span class="o">*</span><span class="p">)</span><span class="err">\</span><span class="n">n</span>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;%4d</span><span class="se">\t</span><span class="s">%s&quot;</span><span class="p">,</span> <span class="o">++</span><span class="n">yylineno</span><span class="p">,</span> <span class="n">yytext</span><span class="p">);</span>
+<span class="o">%%</span>
+<span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
+    <span class="n">yyin</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&quot;r&quot;</span><span class="p">);</span>
+    <span class="n">yylex</span><span class="p">();</span>
+    <span class="n">fclose</span><span class="p">(</span><span class="n">yyin</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="kt">int</span> <span class="n">yywrap</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span></code></pre></div>
+
+<p>首先这个l文件在definitions 部分定义了一个int型变量yylineno用于记录行号。然后，在rules定义了一个模式动作：当遇到一行的结尾时，输出当前行号，并输出当前行内容。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。</p>
+
+<hr>
+
+<h3 id="2-yacc">2.yacc</h3>
+
+<p>Yacc( Yet Another Compiler Compiler)。 Yacc 的 GNU 版叫做 Bison。它是一种工具，将一种编程语言的语法翻译成针对此种语言的 Yacc 语法解析器。从上文中我们可以知道lex可以参数一系列标记，如果我们想当某个标记序列出现时执行某一动作，该怎么实现呢？Yacc该出场了。通过yacc编译y文件(语法文件)就可以产生对应的c程序了；生成的c代码通过编译链接就可以生产语法分析器了。但是，语法分析的前提是词法分析，因此我们需要lex出现输入文件并生成标记。在讲解y文件(语法文件)之前我们假设以及存在如下l文件(词法文件)：</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
+<span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &quot;y.tab.h&quot;</span>
+<span class="o">%</span><span class="p">}</span>
+<span class="o">%%</span>
+<span class="p">[</span><span class="mi">0</span><span class="o">-</span><span class="mi">9</span><span class="p">]</span><span class="o">+</span>                  <span class="k">return</span> <span class="n">NUMBER</span><span class="p">;</span>
+<span class="n">heat</span>                    <span class="k">return</span> <span class="n">TOKHEAT</span><span class="p">;</span>
+<span class="n">on</span><span class="o">|</span><span class="n">off</span>                  <span class="k">return</span> <span class="n">STATE</span><span class="p">;</span>
+<span class="n">target</span>                  <span class="k">return</span> <span class="n">TOKTARGET</span><span class="p">;</span>
+<span class="n">temperature</span>             <span class="k">return</span> <span class="n">TOKTEMPERATURE</span><span class="p">;</span>
+<span class="err">\</span><span class="n">n</span>                      <span class="cm">/* ignore end of line */</span><span class="p">;</span>
+<span class="p">[</span> <span class="err">\</span><span class="n">t</span><span class="p">]</span><span class="o">+</span>                  <span class="cm">/* ignore whitespace */</span><span class="p">;</span>
+<span class="o">%%</span></code></pre></div>
+
+<p>这个l文件主要是参数y文件定义的各种token，大家可以看到它的subroutines部分为空，因为该词法分析器的结果直接输出到语法分析器，因此不需要额外的函数。<strong>下面的y文件都依赖于该l文件</strong>。</p>
+
+<p>一个y文件(语法文件)同样包含definitions、rules、subroutines三个部分，每部分同样通过双百分号(%%)分割。各个部分的作用l文件的对应部分也基本一致。</p>
+
+<p>一个简单的y文件例子，test.y。</p>
+
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
+<span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &lt;string.h&gt;</span>
+<span class="kt">void</span> <span class="n">yyerror</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">);</span>
+<span class="o">%</span><span class="p">}</span>
+<span class="o">%</span><span class="n">token</span> <span class="n">NUMBER</span> <span class="n">TOKHEAT</span> <span class="n">STATE</span> <span class="n">TOKTARGET</span> <span class="n">TOKTEMPERATURE</span>
+<span class="o">%%</span> 
+<span class="nl">commands</span><span class="p">:</span> <span class="cm">/* empty */</span>
+        <span class="o">|</span> <span class="n">commands</span> <span class="n">command</span>
+        <span class="p">;</span>
+
+<span class="nl">command</span><span class="p">:</span>
+        <span class="n">heat_switch</span>
+        <span class="o">|</span>
+        <span class="n">target_set</span>
+        <span class="p">;</span>
+
+<span class="nl">heat_switch</span><span class="p">:</span>
+        <span class="n">TOKHEAT</span> <span class="n">STATE</span>
+        <span class="p">{</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">Heat turned on or off</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="p">;</span>
+
+<span class="nl">target_set</span><span class="p">:</span>
+        <span class="n">TOKTARGET</span> <span class="n">TOKTEMPERATURE</span> <span class="n">NUMBER</span>
+        <span class="p">{</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">Temperature set</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="p">;</span>
+<span class="o">%%</span>
+<span class="kt">void</span> <span class="n">yyerror</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">)</span>
+<span class="p">{</span>
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="s">&quot;error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="n">str</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="kt">int</span> <span class="n">yywrap</span><span class="p">()</span>
+<span class="p">{</span>
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>  
+<span class="n">main</span><span class="p">()</span>
+<span class="p">{</span>
+        <span class="n">yyparse</span><span class="p">();</span>
+<span class="p">}</span></code></pre></div>
+
+<p>该y文件的definitions部分声明了一个函数，并定义了一系列标记(TOKEN)。然后在rules部分定义了四个模式序列对应(语句)的动作，其中commands是一个递归定义。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。这个y文件实现了以下功能</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">输入：heat on
+输出：Heat turned on or off
+输入：target temperature 22
+输出：New temperature set!
+</code></pre></div>
+<h3 id="3-lex与yacc结合">3.lex与yacc结合</h3>
+
+<p>也许你已经注意到了，l文件的definitions部分往往要包含#include &quot;y.tab.h&quot;。而y.tab.h是yacc对y文件编译后产生的c源文见。因此y文件必须限于l文件进行编译成c源文件，然后将l文件产生的c文件和y文件产生的c文件编译连接生产语法解析器。具体步骤见图：</p>
+
+<figure style="margin:0 auto;width:620px">
+    <img src="/images/lex_yacc.jpg"/>
+</figure>
+
+<p>更多lex和yacc的资料如下：</p>
+
+<p><a href="http://epaperpress.com/lexandyacc/index.html">http://epaperpress.com/lexandyacc/index.html</a>
+<br />
+<a href="http://tldp.org/HOWTO/Lex-YACC-HOWTO-1.html">http://tldp.org/HOWTO/Lex-YACC-HOWTO-1.html</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-08-27T00:00:00+08:00"><a href="/php-sapi/">August 27, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
       <span class="entry-reading-time pull-right">
@@ -272,70 +421,6 @@ rel="stylesheet" type="text/css" -->
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-08-12T00:00:00+08:00"><a href="/nginx-empty-domain/">August 12, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
-        
-        Reading time ~1 minute
-      </span><!-- /.entry-reading-time -->
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/nginx-empty-domain/" rel="bookmark" title="nginx,防止他人域名指向自己机器" itemprop="url">nginx,防止他人域名指向自己机器</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>总有一些人，热衷于窃取他人的劳动果实。比如好事者用一个空头域名指向你的主机，从而利用你的网站内容提升他自己的域名排名。比如我就发现有两个空头域名sunrisenet.cn、mbagroup.cn指向了我的网站，我们该如何防止这种情况发生呢?</p>
-
-<h2 id="方法1：将来自其他域名的访问导向自己的域名">方法1：将来自其他域名的访问导向自己的域名</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text"> server {
-     listen 80 default;
-     server_name _;
-     rewrite ^(.*) http://www.xuanhao360.com;
- }
- server {
-     listen 80;
-     server_name  www.xuanhao360.com;
-     root /var/www;
-     index  index.html;
-     ......
- }
-</code></pre></div>
-<h2 id="方法2：对来自其他域名的访问返回500错误">方法2：对来自其他域名的访问返回500错误</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text">server {
-        listen 80 default;
-        server_name _;
-        return 500;
-}
- server {
-     listen 80;
-     server_name  www.xuanhao360.com;
-     root /var/www;
-     index  index.html;
-     ......
- }
-</code></pre></div>
-<h2 id="方法3：黑名单">方法3：黑名单</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text"> server {
-     listen 80 default;
-     server_name sunrisenet.cn;
-     return 500;
- }
- server {
-     listen 80;
-     server_name  www.xuanhao360.com;
-     root /var/www;
-     index  index.html;
-     ......
- }
-</code></pre></div>
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
 
 <div class="pagination">
   
@@ -455,6 +540,12 @@ rel="stylesheet" type="text/css" -->
       <li>
         
           <a href="/page19">19</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page20">20</a>
         
       </li>
     
