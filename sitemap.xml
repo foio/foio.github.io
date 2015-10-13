@@ -116,6 +116,10 @@
 
     
     <url>
+        <loc>/jquery-event-research/</loc>
+    </url>
+    
+    <url>
         <loc>/sizzle-research/</loc>
     </url>
     
