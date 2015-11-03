@@ -133,13 +133,20 @@ rel="stylesheet" type="text/css" -->
     
   </header>
   <div class="entry-content">
-    <p>前端工程师都知道script标签会阻塞网页上其他资源的加载。有时候这种阻塞是必要的，因为javascript可能会改变页面结构，进而对后续的资源(css,js)的作用产生影响。但是，当我们能够识别那些对页面结构不产生影响的javascript并且不希望阻塞其他资源时，我们就需要认真的研究一下，javascript异步加载的方式了。</p>
+    <style type="text/css">
+td, table {
+   border: solid gray 1px;
+   padding: 10px;
+}
+</style>
+
+<p>前端工程师都知道script标签会阻塞网页上其他资源的加载。有时候这种阻塞是必要的，因为javascript可能会改变页面结构，进而对后续的资源(css,js)的作用产生影响。但是，当我们能够识别那些对页面结构不产生影响的javascript并且不希望阻塞其他资源时，我们就需要认真的研究一下，javascript异步加载的方式了。</p>
 
 <hr>
 
 <h3 id="1-并行的下载脚本">1. 并行的下载脚本</h3>
 
-<h4 id="1-xhr-eval">(1) XHR Eval</h4>
+<h4 id="1-xhr-eval">(1) XHR eval</h4>
 
 <p>通过XHR技术我们也可以异步地获取js脚本，并通过eval()执行。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">xhrobj</span> <span class="o">=</span> <span class="nx">getXHROject</span><span class="p">();</span>
@@ -228,8 +235,9 @@ rel="stylesheet" type="text/css" -->
 <h3 id="2-脚本的执行顺序">2.脚本的执行顺序</h3>
 
 <h4 id="1-保证行内脚本和外部脚本的执行顺序">(1)保证行内脚本和外部脚本的执行顺序</h4>
-<div class="highlight"><pre><code class="language-text" data-lang="text">当外部脚本按常规方式加载时，它会阻塞行内脚本的执行，可以保证顺序。但是脚本通过上述的几种方式异步加载时，就无法保证行内脚本和异步脚本之间的顺序。下面就讲解一下保证行内脚本和外部脚本保证执行顺序的技术。
-</code></pre></div>
+
+<p>当外部脚本按常规方式加载时，它会阻塞行内脚本的执行，可以保证顺序。但是脚本通过上述的几种方式异步加载时，就无法保证行内脚本和异步脚本之间的顺序。下面就讲解一下保证行内脚本和外部脚本保证执行顺序的技术。</p>
+
 <h5 id="硬编码回调"><1>.硬编码回调</h5>
 
 <p>如果web开发者能够控制外部脚本，可以在外部脚本回调行内脚本。</p>

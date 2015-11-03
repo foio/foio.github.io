@@ -138,7 +138,6 @@ rel="stylesheet" type="text/css" -->
 <h3 id="1-在php脚本中实现自动加载">1. 在php脚本中实现自动加载</h3>
 
 <p>在 PHP 5 中我们可以定义一个 __autoload() 函数，它会在试图使用尚未被定义的类时自动调用，这样我们就可以定义一些自己的加载规则了。</p>
-
 <div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
 <span class="k">function</span> <span class="nf">__autoload</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">require_once</span> <span class="nv">$class_name</span> <span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
@@ -146,10 +145,9 @@ rel="stylesheet" type="text/css" -->
 
 <span class="nv">$obj</span>  <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass1</span><span class="p">();</span>
 <span class="nv">$obj2</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass2</span><span class="p">();</span>
-<span class="cp">?&gt;</span><span class="x"></span></code></pre></div>
-
+<span class="cp">?&gt;</span><span class="x"></span>
+</code></pre></div>
 <p>使用<code>spl_autoload_register</code>我们可以一次注册多个加载函数，PHP会在试图使用尚未被定义的类时按注册顺序调用。</p>
-
 <div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
 <span class="k">function</span> <span class="nf">autoload_services</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span>
 <span class="p">{</span>
@@ -169,16 +167,11 @@ rel="stylesheet" type="text/css" -->
 <span class="p">}</span>
 <span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">&#39;autoload_services&#39;</span><span class="p">);</span>
 <span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">&#39;autoload_vos&#39;</span><span class="p">);</span>
-<span class="cp">?&gt;</span><span class="x"></span></code></pre></div>
-
+<span class="cp">?&gt;</span><span class="x"></span>
+</code></pre></div>
 <h3 id="2-在php扩展中实现自动加载">2. 在php扩展中实现自动加载</h3>
 
 <p>最近在写一个php扩展，其中一个功能就是实现类的自动加载，其实也是通过在内核中调用<code>spl_autoload_register</code>函数来实现。使用zend API调用<code>spl_autoload_register</code>函数还是相对简单的，下面我们主要讲一下如何在内核中实现<code>inclue/require/include_once/require_once</code>等指令的功能。其实<code>inclue/require/include_once/require_once</code>等指令主要是读入文件编译并执行，下面的方法就是完成了这些操作，代码中有详细的注释。</p>
-
-<h4 id="1-在hive-shell中加载">(1).在hive shell中加载</h4>
-
-<p>首先加载jar包，并创建临时函数\</p>
-
 <div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cm">/*</span>
 <span class="cm">*  loader_import首先将PHP源文件编译成op_array，然后依次执行op_array中的opcode</span>
 <span class="cm">*/</span>
@@ -196,7 +189,7 @@ rel="stylesheet" type="text/css" -->
     <span class="n">file_handle</span><span class="p">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">ZEND_HANDLE_FILENAME</span><span class="p">;</span>
     <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
     <span class="n">file_handle</span><span class="p">.</span><span class="n">handle</span><span class="p">.</span><span class="n">fp</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-    
+
     <span class="c1">//调用zend API编译源文件</span>
     <span class="n">op_array</span> <span class="o">=</span> <span class="n">zend_compile_file</span><span class="p">(</span><span class="o">&amp;</span><span class="n">file_handle</span><span class="p">,</span> <span class="n">ZEND_INCLUDE</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
 
@@ -206,7 +199,7 @@ rel="stylesheet" type="text/css" -->
         <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">)</span> <span class="p">{</span>
             <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span> <span class="o">=</span> <span class="n">path</span><span class="p">;</span>
         <span class="p">}</span>
-        
+
         <span class="c1">//将源文件注册到执行期间的全局变量(EG)的include_files列表中，这样就标记了源文件已经包含过了</span>
         <span class="n">zend_hash_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">EG</span><span class="p">(</span><span class="n">included_files</span><span class="p">),</span> <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">dummy</span><span class="p">,</span>
                 <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">),</span> <span class="nb">NULL</span><span class="p">);</span>
@@ -248,8 +241,8 @@ rel="stylesheet" type="text/css" -->
         <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
-
+<span class="p">}</span>
+</code></pre></div>
 <hr>
 
 <p>学习php扩展开发需要你对zend API以及PHP内核比较熟悉，推荐以下参考资料

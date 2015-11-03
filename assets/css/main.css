@@ -697,6 +697,10 @@ span.CodeRay {
   border: 0;
 }
 
+table{
+    border: solid #ccc 1px;
+}
+
 table.CodeRay {
   width: 100%;
   padding: 2px;
