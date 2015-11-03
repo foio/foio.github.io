@@ -113,7 +113,15 @@
         <loc>/page20/index.html</loc>
     </url>
     
+    <url>
+        <loc>/page21/index.html</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/javascript-async/</loc>
+    </url>
     
     <url>
         <loc>/jquery-event-research/</loc>

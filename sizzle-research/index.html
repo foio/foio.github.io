@@ -121,7 +121,7 @@ rel="stylesheet" type="text/css" -->
         <p class="entry-reading-time">
           <i class="fa fa-clock-o"></i>
           
-          Reading time ~3 minutes
+          Reading time ~1 minute
         </p><!-- /.entry-reading-time -->
         
       </div><!-- /.header-title-wrap -->
@@ -169,74 +169,75 @@ rel="stylesheet" type="text/css" -->
 </code></pre></div>
 <h4 id="2-从左到右扫描生产token集合">(2)从左到右扫描生产token集合</h4>
 
-<p>用正则表达式切分出token的过程，如下代码所示。基本原理就是从左到右扫描，用正则切分。</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//分组</span>
-  <span class="kd">var</span> <span class="nx">rcomma</span> <span class="o">=</span> <span class="sr">/^[\x20\t\r\n\f]*,[\x20\t\r\n\f]*/</span><span class="p">;</span>
-  <span class="c1">//层级</span>
-  <span class="kd">var</span> <span class="nx">rcombinators</span> <span class="o">=</span>           
- <span class="sr">/^[\x20\t\r\n\f]*([&gt;+~]|[\x20\t\r\n\f])[\x20\t\r\n\f]*/</span>
-  <span class="c1">//选择器</span>
-  <span class="kd">var</span> <span class="nx">TAG</span> <span class="o">=</span> <span class="sr">/^((?:\\.|[\w*-]|[^\x00-\xa0])+)/</span><span class="p">;</span>
-  <span class="kd">var</span> <span class="nx">matchExpr</span> <span class="o">=</span> <span class="p">{</span>
-      <span class="nx">CLASS</span><span class="o">:</span> <span class="sr">/^\.((?:\\.|[\w-]|[^\x00-\xa0])+)/</span><span class="p">,</span>
-      <span class="nx">TAG</span><span class="o">:</span> <span class="sr">/^((?:\\.|[\w*-]|[^\x00-\xa0])+)/</span>
-  <span class="p">};</span>
-  <span class="c1">//扫描</span>
-  <span class="k">while</span> <span class="p">(</span><span class="nx">selector</span><span class="p">)</span> <span class="p">{</span>
-      <span class="c1">//分组</span>
-      <span class="k">if</span> <span class="p">(</span><span class="nx">match</span> <span class="o">=</span> <span class="nx">rcomma</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">selector</span><span class="p">))</span> <span class="p">{</span>
-          <span class="nx">selector</span> <span class="o">=</span> <span class="nx">selector</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">match</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">length</span><span class="p">)</span>
-          <span class="nx">groups</span><span class="p">.</span><span class="nx">push</span><span class="p">((</span><span class="nx">tokens</span> <span class="o">=</span> <span class="p">[]));</span>
-      <span class="p">}</span>
-      <span class="c1">//层级关系</span>
-      <span class="k">if</span> <span class="p">((</span><span class="nx">match</span> <span class="o">=</span> <span class="nx">rcombinators</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">selector</span><span class="p">)))</span> <span class="p">{</span>
-          <span class="nx">matched</span> <span class="o">=</span> <span class="nx">match</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
-          <span class="nx">tokens</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
-              <span class="nx">value</span><span class="o">:</span> <span class="nx">matched</span><span class="p">,</span>
-              <span class="nx">type</span><span class="o">:</span> <span class="nx">match</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">replace</span><span class="p">(</span><span class="nx">rtrim</span><span class="p">,</span> <span class="s2">&quot; &quot;</span><span class="p">)</span>
-          <span class="p">});</span>
-          <span class="nx">selector</span> <span class="o">=</span> <span class="nx">selector</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">matched</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
-      <span class="p">}</span>
-      <span class="c1">//选择器</span>
-      <span class="k">for</span> <span class="p">(</span><span class="nx">type</span> <span class="k">in</span> <span class="nx">matchExpr</span><span class="p">)</span> <span class="p">{</span>
-          <span class="k">if</span> <span class="p">((</span><span class="nx">match</span> <span class="o">=</span> <span class="nx">matchExpr</span><span class="p">[</span><span class="nx">type</span><span class="p">].</span><span class="nx">exec</span><span class="p">(</span><span class="nx">selector</span><span class="p">)))</span> <span class="p">{</span>
-              <span class="nx">matched</span> <span class="o">=</span> <span class="nx">match</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
-              <span class="nx">tokens</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
-                  <span class="nx">value</span><span class="o">:</span> <span class="nx">matched</span><span class="p">,</span>
-                  <span class="nx">type</span><span class="o">:</span> <span class="nx">type</span><span class="p">,</span>
-                  <span class="nx">matches</span><span class="o">:</span> <span class="nx">match</span>
-              <span class="p">});</span>
-              <span class="nx">selector</span> <span class="o">=</span> <span class="nx">selector</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">matched</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
-          <span class="p">}</span>
-      <span class="p">}</span>
-  <span class="p">}</span></code></pre></div>
+<p>用正则表达式切分出token的过程，如下代码所示。基本原理就是从左到右扫描，用正则切分。
+<code>javascript
+//分组
+  var rcomma = /^[\x20\t\r\n\f]*,[\x20\t\r\n\f]*/;
+  //层级
+  var rcombinators =           
+ /^[\x20\t\r\n\f]*([&gt;+~]|[\x20\t\r\n\f])[\x20\t\r\n\f]*/
+  //选择器
+  var TAG = /^((?:\\.|[\w*-]|[^\x00-\xa0])+)/;
+  var matchExpr = {
+      CLASS: /^\.((?:\\.|[\w-]|[^\x00-\xa0])+)/,
+      TAG: /^((?:\\.|[\w*-]|[^\x00-\xa0])+)/
+  };
+  //扫描
+  while (selector) {
+      //分组
+      if (match = rcomma.exec(selector)) {
+          selector = selector.slice(match[0].length)
+          groups.push((tokens = []));
+      }
+      //层级关系
+      if ((match = rcombinators.exec(selector))) {
+          matched = match.shift();
+          tokens.push({
+              value: matched,
+              type: match[0].replace(rtrim, &quot; &quot;)
+          });
+          selector = selector.slice(matched.length);
+      }
+      //选择器
+      for (type in matchExpr) {
+          if ((match = matchExpr[type].exec(selector))) {
+              matched = match.shift();
+              tokens.push({
+                  value: matched,
+                  type: type,
+                  matches: match
+              });
+              selector = selector.slice(matched.length);
+          }
+      }
+  }
+</code></p>
 
 <p>最终生成的token集合如下:</p>
-
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span><span class="nx">matches</span><span class="o">:</span> <span class="p">[</span><span class="s2">&quot;div&quot;</span><span class="p">],</span><span class="nx">type</span><span class="o">:</span> <span class="s2">&quot;TAG&quot;</span><span class="p">,</span><span class="nx">value</span><span class="o">:</span> <span class="s2">&quot;div“ }, </span>
 <span class="s2">{matches:[“”], type: &quot;</span> <span class="s2">&quot;, value: &quot;</span> <span class="s2">&quot;},</span>
 <span class="s2">{matches: [&quot;</span><span class="nx">input</span><span class="s2">&quot;], type: &quot;</span><span class="nx">TAG</span><span class="s2">&quot;, value: &quot;</span><span class="nx">input</span><span class="s2">&quot;}, </span>
-<span class="s2">{matches: [&quot;</span><span class="nx">name</span><span class="s2">&quot;], type: &quot;</span><span class="nx">ATTR</span><span class="s2">&quot;, value: &quot;</span><span class="p">[</span><span class="nx">name</span><span class="o">=</span><span class="nx">ttt</span><span class="p">]</span><span class="err">&quot;</span><span class="p">}</span></code></pre></div>
-
+<span class="s2">{matches: [&quot;</span><span class="nx">name</span><span class="s2">&quot;], type: &quot;</span><span class="nx">ATTR</span><span class="s2">&quot;, value: &quot;</span><span class="p">[</span><span class="nx">name</span><span class="o">=</span><span class="nx">ttt</span><span class="p">]</span><span class="err">&quot;</span><span class="p">}</span>
+</code></pre></div>
 <h3 id="2-过滤函数">2.过滤函数</h3>
 
 <hr>
 
-<p>过滤函数用于从浏览器dom模型中找到基本符合css选择器的种子集，sizzle针对每一种token都实现一个过滤函数，如下代码所示：</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//各种类型的token的过滤器，全部返回闭包函数</span>
-<span class="nx">Expr</span><span class="p">.</span><span class="nx">filter</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="nx">ATTR</span>   <span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">operator</span><span class="p">,</span> <span class="nx">check</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
-    <span class="nx">CHILD</span>  <span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">type</span><span class="p">,</span> <span class="nx">what</span><span class="p">,</span> <span class="nx">argument</span><span class="p">,</span> <span class="nx">first</span><span class="p">,</span> <span class="nx">last</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
-    <span class="nx">CLASS</span>  <span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">className</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
-    <span class="nx">ID</span>     <span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
-    <span class="nx">PSEUDO</span> <span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">pseudo</span><span class="p">,</span> <span class="nx">argument</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
-    <span class="nx">TAG</span>    <span class="o">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nodeNameSelector</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="kd">function</span><span class="p">(</span><span class="nx">elem</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">nodeName</span> <span class="o">&amp;&amp;</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">nodeName</span><span class="p">.</span><span class="nx">toLowerCase</span><span class="p">()</span> <span class="o">===</span> <span class="nx">nodeNameSelector</span><span class="p">;</span>
-              <span class="p">};</span>
-     <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
+<p>过滤函数用于从浏览器dom模型中找到基本符合css选择器的种子集，sizzle针对每一种token都实现一个过滤函数，如下代码所示：
+<code>javascript
+//各种类型的token的过滤器，全部返回闭包函数
+Expr.filter = {
+    ATTR   : function (name, operator, check) {return closure}
+    CHILD  : function (type, what, argument, first, last) {return closure}
+    CLASS  : function (className) {return closure}
+    ID     : function (id) {return closure}
+    PSEUDO : function (pseudo, argument) {return closure}
+    TAG    : function (nodeNameSelector) { return function(elem) {
+    return elem.nodeName &amp;&amp; elem.nodeName.toLowerCase() === nodeNameSelector;
+              };
+     }
+}
+</code></p>
 
 <p>通过部分过滤函数，我们可以初步得到符合条件的种子集合。如下图</p>
 
@@ -263,13 +264,12 @@ rel="stylesheet" type="text/css" -->
 </figure>
 
 <p>现在假设我们已经通过编译获得了最终的超级匹配函数。那么从种子集中找到结果集就比较简单了。</p>
-
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">for</span> <span class="nx">item</span> <span class="k">in</span> <span class="nx">seed</span>
       <span class="k">if</span><span class="p">(</span><span class="nx">superMatcher</span><span class="p">(</span><span class="nx">item</span> <span class="p">)){</span>
                <span class="nx">resultSet</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">item</span><span class="p">);</span>
       <span class="p">}</span>
-<span class="k">return</span> <span class="nx">resultSet</span><span class="p">;</span></code></pre></div>
-
+<span class="k">return</span> <span class="nx">resultSet</span><span class="p">;</span>
+</code></pre></div>
 <hr>
 
 <p><a href="/download/sizzle-presentation.pptx">为了便于理解本文，请下载本文对应的ppt</a></p>
@@ -290,20 +290,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/javascript-memoryleak/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/jquery-event-research/" title="jQuery事件系统研究">jQuery事件系统研究</a></h3>
-          <p>jQuery事件系统研究 <a href="/jquery-event-research/">Continue reading</a></p>
+          <h3><a href="/javascript-async/" title="在网页中异步加载javascript">在网页中异步加载javascript</a></h3>
+          <p>jQuery事件系统研究 <a href="/javascript-async/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/javascript-memoryleak/" title="javascript 内存泄露研究">javascript 内存泄露研究</a></h4>
-            <span>Published on May 12, 2015</span>
+            <h4><a href="/jquery-event-research/" title="jQuery事件系统研究">jQuery事件系统研究</a></h4>
+            <span>Published on October 03, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/jquery-callback/" title="jQuery的回调模块实现原理">jQuery的回调模块实现原理</a></h4>
-            <span>Published on April 12, 2015</span>
+            <h4><a href="/javascript-memoryleak/" title="javascript 内存泄露研究">javascript 内存泄露研究</a></h4>
+            <span>Published on May 12, 2015</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

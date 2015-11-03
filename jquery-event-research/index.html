@@ -131,7 +131,7 @@ rel="stylesheet" type="text/css" -->
 
 <p>我将本文组织为如下结构：</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">1.使用原生API有什么问题
-2.大牛时如何解决的
+2.大牛是如何解决的
 3.jQuery的实现
 </code></pre></div>
 <hr>
@@ -272,13 +272,12 @@ rel="stylesheet" type="text/css" -->
 <h4 id="1-解析on函数">(1) 解析on函数</h4>
 
 <p>on函数内部调用了<code>jQuery.event.add</code>的add函数。</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="nx">selector</span><span class="p">).</span><span class="nx">on</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span><span class="nx">childSelector</span><span class="p">,</span><span class="nx">data</span><span class="p">,</span><span class="kd">function</span><span class="p">,</span><span class="nx">map</span><span class="p">)</span>
-                <span class="o">||</span>
-               <span class="err">\</span><span class="o">||</span><span class="err">/</span>
-                <span class="err">\</span><span class="o">/</span>
-<span class="nx">jQuery</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="k">this</span><span class="p">,</span> <span class="nx">types</span><span class="p">,</span> <span class="nx">fn</span><span class="p">,</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">selector</span> <span class="p">);</span></code></pre></div>
-
+<div class="highlight"><pre><code class="language-text" data-lang="text">$(selector).on(event,childSelector,data,function,map)
+                ||
+               \||/
+                \/
+jQuery.event.add( this, types, fn, data, selector );
+</code></pre></div>
 <p>我们来分析以下add函数的代码：</p>
 
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">add</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">elem</span><span class="p">,</span> <span class="nx">types</span><span class="p">,</span> <span class="nx">handler</span><span class="p">,</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">selector</span> <span class="p">)</span> <span class="p">{</span>
@@ -427,20 +426,20 @@ jQuery.event.handlers.call( this, event, handlers )
           <a href="/sizzle-research/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/sizzle-research/" title="sizzle引擎研究">sizzle引擎研究</a></h3>
-          <p>sizzle引擎研究 <a href="/sizzle-research/">Continue reading</a></p>
+          <h3><a href="/javascript-async/" title="在网页中异步加载javascript">在网页中异步加载javascript</a></h3>
+          <p>jQuery事件系统研究 <a href="/javascript-async/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/javascript-memoryleak/" title="javascript 内存泄露研究">javascript 内存泄露研究</a></h4>
-            <span>Published on May 12, 2015</span>
+            <h4><a href="/sizzle-research/" title="sizzle引擎研究">sizzle引擎研究</a></h4>
+            <span>Published on August 26, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/jquery-callback/" title="jQuery的回调模块实现原理">jQuery的回调模块实现原理</a></h4>
-            <span>Published on April 12, 2015</span>
+            <h4><a href="/javascript-memoryleak/" title="javascript 内存泄露研究">javascript 内存泄露研究</a></h4>
+            <span>Published on May 12, 2015</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
