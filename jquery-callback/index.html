@@ -118,22 +118,16 @@ rel="stylesheet" type="text/css" -->
         
         <h2>April 12, 2015</h2>
         
-        <p class="entry-reading-time">
-          <i class="fa fa-clock-o"></i>
-          
-          Reading time ~5 minutes
-        </p><!-- /.entry-reading-time -->
-        
       </div><!-- /.header-title-wrap -->
     </header>
     <div class="entry-content">
-      <p>jQuery的回调系统时jQuery的基本功能之一,用于支撑jQuery的<code>ajax()</code>方法的实现和对promise规范的实现。jQuery提供了<code>callback</code>方法用于实现各种复杂回调功能.</p>
+      <p>jQuery的回调系统是jQuery的基本功能之一,用于支撑jQuery的<code>ajax()</code>方法的实现和对promise规范的实现。jQuery提供了<code>callback</code>方法用于实现各种复杂回调功能.</p>
 
 <h3 id="1-基本用法以及特殊参数">1.基本用法以及特殊参数</h3>
 
 <hr>
 
-<p>下面时使用callback最简单的例子,其中<code>callback</code> 函数没有任何参数,其中<code>add</code>,<code>fire</code>,<code>remove</code> 的含义通过方法名可以立刻知道.</p>
+<p>下面是使用callback最简单的例子,其中<code>callback</code> 函数没有任何参数,其中<code>add</code>,<code>fire</code>,<code>remove</code> 的含义通过方法名可以立刻知道.</p>
 
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">callbacks</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">Callbacks</span><span class="p">();</span>
 <span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn1</span> <span class="p">);</span>
@@ -159,7 +153,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 <span class="cm">/*</span>
 <span class="cm">output:</span>
 <span class="cm">fn1 says:foo</span>
-<span class="cm">fn2 says:foo //这个输出时memory标记的作用</span>
+<span class="cm">fn2 says:foo //这个输出是memory标记的作用</span>
 <span class="cm">fn1 says:bar</span>
 <span class="cm">fn2 says:bar</span>
 <span class="cm">fn1 says:foobar</span>
@@ -335,6 +329,22 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
         
       </footer>
     </div><!-- /.entry-content -->
+
+    
+<div style="max-width:800px;background-color:#fff;padding: 20px;margin:0 auto;">
+<!--高速版-->
+    <div id="SOHUCS" style="max-width:800px;"></div>
+    <script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+    <script type="text/javascript">
+        window.changyan.api.config({
+            appid: 'cyrgTvN9G',
+            conf: 'prod_e42e502ec2a5653d7d595968a1a242c1'
+        });
+    </script>
+</div>
+
+	        
+
     
     
     <div class="read-more">
@@ -365,6 +375,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
   </article>
 </div><!-- /#main -->
 
+
 <div class="footer-wrapper">
   <footer role="contentinfo">
     <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
@@ -375,6 +386,5 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
 	        
-
 </body>
 </html>

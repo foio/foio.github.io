@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2015-11-09T10:41:49+08:00</updated>
+<updated>2015-11-09T20:33:06+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -1191,13 +1191,13 @@ IE8以下版本的浏览器中造成内存泄露。&lt;/p&gt;
     <uri></uri>
     <email>syszhpe@gmail.com</email>
   </author>
-  <content type="html">&lt;p&gt;jQuery的回调系统时jQuery的基本功能之一,用于支撑jQuery的&lt;code&gt;ajax()&lt;/code&gt;方法的实现和对promise规范的实现。jQuery提供了&lt;code&gt;callback&lt;/code&gt;方法用于实现各种复杂回调功能.&lt;/p&gt;
+  <content type="html">&lt;p&gt;jQuery的回调系统是jQuery的基本功能之一,用于支撑jQuery的&lt;code&gt;ajax()&lt;/code&gt;方法的实现和对promise规范的实现。jQuery提供了&lt;code&gt;callback&lt;/code&gt;方法用于实现各种复杂回调功能.&lt;/p&gt;
 
 &lt;h3 id=&quot;1-基本用法以及特殊参数&quot;&gt;1.基本用法以及特殊参数&lt;/h3&gt;
 
 &lt;hr&gt;
 
-&lt;p&gt;下面时使用callback最简单的例子,其中&lt;code&gt;callback&lt;/code&gt; 函数没有任何参数,其中&lt;code&gt;add&lt;/code&gt;,&lt;code&gt;fire&lt;/code&gt;,&lt;code&gt;remove&lt;/code&gt; 的含义通过方法名可以立刻知道.&lt;/p&gt;
+&lt;p&gt;下面是使用callback最简单的例子,其中&lt;code&gt;callback&lt;/code&gt; 函数没有任何参数,其中&lt;code&gt;add&lt;/code&gt;,&lt;code&gt;fire&lt;/code&gt;,&lt;code&gt;remove&lt;/code&gt; 的含义通过方法名可以立刻知道.&lt;/p&gt;
 
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;callbacks&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Callbacks&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
 &lt;span class=&quot;nx&quot;&gt;callbacks&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;add&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;fn1&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
@@ -1223,7 +1223,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 &lt;span class=&quot;cm&quot;&gt;/*&lt;/span&gt;
 &lt;span class=&quot;cm&quot;&gt;output:&lt;/span&gt;
 &lt;span class=&quot;cm&quot;&gt;fn1 says:foo&lt;/span&gt;
-&lt;span class=&quot;cm&quot;&gt;fn2 says:foo //这个输出时memory标记的作用&lt;/span&gt;
+&lt;span class=&quot;cm&quot;&gt;fn2 says:foo //这个输出是memory标记的作用&lt;/span&gt;
 &lt;span class=&quot;cm&quot;&gt;fn1 says:bar&lt;/span&gt;
 &lt;span class=&quot;cm&quot;&gt;fn2 says:bar&lt;/span&gt;
 &lt;span class=&quot;cm&quot;&gt;fn1 says:foobar&lt;/span&gt;

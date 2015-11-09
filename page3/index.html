@@ -121,12 +121,6 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-05-12T00:00:00+08:00"><a href="/javascript-memoryleak/">May 12, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
-        
-        Reading time ~2 minutes
-      </span><!-- /.entry-reading-time -->
-      
     </div><!-- /.entry-meta -->
     
       <h1 class="entry-title"><a href="/javascript-memoryleak/" rel="bookmark" title="javascript 内存泄露研究" itemprop="url">javascript 内存泄露研究</a></h1>
@@ -265,25 +259,19 @@ IE8以下版本的浏览器中造成内存泄露。</p>
     <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-04-12T00:00:00+08:00"><a href="/jquery-callback/">April 12, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
-        
-        Reading time ~5 minutes
-      </span><!-- /.entry-reading-time -->
-      
     </div><!-- /.entry-meta -->
     
       <h1 class="entry-title"><a href="/jquery-callback/" rel="bookmark" title="jQuery的回调模块实现原理" itemprop="url">jQuery的回调模块实现原理</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>jQuery的回调系统时jQuery的基本功能之一,用于支撑jQuery的<code>ajax()</code>方法的实现和对promise规范的实现。jQuery提供了<code>callback</code>方法用于实现各种复杂回调功能.</p>
+    <p>jQuery的回调系统是jQuery的基本功能之一,用于支撑jQuery的<code>ajax()</code>方法的实现和对promise规范的实现。jQuery提供了<code>callback</code>方法用于实现各种复杂回调功能.</p>
 
 <h3 id="1-基本用法以及特殊参数">1.基本用法以及特殊参数</h3>
 
 <hr>
 
-<p>下面时使用callback最简单的例子,其中<code>callback</code> 函数没有任何参数,其中<code>add</code>,<code>fire</code>,<code>remove</code> 的含义通过方法名可以立刻知道.</p>
+<p>下面是使用callback最简单的例子,其中<code>callback</code> 函数没有任何参数,其中<code>add</code>,<code>fire</code>,<code>remove</code> 的含义通过方法名可以立刻知道.</p>
 
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">callbacks</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">Callbacks</span><span class="p">();</span>
 <span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn1</span> <span class="p">);</span>
@@ -309,7 +297,7 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 <span class="cm">/*</span>
 <span class="cm">output:</span>
 <span class="cm">fn1 says:foo</span>
-<span class="cm">fn2 says:foo //这个输出时memory标记的作用</span>
+<span class="cm">fn2 says:foo //这个输出是memory标记的作用</span>
 <span class="cm">fn1 says:bar</span>
 <span class="cm">fn2 says:bar</span>
 <span class="cm">fn1 says:foobar</span>
