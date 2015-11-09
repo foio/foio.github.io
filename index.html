@@ -119,6 +119,281 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-11-08T00:00:00+08:00"><a href="/requireJS/">November 08, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~5 minutes
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/requireJS/" rel="bookmark" title="RequireJS结构分析，实现自己的模块加载系统" itemprop="url">RequireJS结构分析，实现自己的模块加载系统</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>近年来，前端变的越来越重，页面中的javascript代码量上升了一个量级，为了便于维护和团队协作，模块化是必经之路。针对javascript模块化，业界逐渐产出两种方案AMD和CMD，它们有什么区别呢？看看大牛玉帛在知乎上的回答:<a href="http://www.zhihu.com/question/20342350/answer/14828786">http://www.zhihu.com/question/20342350/answer/14828786</a>。</p>
+
+<p>其中最重要的区别是AMD是提前执行，CMD是延迟执行。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="c1">//CMD 推崇依赖就近，代表为seajs</span>
+<span class="nx">define</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span><span class="nx">exports</span><span class="p">,</span><span class="nx">module</span><span class="p">){</span>
+    <span class="kd">var</span> <span class="nx">a</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./a&#39;</span><span class="p">);</span> 
+    <span class="nx">a</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">b</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./b&#39;</span><span class="p">);</span>
+    <span class="nx">b</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>
+<span class="p">})</span>
+
+<span class="c1">//AMD 推崇依赖前置，代表为requireJs</span>
+<span class="c1">//by foio.github.io</span>
+<span class="nx">define</span><span class="p">([</span><span class="s1">&#39;./a&#39;</span><span class="p">,</span><span class="s1">&#39;./b&#39;</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="nx">b</span><span class="p">){</span>
+    <span class="nx">a</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>    
+    <span class="nx">b</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>本篇文章我们分析一下RequreJS的结构。没有任何准备就看源代码往往是一头雾水，我也并不打算在本文详解RequireJS的源代码，源代码处理很多细节问题，反而会影响我们从宏观上理解RequreJS的机构。你可以先了解几种在网页中异步加载javascript的方案（可以参考<a href="http://foio.github.io/javascript-async/">我的另一篇博客</a>），然后思考还会碰到什么问题。就我而言，我提出如下两个基本问题：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">(1).RequireJS是如何异步加载js模块
+(2).RequireJS是如何处理模块间的依赖关系的(包括如何处理循环依赖)
+</code></pre></div>
+<p>接下来我就来分别分析这两个问题。在开始之前，我们先看一下本文中javascript代码的层次结构。</p>
+
+<figure>
+<img src="/images/require-structure.gif" alt="require structure">
+</figure>
+
+<p>从图中可以看出，模块加载系统的require和define的实现，主要借助于4个子函数(矩形表示)和3个基本数据结构(椭圆形表示)，其中蓝色椭圆为require和define之间共同使用的数据结构。下文主要围绕着这个结构图展开，阅读过程中请随时参阅此图。</p>
+
+<hr>
+
+<h2 id="1-requirejs是如何异步加载js模块">1. RequireJS是如何异步加载js模块</h2>
+
+<p>如果你看过<a href="http://foio.github.io/javascript-async/">这篇专门讲解如何异步加载javascript模块的文章</a>，就会发现RequireJS用的就是其中的<code>script dom element</code>的方法。下面是具体实现的伪代码。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="kd">function</span> <span class="nx">loadJS</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">callback</span><span class="p">){</span>
+    <span class="c1">//创建script节点</span>
+    <span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;script&quot;</span><span class="p">);</span>
+    <span class="c1">//监听脚本加载完成事件，处理浏览器的兼容性，针对符合W3C标准的浏览器和不符合W3C标准的浏览器分别监听不同的事件</span>
+    <span class="nx">node</span><span class="p">.[</span><span class="nx">W3C</span><span class="o">?</span><span class="s2">&quot;onload&quot;</span><span class="o">:</span><span class="s2">&quot;onreadystatechange&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">callback</span><span class="p">){</span>
+            <span class="nx">callback</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">};</span>
+
+    <span class="c1">//监听onerror事件处理javascript加载失败的情况</span>
+    <span class="nx">node</span><span class="p">.</span><span class="nx">onerror</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){}</span>
+
+    <span class="nx">node</span><span class="p">.</span><span class="nx">src</span><span class="o">=</span><span class="nx">url</span><span class="p">;</span>
+    <span class="nx">head</span><span class="p">.</span><span class="nx">insertBefore</span><span class="p">(</span><span class="nx">node</span><span class="p">,</span><span class="nx">head</span><span class="p">.</span><span class="nx">firstChild</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<h2 id="2-requirejs如何按顺序加载模块">2. RequireJS如何按顺序加载模块</h2>
+
+<p>用过RequireJS都知道，它主要就是两个函数require和define。其中define用于定义模块，require用于执行模块。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="c1">//c.js</span>
+<span class="nx">define</span><span class="p">(</span><span class="nx">id</span><span class="p">,[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span><span class="s1">&#39;b&#39;</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="nx">b</span><span class="p">){</span>
+    <span class="k">return</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="nx">a</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>    
+        <span class="nx">b</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>    
+        <span class="c1">//doSomething();</span>
+    <span class="p">}</span>   
+<span class="p">});</span>
+
+<span class="c1">//logic.js</span>
+<span class="nx">require</span><span class="p">(</span><span class="nx">id</span><span class="p">,[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">c</span><span class="p">){</span>
+    <span class="k">return</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="nx">c</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>
+        <span class="c1">//doSomething();</span>
+    <span class="p">}</span>   
+<span class="p">});</span>
+</code></pre></div>
+<p>要保证javascript模块的执行顺序，首先必须组织好依赖关系。</p>
+
+<h3 id="1-组织依赖关系">(1)组织依赖关系</h3>
+
+<p>为了组织RquireJS需要哪些数据结构呢？看起来无从下手，我们可以对问题进行拆分。</p>
+
+<h4 id="define函数定义的模块放在哪里？"><1>.define函数定义的模块放在哪里？</h4>
+
+<p>每个define函数定义的模块都放在factorys里面，留待require函数执行时使用</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="nx">factorys</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">...</span>
+    <span class="nx">id</span> <span class="o">:</span> <span class="p">{</span>
+        <span class="nx">deps</span><span class="o">:</span> <span class="p">[],</span><span class="c1">//模块的依赖  </span>
+        <span class="nx">factory</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
+    <span class="p">}</span>
+    <span class="p">...</span>
+<span class="p">};</span>
+</code></pre></div>
+<h4 id="开始加载的模块放在哪里，如何标记模块的加载状态？"><2>.开始加载的模块放在哪里，如何标记模块的加载状态？</h4>
+
+<p>moudules存储了所有已经开始加载的模块，包括加载状态信息、依赖模块信息、模块的回调函数、以及回调函数callback返回的结果。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="nx">modules</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="p">...</span>
+    <span class="nx">id</span><span class="o">:</span><span class="p">{</span>
+        <span class="nx">state</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span><span class="c1">//模块的加载状态    </span>
+        <span class="nx">deps</span><span class="o">:</span><span class="p">[],</span><span class="c1">//模块的依赖关系</span>
+        <span class="nx">factory</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
+        <span class="nx">exportds</span><span class="o">:</span> <span class="p">{},</span><span class="c1">//本模块回调函数callback的返回结果，供依赖于该模块的其他模块使用</span>
+    <span class="p">}</span>   
+    <span class="p">...</span> 
+<span class="p">}</span>
+</code></pre></div>
+<h4 id="正在加载但是还没有加载完成的模块id列表"><3>.正在加载但是还没有加载完成的模块id列表</h4>
+
+<p>每个脚本加载完成事件onload触发时，都需要检查loading队列，确认哪些模块的依赖已经加载完成，是否可以执行</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="nx">loadings</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="p">...</span>
+    <span class="nx">id</span><span class="p">,</span>
+    <span class="p">...</span>
+<span class="p">]</span>
+</code></pre></div>
+<h3 id="2-define函数的基本实现">(2). define函数的基本实现</h3>
+
+<p>再次强调，本文的目的是理解结构，而不是具体实现，因此代码中不会考虑浏览器兼容性，也不会考虑逻辑的完整性。define函数主要目的
+是将模块注册到factorys列表中，方便require可以找到。同时必须处理循环依赖问题。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="nx">req</span><span class="p">.</span><span class="nx">define</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">deps</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
+    <span class="c1">//根据模块名获取模块的url</span>
+    <span class="kd">var</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">getScriptId</span><span class="p">(</span><span class="nx">name</span><span class="p">);</span>
+    <span class="c1">//如果模块没有注册，就将模块加入factorys列表</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">id</span><span class="p">]){</span>
+        <span class="nx">factorys</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nx">deps</span><span class="o">:</span> <span class="nx">deps</span><span class="p">,</span>
+            <span class="nx">callback</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span> 
+            <span class="c1">//延迟执行函数，在加载模块时调用，用于检测循环依赖问题</span>
+            <span class="nx">delay</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">){</span>
+                <span class="c1">//检测到循环时抛出异常</span>
+                <span class="k">if</span><span class="p">(</span><span class="nx">checkCycle</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">deps</span><span class="p">,</span><span class="nx">id</span><span class="p">)){</span>
+                    <span class="k">throw</span> <span class="k">new</span> <span class="nx">error</span><span class="p">(</span><span class="s2">&quot;circular dependency detected for module:&quot;</span><span class="o">+</span><span class="nx">name</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">};</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>循环依赖检测函数的实现有些小技巧，需要理解上文提到的<code>modules</code>基本结构。因为checkCycle函数做了如下假设：
+所有依赖模块都已经存放在modules结构中了。所以我们需要注意checkClylce的调用时机。具体实现请参考本文代码。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="kd">function</span> <span class="nx">checkCycle</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span><span class="nx">id</span><span class="p">){</span>
+    <span class="c1">//检查id的所有依赖模块</span>
+    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">depid</span> <span class="k">in</span> <span class="nx">deps</span><span class="p">){</span>
+        <span class="c1">//如果模块已经加载完成则不可能存在循环依赖</span>
+        <span class="c1">//如果depid与id相等，则检测到循环依赖，否则递归的检测id与depid的依赖模块</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">state</span> <span class="o">!==</span> <span class="mi">2</span> <span class="o">&amp;&amp;</span><span class="err">　</span><span class="p">(</span><span class="nx">depid</span> <span class="o">==</span> <span class="nx">id</span> <span class="o">||</span> <span class="nx">checkCycle</span><span class="p">(</span><span class="nx">module</span><span class="p">[</span><span class="nx">depid</span><span class="p">].</span><span class="nx">deps</span><span class="p">,</span><span class="nx">id</span><span class="p">))){</span>
+            <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="3-require函数的基本实现">(3). require函数的基本实现</h3>
+
+<p>require函数的实现是相当复杂的，我们先确立程序的基本框架，再逐步深入到具体细节。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="kd">var</span> <span class="nx">require</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
+    <span class="kd">var</span> <span class="nx">dn</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="c1">//依赖的模块数</span>
+        <span class="nx">cn</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">//已经加载的依赖模块数</span>
+    <span class="nx">deps</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">el</span><span class="p">){</span>
+        <span class="c1">//依赖数量加1</span>
+        <span class="nx">dn</span><span class="o">++</span><span class="p">;</span>
+        <span class="c1">//如果模块还没开始加载，则递归的调用require加载</span>
+        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">el</span><span class="p">]){</span>
+            <span class="c1">//如果模块还没定义，则抛出异常</span>
+            <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">]){</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nx">error</span><span class="p">(</span><span class="s2">&quot;undefined module:&quot;</span><span class="o">+</span><span class="nx">name</span><span class="p">);</span>
+            <span class="p">}</span>
+            <span class="c1">//加载js  </span>
+            <span class="nx">loadJS</span><span class="p">(</span><span class="nx">el</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
+                <span class="c1">//加载完成后执行依赖检查，如果没有依赖就执行callback函数</span>
+                <span class="nx">checkDeps</span><span class="p">();</span>    
+            <span class="p">});</span>
+            <span class="c1">//标志模块已经开始加载</span>
+            <span class="nx">modules</span><span class="p">[</span><span class="nx">el</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="nx">el</span><span class="p">,</span> 
+                <span class="nx">state</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span><span class="c1">//模块的加载状态    </span>
+                <span class="nx">deps</span><span class="o">:</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">deps</span><span class="p">,</span><span class="c1">//模块的依赖关系</span>
+                <span class="nx">factory</span><span class="o">:</span> <span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
+                <span class="nx">exportds</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span><span class="c1">//本模块回调函数callback的返回结果，供依赖于该模块的其他模块使用</span>
+            <span class="p">};</span>
+            <span class="c1">//模块开始加载时，放入加载队列，以便检测加载情况</span>
+            <span class="nx">loadings</span><span class="p">.</span><span class="nx">unshift</span><span class="p">(</span><span class="nx">el</span><span class="p">);</span>                       
+            <span class="c1">//递归的调用require函数加载依赖模块</span>
+            <span class="nx">require</span><span class="p">(</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">deps</span><span class="p">,</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">callback</span><span class="p">);</span>
+            <span class="c1">//这时el模块的所有依赖都已经开始加载并存放在modules结构中了，可以检测循环依赖了</span>
+            <span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">delay</span><span class="p">();</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">state</span> <span class="o">==</span> <span class="mi">2</span><span class="p">){</span>
+            <span class="nx">cn</span><span class="o">++</span><span class="p">;</span> <span class="c1">//已经加载的依赖模块数加1</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+    <span class="c1">//所有依赖全部加载完成</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">dn</span> <span class="o">==</span> <span class="nx">cn</span><span class="p">){</span>
+        <span class="nx">fireFactory</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span><span class="nx">args</span><span class="p">,</span><span class="nx">factory</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="c1">//检测依赖情况</span>
+    <span class="nx">checkDeps</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>这就是require函数的基本逻辑框架了，代码中使用了loadJS()，checkDeps(), 
+fireFactory()等函数。其中loadJS函数我们章节“RequireJS如何异步加载js模块”中已经实现了。
+下面我们分别来看看checkDeps()和fireFactory()的实现。</p>
+
+<p>checkDeps是用来检查加载队列loadings中模块的依赖情况的，
+一个模块的依赖全部加载完成后，就调用fireFactory执行该模块的回函数。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="kd">function</span> <span class="nx">checkDeps</span><span class="p">(){</span>
+    <span class="c1">//遍历加载列表</span>
+    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="nx">loadings</span><span class="p">.</span><span class="nx">length</span><span class="p">,</span> <span class="nx">id</span><span class="p">;</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">loadings</span><span class="p">[</span><span class="o">--</span><span class="nx">i</span><span class="p">]){</span>
+        <span class="kd">var</span> <span class="nx">obj</span> <span class="o">=</span> <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">],</span> <span class="nx">deps</span> <span class="o">=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">allloaded</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>                                   
+        <span class="c1">//遍历每一个模块的加载</span>
+        <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">key</span> <span class="k">in</span> <span class="nx">deps</span><span class="p">){</span>
+            <span class="c1">//如果存在未加载完的模块，则退出内层循环</span>
+            <span class="k">if</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">key</span><span class="p">].</span><span class="nx">state</span> <span class="o">!==</span> <span class="mi">2</span><span class="p">){</span>
+                <span class="nx">allloaded</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+                <span class="k">break</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+
+        <span class="c1">//如果所有模块已经加载完成</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">allloaded</span><span class="p">){</span>
+            <span class="nx">loadings</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span> <span class="c1">//从loadings列表中移除已经加载完成的模块                           </span>
+            <span class="nx">fireFactory</span><span class="p">(</span><span class="nx">obj</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">factory</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>       
+<span class="p">}</span>
+</code></pre></div>
+<p>fireFactory的具体逻辑见如下代码，它的工作时从各个依赖模块收集返回值，然后调用factory：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
+<span class="kd">function</span> <span class="nx">fireFactory</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span><span class="nx">deps</span><span class="p">,</span><span class="nx">factory</span><span class="p">){</span>
+    <span class="c1">//遍历id模块的依赖，为factory准备参数</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">array</span> <span class="o">=</span> <span class="p">[]</span> <span class="p">,</span> <span class="nx">d</span><span class="p">;</span> <span class="nx">d</span> <span class="o">=</span> <span class="nx">deps</span><span class="p">[</span><span class="nx">i</span><span class="p">];)</span> <span class="p">{</span>
+        <span class="nx">array</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">d</span><span class="p">].</span><span class="nx">exports</span><span class="p">);</span>
+    <span class="p">};</span>
+    <span class="c1">//在context对象上调用factory方法</span>
+    <span class="kd">var</span> <span class="nx">ret</span> <span class="o">=</span> <span class="nx">factory</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="nx">context</span><span class="p">,</span><span class="nx">array</span><span class="p">);</span> 
+    <span class="c1">//记录模块的返回结果，本模块的返回结果可能作为依赖该模块的其他模块的回调函数的参数</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">ret</span> <span class="o">!=</span> <span class="k">void</span> <span class="mi">0</span><span class="p">){</span>
+        <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">ret</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="nx">ret</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>这些内容是我用将近一周的业余时间的研究心得，希望对你有帮助。当然，这些代码都只是javascript加载系统的基本框架，如果有考虑疏忽的地方，还请你指正。我计划在最近两周给出javascript模块加载系统的一个完整的可用demo。</p>
+
+<p>原则上本文是禁止转载的，但是如果你非要转载我也无法阻止。但是请各位转载时务必注明出处，尊重我的劳动成果。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-11-03T00:00:00+08:00"><a href="/javascript-async/">November 03, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
       <span class="entry-reading-time pull-right">
@@ -206,7 +481,7 @@ td, table {
 </tr>
 <tr>
 <td>script dom element</td>
-<td style="text-align: left">不脚本并行下载，阻塞其他资源</td>
+<td style="text-align: left">脚本并行下载，阻塞其他资源</td>
 <td style="text-align: left">浏览器不保证执行顺序</td>
 <td style="text-align: left">无</td>
 </tr>
@@ -413,309 +688,6 @@ td, table {
 <span class="o">&lt;</span><span class="err">/script&gt;</span>
 </code></pre></div>
 <p>夜深了，城市的灯光污染，我无法看到今夜的月。</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-10-03T00:00:00+08:00"><a href="/jquery-event-research/">October 03, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
-        
-        Reading time ~7 minutes
-      </span><!-- /.entry-reading-time -->
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/jquery-event-research/" rel="bookmark" title="jQuery事件系统研究" itemprop="url">jQuery事件系统研究</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>我们习惯理所当然的使用jQuery提供的高级事件API，jQuery帮我们处理了事件注册机制在各个浏览器间的兼容性，帮我们实现了高级的事件委托机制，大大的提高了我们的工作效率；然而我从来都不是一个知其然不知其所以然的工程师，你是否一样？如果你同样对其实现细节感兴趣，请仔细阅读本文。本文不涉及jQuery提供的自定义事件。</p>
-
-<p>我将本文组织为如下结构：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">1.使用原生API有什么问题
-2.大牛是如何解决的
-3.jQuery的实现
-</code></pre></div>
-<hr>
-
-<h3 id="1-使用原生api有什么问题">1. 使用原生API有什么问题</h3>
-
-<p>(1) 最原始的方法是直接对dom元素的onclick、onmouseover等属性赋值一个函数:</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">Element</span><span class="p">.</span><span class="nx">onclick</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-   <span class="c1">//event handler logic</span>
-<span class="p">};</span></code></pre></div>
-
-<p>然而这种方式一次只能添加一个事件处理函数，不具有通用性。</p>
-
-<p>(2) 对于符合最新W3C标准的浏览器(IE&gt;8,chrome,firefox,android)可以使用element.addEventListener，将事件类型作为一个参数传递。</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">element</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="err">‘</span><span class="nx">click</span><span class="err">’</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
-   <span class="c1">//event handler logic</span>
-<span class="p">},</span><span class="kc">false</span><span class="p">);</span></code></pre></div>
-
-<p>element.addEventListener是支持添加多个事件的，调用顺序是事件添加顺序。并且我们可以通过传递第三个参数来控制事件的触发时机是捕获阶段还是冒泡阶段，默认为冒泡阶段。然而低版本的IE(&lt;=8)不支持element.addEventListener。</p>
-
-<p>(3)对于低版本的IE(&lt;=8)相应的提供了element.attachEvent:</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">element</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span><span class="err">‘</span><span class="nx">onclick</span><span class="err">’</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
-        <span class="c1">//event handler</span>
-<span class="p">});</span></code></pre></div>
-
-<p>element.attachEvent的事件类型参数格式必须是on+事件类型，但是监听函数内部的this指针指向的却不是触发事件的element。</p>
-
-<p>由此可见，以上三种方法直接使用原生API的方法都是有问题的或者说不完美的。</p>
-
-<hr>
-
-<h3 id="2-dean-edwards大牛的实现">2.Dean Edwards大牛的实现</h3>
-
-<p>Dean Edwards在2005年写的了addevent的库，用于处理对浏览器的兼容性问题。理解了这个addEvent库，我们可以更好的理解jQuery的事件系统。</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//事件添加方法</span>
-<span class="nx">addEvent</span><span class="p">.</span><span class="nx">guid</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-<span class="kd">function</span> <span class="nx">addEvent</span><span class="p">(</span><span class="nx">element</span><span class="p">,</span> <span class="nx">type</span><span class="p">,</span> <span class="nx">handler</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// 为传入的每个事件初始化一个唯一的id</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">handler</span><span class="p">.</span><span class="nx">$$guid</span><span class="p">)</span> <span class="nx">handler</span><span class="p">.</span><span class="nx">$$guid</span> <span class="o">=</span> <span class="nx">addEvent</span><span class="p">.</span><span class="nx">guid</span><span class="o">++</span><span class="p">;</span> <span class="c1">//下文：addEvent.guid = 1;</span>
-
-    <span class="c1">// 给element维护一个events属性，初始化为一个空对象。  </span>
-    <span class="c1">// element.events的结构类似于 { &quot;click&quot;: {...}, &quot;dbclick&quot;: {...}, &quot;change&quot;: {...} }  </span>
-    <span class="c1">// 即element.events是一个对象，其中每个事件类型又会对应一个对象</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">element</span><span class="p">.</span><span class="nx">events</span><span class="p">)</span> <span class="nx">element</span><span class="p">.</span><span class="nx">events</span> <span class="o">=</span> <span class="p">{};</span>
-
-    <span class="c1">// 试图取出element.events中当前事件类型type对应的对象，赋值给handlers</span>
-    <span class="kd">var</span> <span class="nx">handlers</span> <span class="o">=</span> <span class="nx">element</span><span class="p">.</span><span class="nx">events</span><span class="p">[</span><span class="nx">type</span><span class="p">];</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">handlers</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">handlers</span> <span class="o">=</span> <span class="nx">element</span><span class="p">.</span><span class="nx">events</span><span class="p">[</span><span class="nx">type</span><span class="p">]</span> <span class="o">=</span> <span class="p">{};</span>
-        <span class="c1">//如果handlers是undefined，则初始化为空对象</span>
-        <span class="c1">// 如果这个element已经有了一个方法，例如已经有了onclick方法</span>
-        <span class="c1">// 就把element的onclick方法赋值给handlers的0元素，此时handlers的结构就是：</span>
-        <span class="c1">// { 0: function(e){...} }</span>
-        <span class="c1">// 此时element.events的结构就是： { &quot;click&quot;: { 0: function(e){...} },  /*省略其他事件类型*/ } </span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">element</span><span class="p">[</span><span class="s2">&quot;on&quot;</span> <span class="o">+</span> <span class="nx">type</span><span class="p">])</span> <span class="p">{</span>
-            <span class="nx">handlers</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nx">element</span><span class="p">[</span><span class="s2">&quot;on&quot;</span> <span class="o">+</span> <span class="nx">type</span><span class="p">];</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="c1">// 把当前的事件handler存放到handlers中，handler.$$guid = addEvent.guid++; addEvent.guid = 1; 肯定是从1开始累加的</span>
-    <span class="c1">// 因此，这是handlers的结构就是 { 0: function(e){...}, 1: function(){}, 2: function(){} 等等... }</span>
-    <span class="nx">handlers</span><span class="p">[</span><span class="nx">handler</span><span class="p">.</span><span class="nx">$$guid</span><span class="p">]</span> <span class="o">=</span> <span class="nx">handler</span><span class="p">;</span>
-    <span class="c1">// 下文定义了一个handleEvent(event)函数</span>
-    <span class="c1">// 将这个函数，绑定到element的type事件上。  说明：在element进行click时，将会触发handleEvent函数，handleEvent函数将会查找element.events，并调用相应的函数。可以把handleEvent称为“主监听函数”</span>
-    <span class="nx">element</span><span class="p">[</span><span class="s2">&quot;on&quot;</span> <span class="o">+</span> <span class="nx">type</span><span class="p">]</span> <span class="o">=</span> <span class="nx">handleEvent</span><span class="p">;</span>
-<span class="p">};</span>
-
-
-<span class="kd">function</span> <span class="nx">handleEvent</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// 在IE中，event需要通过window.event获取</span>
-    <span class="nx">event</span> <span class="o">=</span> <span class="nx">event</span> <span class="o">||</span> <span class="nb">window</span><span class="p">.</span><span class="nx">event</span><span class="p">;</span>
-    <span class="c1">// 根据事件类型在events中获取事件集合（events的数据结构，参考addEvent方法的注释）</span>
-    <span class="kd">var</span> <span class="nx">handlers</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">events</span><span class="p">[</span><span class="nx">event</span><span class="p">.</span><span class="nx">type</span><span class="p">];</span>
-    <span class="c1">// 注意！注意！  这里的this不是window，而是element对象，因为上文 element[&quot;on&quot; + type] = handleEvent;</span>
-    <span class="c1">// 所以在程序执行时，handleEvent已经作为了element的一个属性，它的作用域是element，即this === element</span>
-
-    <span class="c1">// 循环执行handlers集合里的所有函数    另外，这里执行事件时传递的event，无论在什么浏览器下，都是正确的</span>
-    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="k">in</span> <span class="nx">handlers</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//此处为何要把handlers[i]赋值给this.$$handleEvent，然后在执行呢？</span>
-        <span class="k">this</span><span class="p">.</span><span class="nx">$$handleEvent</span> <span class="o">=</span> <span class="nx">handlers</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
-        <span class="k">this</span><span class="p">.</span><span class="nx">$$handleEvent</span><span class="p">(</span><span class="nx">event</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">};</span></code></pre></div>
-
-<p>Dean Edwards的这段代码还是比较好理解的，他首先将事件组织成一个如下结构，即每一种事件类型维持一个绑定事件处理函数列表，当某一类事件触发时，通过一个wrapper函数(通过onEvent API绑定的handleEvent)轮询对应列表并依次处理。事件列表结构组织如下：</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">element</span><span class="o">:</span> <span class="p">{</span>
-            <span class="nx">onclick</span><span class="o">:</span> <span class="nx">handleEvent</span><span class="p">(</span><span class="nx">event</span><span class="p">),</span>   <span class="cm">/*下文定义的函数*/</span>
-            <span class="nx">events</span><span class="o">:</span> <span class="p">{</span>
-                <span class="nx">click</span><span class="o">:</span><span class="p">{</span>
-                    <span class="mi">0</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){...},</span>    <span class="cm">/*element已有的click事件*/</span>
-                    <span class="mi">1</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){...},</span>
-                    <span class="mi">2</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){...}</span>
-                    <span class="cm">/*.......其他事件......*/</span>
-                <span class="p">},</span>
-                <span class="nx">change</span><span class="o">:</span><span class="p">{</span>
-                    <span class="cm">/*省略*/</span>
-                <span class="p">},</span>
-                <span class="nx">dbclick</span><span class="o">:</span><span class="p">{</span>
-                    <span class="cm">/*省略*/</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
-
-<p>如果理解了以上代码，那么jQuery的事件处理系统就容易懂了。</p>
-
-<hr>
-
-<h3 id="3-jquery的实现">3. jQuery的实现</h3>
-
-<p>其实用Dean Edwards的addEvent库就可以很好的实现了事件处理程序的健壮性：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">(1).跨浏览器兼容性
-(2).this变量的正确指向
-(3).支持添加多个事件处理函数
-</code></pre></div>
-<p>但是jQuery的真正强大之处在于它对事件委托的实现，这也是我们接下来分析的要点，关于事件委托的介绍请参考我的<a href="http://foio.github.io/javascript-delegate/">另一篇文章</a>。</p>
-
-<p>对于事件绑定，jQuery提供了一个万能函数on，<code>$(selector).on(event,childSelector,data,function,map)</code>，基本上jQuery的各种事件函数变体都是对on函数的封装：
-比如：<code>$(selector).click()，</code></p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">jQuery</span><span class="p">.</span><span class="nx">fn</span><span class="p">[</span> <span class="s1">&#39;click&#39;</span> <span class="p">]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">fn</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">arguments</span><span class="p">.</span><span class="nx">length</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">?</span>
-         <span class="k">this</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span> <span class="nx">name</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">fn</span> <span class="p">)</span> <span class="o">:</span>
-         <span class="k">this</span><span class="p">.</span><span class="nx">trigger</span><span class="p">(</span> <span class="nx">name</span> <span class="p">);</span>
-<span class="p">};</span></code></pre></div>
-
-<p><code>$(selector).bind ()</code></p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">bind</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">types</span><span class="p">,</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">fn</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span> <span class="nx">types</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">fn</span> <span class="p">)</span>
-<span class="p">}</span></code></pre></div>
-
-<p>还有<code>$(selector).live()</code>，<code>$(selector).delegate()</code>，具体各个api的区别请参考jQuery文档。</p>
-
-<h4 id="1-解析on函数">(1) 解析on函数</h4>
-
-<p>on函数内部调用了<code>jQuery.event.add</code>的add函数。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">$(selector).on(event,childSelector,data,function,map)
-                ||
-               \||/
-                \/
-jQuery.event.add( this, types, fn, data, selector );
-</code></pre></div>
-<p>我们来分析以下add函数的代码：</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">add</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">elem</span><span class="p">,</span> <span class="nx">types</span><span class="p">,</span> <span class="nx">handler</span><span class="p">,</span> <span class="nx">data</span><span class="p">,</span> <span class="nx">selector</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="c1">//从jQuery私有缓存中获取该dom节点对应的事件元数据，这里需要简单了解以下jQuery的数据缓存系统，我们常常用$(selector).data()来从缓存中获取数据，相应的jQuery也有自己的私有缓存变量</span>
-    <span class="nx">elemData</span> <span class="o">=</span> <span class="nx">data_priv</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span> <span class="nx">elem</span> <span class="p">);</span>
-    <span class="c1">//该dom节点没有绑定过events类型的事件，则建立一个该类型事件的对象</span>
-    <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="p">(</span><span class="nx">events</span> <span class="o">=</span> <span class="nx">elemData</span><span class="p">.</span><span class="nx">events</span><span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
-       <span class="nx">events</span> <span class="o">=</span> <span class="nx">elemData</span><span class="p">.</span><span class="nx">events</span> <span class="o">=</span> <span class="p">{};</span>
-   <span class="p">}</span>
-   <span class="c1">//该节点没有绑定过事件，则绑定一个事件处理wrapper函数</span>
-   <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="p">(</span><span class="nx">eventHandle</span> <span class="o">=</span> <span class="nx">elemData</span><span class="p">.</span><span class="nx">handle</span><span class="p">)</span> <span class="p">)</span> <span class="p">{</span>
-       <span class="c1">//事件处理wrapper函数其实就简单调用了jQuery.event.dispatch.apply</span>
-        <span class="nx">eventHandle</span> <span class="o">=</span> <span class="nx">elemData</span><span class="p">.</span><span class="nx">handle</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">e</span> <span class="p">)</span> <span class="p">{</span>
-            <span class="nx">jQuery</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">dispatch</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span> <span class="nx">elem</span><span class="p">,</span> <span class="nx">arguments</span> <span class="p">)</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="c1">//当参数中有多个选择器描述符时，循环遍历各个选择器，添加到对应的事件处理列表中</span>
-    <span class="nx">types</span> <span class="o">=</span> <span class="p">(</span> <span class="nx">types</span> <span class="o">||</span> <span class="s2">&quot;&quot;</span> <span class="p">).</span><span class="nx">match</span><span class="p">(</span> <span class="nx">rnotwhite</span> <span class="p">)</span> <span class="o">||</span> <span class="p">[</span> <span class="s2">&quot;&quot;</span> <span class="p">];</span>
-    <span class="nx">t</span> <span class="o">=</span> <span class="nx">types</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-    <span class="k">while</span> <span class="p">(</span> <span class="nx">t</span><span class="o">--</span> <span class="p">)</span> <span class="p">{</span>
-           <span class="c1">//拼装事件处理元数据，dispatch就是通过这个元数据调用相应的handler函数的</span>
-            <span class="nx">handleObj</span> <span class="o">=</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
-                <span class="nx">type</span><span class="o">:</span> <span class="nx">type</span><span class="p">,</span>
-                <span class="nx">origType</span><span class="o">:</span> <span class="nx">origType</span><span class="p">,</span>
-                <span class="nx">data</span><span class="o">:</span> <span class="nx">data</span><span class="p">,</span>
-                <span class="nx">handler</span><span class="o">:</span> <span class="nx">handler</span><span class="p">,</span>
-                <span class="nx">guid</span><span class="o">:</span> <span class="nx">handler</span><span class="p">.</span><span class="nx">guid</span><span class="p">,</span>
-                <span class="nx">selector</span><span class="o">:</span> <span class="nx">selector</span><span class="p">,</span>
-                <span class="nx">needsContext</span><span class="o">:</span> <span class="nx">selector</span> <span class="o">&amp;&amp;</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">expr</span><span class="p">.</span><span class="nx">match</span><span class="p">.</span><span class="nx">needsContext</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span> <span class="nx">selector</span> <span class="p">),</span>
-                <span class="nx">namespace</span><span class="o">:</span> <span class="nx">namespaces</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
-            <span class="p">},</span> <span class="nx">handleObjIn</span> <span class="p">);</span>
-        <span class="c1">//重点：如果selector参数不为空则表示事件委托，将事件委托添加到列表的前面，以保证优先处理。jquery事件处理的顺序时先委托事件其次正常事件</span>
-        <span class="k">if</span> <span class="p">(</span> <span class="nx">selector</span> <span class="p">)</span> <span class="p">{</span>
-            <span class="nx">handlers</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span> <span class="nx">handlers</span><span class="p">.</span><span class="nx">delegateCount</span><span class="o">++</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">handleObj</span> <span class="p">);</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-            <span class="nx">handlers</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span> <span class="nx">handleObj</span> <span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
-
-<p>on函数主要建立事件元数据，并将元数据放到对应的列表里。最终生成如下事件数据结构：</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">jQuery</span><span class="err">事件的数据结构：</span>
-<span class="nx">elemData</span><span class="err">：</span><span class="p">{</span>
-      <span class="nx">handle</span><span class="err">：</span><span class="kd">function</span><span class="p">(){</span>  <span class="c1">//事件处理包装函数  }</span>
-      <span class="nx">events</span><span class="o">:</span>  <span class="p">{</span>
-            <span class="nx">click</span><span class="o">:</span><span class="p">{</span>
-                <span class="nx">delegateCount</span><span class="o">:</span> <span class="nx">n</span><span class="p">,</span> <span class="c1">//需要委托的事件数，需要委托的事件放在数据的最前面，通过delegateCount来标记</span>
-                <span class="p">[</span> <span class="c1">//事件元数据，dispatch函数就是通过遍历这个数据结构来依次调用事件处理函数的</span>
-                    <span class="p">{</span>
-                      <span class="nx">type</span><span class="o">:</span> <span class="nx">type</span><span class="p">,</span>
-                      <span class="nx">origType</span><span class="o">:</span> <span class="nx">origType</span><span class="p">,</span>
-                      <span class="nx">data</span><span class="o">:</span> <span class="nx">data</span><span class="p">,</span>
-                      <span class="nx">handler</span><span class="o">:</span> <span class="nx">handler</span><span class="p">,</span>
-                      <span class="nx">guid</span><span class="o">:</span> <span class="nx">handler</span><span class="p">.</span><span class="nx">guid</span><span class="p">,</span>
-                      <span class="nx">selector</span><span class="o">:</span> <span class="nx">selector</span><span class="p">,</span>
-                    <span class="p">}</span>
-                    <span class="p">......</span>
-                    <span class="p">{}</span>
-                <span class="p">]</span>
-              <span class="p">},</span>
-            <span class="nx">mouseon</span><span class="o">:</span><span class="p">[],</span>
-            <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
-
-<p>我们也看到了，on函数通过绑定一个wrapper函数来调用真实的事件处理函数，类似大牛Dean Edwards的实现。而wrapper函数中调用了dispatch函数，下面我们分析一下dispatch。</p>
-
-<h4 id="2-解析dispatch函数">(2) 解析dispatch函数</h4>
-
-<p>dispatch函数首先通过handlers函数对事件元数据队列进行预处理：委托元数据生成以及事件最终排序</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">jQuery.event.dispatch.apply( elem, arguments )
-                ||
-               \||/
-                \/
-jQuery.event.handlers.call( this, event, handlers )
-</code></pre></div>
-<p>我们先看一下handlers函数的详细解析，handler函数主要是实现了委托的功能。首先从事件触发节点开始到事件委托节点结束，模拟冒泡过程，在冒泡的过程中遍历elemData中的委托事件元数据，选择匹配的节点，生成handlerQueue以供dispatch使用。其中handlerQueue的结果类似：<code>[{elem: node ..., handlers: this},...,{elem: node ..., handlers: list}]</code>。</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">handlers</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">event</span><span class="p">,</span> <span class="nx">handlers</span> <span class="p">)</span> <span class="p">{</span>
-  <span class="c1">//触发事件的节点</span>
-  <span class="nx">cur</span> <span class="o">=</span> <span class="nx">event</span><span class="p">.</span><span class="nx">target</span><span class="p">;</span>
-  <span class="c1">//事件列表中委托事件的个数，目前事件列表中存放css选择器以及对应的事件处理函数</span>
-  <span class="nx">delegateCount</span> <span class="o">=</span> <span class="nx">handlers</span><span class="p">.</span><span class="nx">delegateCount</span><span class="p">,</span>
-  <span class="c1">//针对每一个触发事件，模拟冒泡过程，匹配到要代理节点，并放到匹配数组中，this指向委托节点，而cur指向事件触发节点，从事件触发节点到委托节点模拟冒泡过程，查找匹配需要委托选择器的节点。</span>
-  <span class="err">/×</span>
-   <span class="err">×</span>  <span class="err">注意：一个节点可能匹配多个选择器，相应的也会被触发多次，而模拟冒泡过程也保证了离</span><span class="nx">event</span><span class="p">.</span><span class="nx">target</span><span class="err">比较进的节点放在队列的最前面</span>
-   <span class="err">×</span><span class="o">/</span>
-    <span class="k">for</span> <span class="p">(</span> <span class="p">;</span> <span class="nx">cur</span> <span class="o">!==</span> <span class="k">this</span><span class="p">;</span> <span class="nx">cur</span> <span class="o">=</span> <span class="nx">cur</span><span class="p">.</span><span class="nx">parentNode</span> <span class="o">||</span> <span class="k">this</span> <span class="p">){</span>
-         <span class="k">for</span> <span class="p">(</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">delegateCount</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span> <span class="p">){</span>
-                <span class="c1">//在冒泡过程中，匹配节点</span>
-                <span class="nx">sel</span> <span class="o">=</span> <span class="nx">handleObj</span><span class="p">.</span><span class="nx">selector</span> <span class="o">+</span> <span class="s2">&quot; &quot;</span><span class="p">;</span>
-                <span class="nx">matches</span><span class="p">[</span> <span class="nx">sel</span> <span class="p">]</span> <span class="o">=</span> <span class="nx">handleObj</span><span class="p">.</span><span class="nx">needsContext</span> <span class="o">?</span>
-                <span class="nx">jQuery</span><span class="p">(</span> <span class="nx">sel</span><span class="p">,</span> <span class="k">this</span> <span class="p">).</span><span class="nx">index</span><span class="p">(</span> <span class="nx">cur</span> <span class="p">)</span> <span class="o">&gt;=</span> <span class="mi">0</span> <span class="o">:</span>
-                <span class="nx">jQuery</span><span class="p">.</span><span class="nx">find</span><span class="p">(</span> <span class="nx">sel</span><span class="p">,</span> <span class="k">this</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="p">[</span> <span class="nx">cur</span> <span class="p">]</span> <span class="p">).</span><span class="nx">length</span><span class="p">;</span>
-                <span class="c1">//将匹配到的节点压入匹配数组</span>
-                <span class="nx">matches</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span> <span class="nx">handleObj</span> <span class="p">);</span>
-         <span class="p">}</span>
-         <span class="c1">//对于代理节点</span>
-         <span class="k">if</span> <span class="p">(</span> <span class="nx">matches</span><span class="p">.</span><span class="nx">length</span> <span class="p">)</span> <span class="p">{</span>
-           <span class="c1">//将匹配到的节点和对应的事件处理元数据列表放到handlerQueue队列中，以供dispatch使用，注意这里elem为匹配到的节点（要委托的节点），这是为了保证调用委托handler函数的内部this是正确的。</span>
-            <span class="nx">handlerQueue</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span> <span class="nx">elem</span><span class="o">:</span> <span class="nx">cur</span><span class="p">,</span> <span class="nx">handlers</span><span class="o">:</span> <span class="nx">matches</span> <span class="p">});</span>
-         <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="c1">// 如果还有不需要代理的事件，则直接放入队列尾部</span>
-    <span class="k">if</span> <span class="p">(</span> <span class="nx">delegateCount</span> <span class="o">&lt;</span> <span class="nx">handlers</span><span class="p">.</span><span class="nx">length</span> <span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//注意这里的elem为this(代理节点)，这也保证了非委托handler内部this的正确指向</span>
-        <span class="nx">handlerQueue</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span> <span class="nx">elem</span><span class="o">:</span> <span class="k">this</span><span class="p">,</span> <span class="nx">handlers</span><span class="o">:</span> <span class="nx">handlers</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span> <span class="nx">delegateCount</span> <span class="p">)</span> <span class="p">});</span>
-    <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
-
-<p>理解了handlers函数的实现，dispatch函数的逻辑就简单了:</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">dispatch</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span> <span class="nx">event</span> <span class="p">){</span>
-        <span class="c1">//获取handlerQueue队列</span>
-        <span class="nx">handlerQueue</span> <span class="o">=</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">event</span><span class="p">.</span><span class="nx">handlers</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span> <span class="k">this</span><span class="p">,</span> <span class="nx">event</span><span class="p">,</span> <span class="nx">handlers</span> <span class="p">);</span>
-        <span class="c1">//对每一个需要触发的节点，执行相应的处理函数</span>
-        <span class="k">while</span> <span class="p">(</span> <span class="p">(</span><span class="nx">matched</span> <span class="o">=</span> <span class="nx">handlerQueue</span><span class="p">[</span> <span class="nx">i</span><span class="o">++</span> <span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">event</span><span class="p">.</span><span class="nx">isPropagationStopped</span><span class="p">()</span> <span class="p">)</span> <span class="p">{</span>
-               <span class="k">while</span> <span class="p">(</span> <span class="p">(</span><span class="nx">handleObj</span> <span class="o">=</span> <span class="nx">matched</span><span class="p">.</span><span class="nx">handlers</span><span class="p">[</span> <span class="nx">j</span><span class="o">++</span> <span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">event</span><span class="p">.</span><span class="nx">isImmediatePropagationStopped</span><span class="p">()</span> <span class="p">)</span> <span class="p">{</span>
-                    <span class="c1">//调用事件处理函数，这时已经保证了委托函数先调用的原则，同时保证了this指向的正确性</span>
-                    <span class="nx">handleObj</span><span class="p">.</span><span class="nx">handler</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span> <span class="nx">matched</span><span class="p">.</span><span class="nx">elem</span><span class="p">,</span> <span class="nx">args</span> <span class="p">);</span>
-              <span class="p">}</span>
-        <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
-
-<hr>
-
-<p>没错，现在我们基本分析完了jQuery事件系统的实现。可以说jQuery的实现参考了Dean Edwards的代码，同时添加了事件委托的实现。</p>
-
-<p>本文我需要参考了如下博客
-<a href="http://www.cnblogs.com/lidabo/archive/2012/04/01/2429128.html">http://www.cnblogs.com/lidabo/archive/2012/04/01/2429128.html</a>
-<a href="http://www.cnblogs.com/wangfupeng1988/p/3659470.html">http://www.cnblogs.com/wangfupeng1988/p/3659470.html</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->

@@ -1,0 +1,25 @@
+digraph G {
+	require[shape = polygon, sides = 4, skew= 0.4]
+ 	checkDeps[shape=box]
+	loadJS[shape=box]
+	fireFactory[shape=box]
+	modules[color=lightblue,style = filled]
+	factorys[color=lightblue,style = filled]
+   	require -> loadJS; 
+   	require -> checkDeps; 
+   	require -> fireFactory; 
+   	require -> modules; 
+   	require -> loadings; 
+   	require -> factorys; 
+   	checkDeps -> fireFactory;
+   	checkDeps -> modules;
+   	checkDeps -> loadings;
+   	fireFactory -> modules;
+
+
+   	define[shape = polygon, sides = 4, skew= 0.4]
+   	checkCycle[shape=box]
+   	define -> factorys;
+   	define -> checkCycle;
+   	checkCycle -> modules;
+}

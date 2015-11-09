@@ -120,6 +120,10 @@
 
     
     <url>
+        <loc>/requireJS/</loc>
+    </url>
+    
+    <url>
         <loc>/javascript-async/</loc>
     </url>
     

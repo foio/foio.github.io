@@ -119,6 +119,63 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-03T00:00:00+08:00"><a href="/scrum/">July 03, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+      <span class="entry-reading-time pull-right">
+        <i class="fa fa-clock-o"></i>
+        
+        Reading time ~1 minute
+      </span><!-- /.entry-reading-time -->
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/scrum/" rel="bookmark" title="scrum,增量的价值交互" itemprop="url">scrum,增量的价值交互</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <blockquote>
+<p>敏捷软件开发又称敏捷开发，是一种从1990年代开始逐渐引起广泛关注的一些新型软件开发方 法，是一种应对快速变化的需求的一种软件开发能力。它们的具体名称、理念、过程、术语都不尽相同，相对于“非敏捷”，更强调程序员团队与业务专家之间的紧密协作、面对面的沟通（认为比书面的文档更有效）、频繁交付新的软件版本、紧凑而自我组织型的团队、能够很好地适应需求变化的代码编写和团队组织方法，也 更注重软件开发中人的作用。</p>
+</blockquote>
+
+<p>下面分别分析敏捷开发与传统的瀑布开发方式的不同。</p>
+
+<h4 id="1-瀑布式开发流程：">1.瀑布式开发流程：</h4>
+
+<figure>
+    <img src="/images/waterfull.png"/>
+    <figcaption>传统的瀑布式开发流程</figcaption>
+</figure>
+
+<p>瀑布式开发流程特征如下：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">1.基于阶段(文档)
+前一个阶段的输出就是下一个阶段的输入，文档是个阶段衔接的唯一信息。管理人员喜欢瀑布模型的原因是把文档理解为开发的速度，可以方便地界定不同阶段的里程碑，由此量化团队工作效率。
+2.基于一次性需求和前期设计
+没有迭代与反馈。瀑布模型对反馈没有涉及，所以对变化的客户需求非常不容易适应。瀑布就意味着没有回头路。 
+</code></pre></div>
+<p>近几年各大公司开始刮起了敏捷风。敏捷软件开发是一个开发软件的管理新模式，用来替代以文件驱动开发的瀑布开发模式。
+敏捷开发宣言：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">个体的交互    高于   流程与工具
+工作的软件    高于   详尽的文档
+客户的合作    高于   合同谈判
+响应变化      高于   遵循计划
+</code></pre></div>
+<p>敏捷开发要素:</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">三个角色：Scrum master(SM),Product Owner(PM),Team(RD,QA,FE)
+四个仪式：迭代计划会，每日站立会，Show Case，迭代回顾会
+三个工作：产品backlog，迭代backlog，燃尽图
+</code></pre></div>
+<p>从一张图基本可以理解scrum流程。
+<figure>
+    <img src="/images/scrum.png"/>
+    <figcaption>scrum示意图</figcaption>
+</figure></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-06-15T00:00:00+08:00"><a href="/nginx-phpfpm/">June 15, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
       <span class="entry-reading-time pull-right">
@@ -156,35 +213,6 @@ error_log /var/log/php/php_errors.log
 <div class="highlight"><pre><code class="language-text" data-lang="text">ps aux    |    grep php-fpm
 </code></pre></div>
 <p>比如我的系统，php-fpm master进程的owner为root，php-fpm worer进程的owner为www-data，对我而言只需要目录/var/log/php/的owner和group为www-data即可。</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-06-11T00:00:00+08:00"><a href="/RESTful/">June 11, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-      <span class="entry-reading-time pull-right">
-        <i class="fa fa-clock-o"></i>
-        
-        Reading time ~1 minute
-      </span><!-- /.entry-reading-time -->
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/RESTful/" rel="bookmark" title="RESTful" itemprop="url">RESTful</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p><a href="http://en.wikipedia.org/wiki/Roy_Fielding">Roy Thomas Fielding</a> 在他的博士论文 《<a href="http://en.wikipedia.org/wiki/Roy_Fielding">Architectural Styles and the Design of Network-based Software Architectures</a>》提出了REST(<a href="http://www.ics.uci.edu/%7Efielding/pubs/dissertation/rest_arch_style.htm">Representational State Transfer</a>)概念。</p>
-
-<p>在网站即软件的时代，网站开发完全可以采用软件开发的模式。但是传统上，软件和网络是两个不同的领域，很少有交集；<a href="http://en.wikipedia.org/wiki/Roy_Fielding">Roy Thomas Fielding</a> 在他的博士论文中讨论了一种现代化的web设计原则，用于指导网站软件的设计。该原则有一下特点:</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">（1）每一个URI代表一种资源；
-（2）客户端和服务器之间，传递这种资源的某种表现层(xml,json,txt等)；
-（3）客户端通过四个HTTP动词(GET,POST,PUT,DELETE)，对服务器端资源进行操作，实现&quot;表现层状态转化&quot;。
-</code></pre></div>
-<p>如果一个架构符合REST原则，就称它为RESTful架构。</p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
