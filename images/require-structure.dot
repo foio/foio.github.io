@@ -1,25 +1,47 @@
 digraph G {
 	require[shape = polygon, sides = 4, skew= 0.4]
- 	checkDeps[shape=box]
+   	define[shape = polygon, sides = 4, skew= 0.4]
+ 	checkDeps[shape=box;color=lightblue,style = filled]
 	loadJS[shape=box]
 	fireFactory[shape=box]
-	modules[color=lightblue,style = filled]
-	factorys[color=lightblue,style = filled]
-   	require -> loadJS; 
-   	require -> checkDeps; 
-   	require -> fireFactory; 
-   	require -> modules; 
-   	require -> loadings; 
-   	require -> factorys; 
-   	checkDeps -> fireFactory;
-   	checkDeps -> modules;
-   	checkDeps -> loadings;
-   	fireFactory -> modules;
+	getScriptId[shape=box]
+	getCurrentJs[shape=box]
+    loadDepsModule[shape=box;color=lightblue,style = filled]
+   	checkCycle[shape=box;color=lightblue,style = filled]
+    init[shape=box]
+
+    define -> modules;
+    define -> getScriptId;
+    define -> getCurrentJs;
+
+    require -> modules;
+    require -> loadings;
+   	require -> getCurrentJs;
+   	require -> getScriptId;
+   	require -> loadDepsModule;
+   	
+    
+    loadDepsModule -> modules;
+    loadDepsModule -> loadJS;
+    loadDepsModule -> checkDeps;
+    loadDepsModule -> loadDepsModule;
 
 
-   	define[shape = polygon, sides = 4, skew= 0.4]
-   	checkCycle[shape=box]
-   	define -> factorys;
-   	define -> checkCycle;
-   	checkCycle -> modules;
+    getScriptId -> init; 
+
+    init->getCurrentJs; 
+    init->loadJS;
+
+
+    checkCycle -> modules;
+    checkCycle -> checkCycle;
+
+
+    checkDeps -> modules;
+    checkDeps -> loadings;
+    checkDeps -> checkCycle;
+    checkDeps -> fireFactory;
+    checkDeps -> checkDeps;
+
+    fireFactory -> modules;
 }

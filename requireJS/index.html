@@ -140,7 +140,7 @@ rel="stylesheet" type="text/css" -->
     <span class="nx">b</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>
 <span class="p">});</span>
 </code></pre></div>
-<p>本篇文章我们分析一下RequreJS的结构。没有任何准备就看源代码往往是一头雾水，我也并不打算在本文详解RequireJS的源代码，源代码处理很多细节问题，反而会影响我们从宏观上理解RequreJS的机构。你可以先了解几种在网页中异步加载javascript的方案（可以参考<a href="http://foio.github.io/javascript-async/">我的另一篇博客</a>），然后思考还会碰到什么问题。就我而言，我提出如下两个基本问题：</p>
+<p>本篇文章我们实现一个自己的requreJS,我并不打算在源码中处理浏览器兼容性等细节，过于关注细节，反而会影响我们从宏观上理解代码机构。本文的目的是实现一个基本可用的javascript模块加载系统，带领读者理解要实现一个模块加载系统需要的知识结构。了解几种在网页中异步加载javascript的方案（可以参考<a href="http://foio.github.io/javascript-async/">我的另一篇博客</a>），对理解本文有很大帮助。我提出如下两个基本问题：</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">(1).RequireJS是如何异步加载js模块
 (2).RequireJS是如何处理模块间的依赖关系的(包括如何处理循环依赖)
 </code></pre></div>
@@ -150,7 +150,7 @@ rel="stylesheet" type="text/css" -->
 <img src="/images/require-structure.png" alt="require structure">
 </figure>
 
-<p>从图中可以看出，模块加载系统的require和define的实现，主要借助于4个子函数(矩形表示)和3个基本数据结构(椭圆形表示)，其中蓝色椭圆为require和define之间共同使用的数据结构。下文主要围绕着这个结构图展开，阅读过程中请随时参阅此图。</p>
+<p>从图中可以看出，模块加载系统的require和define的实现，主要借助于几个子函数(矩形表示)和两个基本数据结构(椭圆形表示)，其中蓝色矩形表示存在递归调用。下文主要围绕着这个结构图展开，阅读过程中请随时参阅此图。</p>
 
 <hr>
 
@@ -158,21 +158,25 @@ rel="stylesheet" type="text/css" -->
 
 <p>如果你看过<a href="http://foio.github.io/javascript-async/">这篇专门讲解如何异步加载javascript模块的文章</a>，就会发现RequireJS用的就是其中的<code>script dom element</code>的方法。下面是具体实现的伪代码。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="kd">function</span> <span class="nx">loadJS</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">callback</span><span class="p">){</span>
+<span class="c1">//foioRequireJS的js加载函数 </span>
+<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadJS</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">callback</span><span class="p">){</span>
     <span class="c1">//创建script节点</span>
     <span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;script&quot;</span><span class="p">);</span>
-    <span class="c1">//监听脚本加载完成事件，处理浏览器的兼容性，针对符合W3C标准的浏览器和不符合W3C标准的浏览器分别监听不同的事件</span>
-    <span class="nx">node</span><span class="p">.[</span><span class="nx">W3C</span><span class="o">?</span><span class="s2">&quot;onload&quot;</span><span class="o">:</span><span class="s2">&quot;onreadystatechange&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="nx">node</span><span class="p">.</span><span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="p">;</span>
+    <span class="c1">//监听脚本加载完成事件，针对符合W3C标准的浏览器监听onload事件即可</span>
+    <span class="nx">node</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
         <span class="k">if</span><span class="p">(</span><span class="nx">callback</span><span class="p">){</span>
             <span class="nx">callback</span><span class="p">();</span>
         <span class="p">}</span>
     <span class="p">};</span>
-
     <span class="c1">//监听onerror事件处理javascript加载失败的情况</span>
-    <span class="nx">node</span><span class="p">.</span><span class="nx">onerror</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){}</span>
-
+    <span class="nx">node</span><span class="p">.</span><span class="nx">onerror</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="k">throw</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">&#39;load script:&#39;</span><span class="o">+</span><span class="nx">url</span><span class="o">+</span><span class="s2">&quot; failed!&quot;</span><span class="p">);</span> 
+    <span class="p">}</span>
     <span class="nx">node</span><span class="p">.</span><span class="nx">src</span><span class="o">=</span><span class="nx">url</span><span class="p">;</span>
-    <span class="nx">head</span><span class="p">.</span><span class="nx">insertBefore</span><span class="p">(</span><span class="nx">node</span><span class="p">,</span><span class="nx">head</span><span class="p">.</span><span class="nx">firstChild</span><span class="p">);</span>
+    <span class="c1">//插入到head中</span>
+    <span class="kd">var</span> <span class="nx">head</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="s2">&quot;head&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">];</span>
+    <span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
 <span class="p">}</span>
 </code></pre></div>
 <h2 id="2-requirejs如何按顺序加载模块">2. RequireJS如何按顺序加载模块</h2>
@@ -202,20 +206,7 @@ rel="stylesheet" type="text/css" -->
 
 <p>为了组织RquireJS需要哪些数据结构呢？看起来无从下手，我们可以对问题进行拆分。</p>
 
-<h4 id="define函数定义的模块放在哪里？"><1>.define函数定义的模块放在哪里？</h4>
-
-<p>每个define函数定义的模块都放在factorys里面，留待require函数执行时使用</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="nx">factorys</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="p">...</span>
-    <span class="nx">id</span> <span class="o">:</span> <span class="p">{</span>
-        <span class="nx">deps</span><span class="o">:</span> <span class="p">[],</span><span class="c1">//模块的依赖  </span>
-        <span class="nx">factory</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
-    <span class="p">}</span>
-    <span class="p">...</span>
-<span class="p">};</span>
-</code></pre></div>
-<h4 id="开始加载的模块放在哪里，如何标记模块的加载状态？"><2>.开始加载的模块放在哪里，如何标记模块的加载状态？</h4>
+<h4 id="模块放在哪里，如何标记模块的加载状态？"><1>.模块放在哪里，如何标记模块的加载状态？</h4>
 
 <p>moudules存储了所有已经开始加载的模块，包括加载状态信息、依赖模块信息、模块的回调函数、以及回调函数callback返回的结果。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
@@ -230,7 +221,7 @@ rel="stylesheet" type="text/css" -->
     <span class="p">...</span> 
 <span class="p">}</span>
 </code></pre></div>
-<h4 id="正在加载但是还没有加载完成的模块id列表"><3>.正在加载但是还没有加载完成的模块id列表</h4>
+<h4 id="正在加载但是还没有加载完成的模块id列表"><2>.正在加载但是还没有加载完成的模块id列表</h4>
 
 <p>每个脚本加载完成事件onload触发时，都需要检查loading队列，确认哪些模块的依赖已经加载完成，是否可以执行</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
@@ -245,104 +236,91 @@ rel="stylesheet" type="text/css" -->
 <p>再次强调，本文的目的是理解结构，而不是具体实现，因此代码中不会考虑浏览器兼容性，也不会考虑逻辑的完整性。define函数主要目的
 是将模块注册到factorys列表中，方便require可以找到。同时必须处理循环依赖问题。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="nx">req</span><span class="p">.</span><span class="nx">define</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">deps</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
+<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">define</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
     <span class="c1">//根据模块名获取模块的url</span>
-    <span class="kd">var</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">getScriptId</span><span class="p">(</span><span class="nx">name</span><span class="p">);</span>
-    <span class="c1">//如果模块没有注册，就将模块加入factorys列表</span>
-    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">id</span><span class="p">]){</span>
-        <span class="nx">factorys</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="nx">deps</span><span class="o">:</span> <span class="nx">deps</span><span class="p">,</span>
-            <span class="nx">callback</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span> 
-            <span class="c1">//延迟执行函数，在加载模块时调用，用于检测循环依赖问题</span>
-            <span class="nx">delay</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">){</span>
-                <span class="c1">//检测到循环时抛出异常</span>
-                <span class="k">if</span><span class="p">(</span><span class="nx">checkCycle</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">deps</span><span class="p">,</span><span class="nx">id</span><span class="p">)){</span>
-                    <span class="k">throw</span> <span class="k">new</span> <span class="nx">error</span><span class="p">(</span><span class="s2">&quot;circular dependency detected for module:&quot;</span><span class="o">+</span><span class="nx">name</span><span class="p">);</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">};</span>
+    <span class="kd">var</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">getCurrentJs</span><span class="p">();</span>
+    <span class="c1">//将依赖中的name转换为id，id其实是模块javascript文件的全路径</span>
+    <span class="kd">var</span> <span class="nx">depsId</span> <span class="o">=</span> <span class="p">[];</span> 
+    <span class="nx">deps</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
+        <span class="nx">depsId</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">getScriptId</span><span class="p">(</span><span class="nx">name</span><span class="p">));</span>
+    <span class="p">});</span>
+    <span class="c1">//如果模块没有注册，就将模块加入modules列表</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">]){</span>
+            <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="nx">id</span><span class="o">:</span> <span class="nx">id</span><span class="p">,</span> 
+                <span class="nx">state</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span><span class="c1">//模块的加载状态   </span>
+                <span class="nx">deps</span><span class="o">:</span><span class="nx">depsId</span><span class="p">,</span><span class="c1">//模块的依赖关系</span>
+                <span class="nx">callback</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
+                <span class="nx">exports</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span><span class="c1">//本模块回调函数callback的返回结果，供依赖于该模块的其他模块使用</span>
+                <span class="nx">color</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
+            <span class="p">};</span>
     <span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>循环依赖检测函数的实现有些小技巧，需要理解上文提到的<code>modules</code>基本结构。因为checkCycle函数做了如下假设：
-所有依赖模块都已经存放在modules结构中了。所以我们需要注意checkClylce的调用时机。具体实现请参考本文代码。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="kd">function</span> <span class="nx">checkCycle</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span><span class="nx">id</span><span class="p">){</span>
-    <span class="c1">//检查id的所有依赖模块</span>
-    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">depid</span> <span class="k">in</span> <span class="nx">deps</span><span class="p">){</span>
-        <span class="c1">//如果模块已经加载完成则不可能存在循环依赖</span>
-        <span class="c1">//如果depid与id相等，则检测到循环依赖，否则递归的检测id与depid的依赖模块</span>
-        <span class="k">if</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">state</span> <span class="o">!==</span> <span class="mi">2</span> <span class="o">&amp;&amp;</span><span class="err">　</span><span class="p">(</span><span class="nx">depid</span> <span class="o">==</span> <span class="nx">id</span> <span class="o">||</span> <span class="nx">checkCycle</span><span class="p">(</span><span class="nx">module</span><span class="p">[</span><span class="nx">depid</span><span class="p">].</span><span class="nx">deps</span><span class="p">,</span><span class="nx">id</span><span class="p">))){</span>
-            <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-<span class="p">}</span>
+<span class="p">};</span>
 </code></pre></div>
 <h3 id="3-require函数的基本实现">(3). require函数的基本实现</h3>
 
-<p>require函数的实现是相当复杂的，我们先确立程序的基本框架，再逐步深入到具体细节。</p>
+<p>require函数的实现是相当复杂的，我们先确立程序的基本框架，再逐步深入到具体细节。 其实require函数主要的逻辑就是将main模块放入modules和loadings队列。然后就开始调用loadDepsModule加载main模块的依赖模块。
+下面我们来看loadDepsModule的实现。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="kd">var</span> <span class="nx">require</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
-    <span class="kd">var</span> <span class="nx">dn</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="c1">//依赖的模块数</span>
-        <span class="nx">cn</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="c1">//已经加载的依赖模块数</span>
-    <span class="nx">deps</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">el</span><span class="p">){</span>
-        <span class="c1">//依赖数量加1</span>
-        <span class="nx">dn</span><span class="o">++</span><span class="p">;</span>
-        <span class="c1">//如果模块还没开始加载，则递归的调用require加载</span>
-        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">el</span><span class="p">]){</span>
-            <span class="c1">//如果模块还没定义，则抛出异常</span>
-            <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">]){</span>
-                <span class="k">throw</span> <span class="k">new</span> <span class="nx">error</span><span class="p">(</span><span class="s2">&quot;undefined module:&quot;</span><span class="o">+</span><span class="nx">name</span><span class="p">);</span>
-            <span class="p">}</span>
-            <span class="c1">//加载js  </span>
-            <span class="nx">loadJS</span><span class="p">(</span><span class="nx">el</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
-                <span class="c1">//加载完成后执行依赖检查，如果没有依赖就执行callback函数</span>
-                <span class="nx">checkDeps</span><span class="p">();</span>    
-            <span class="p">});</span>
-            <span class="c1">//标志模块已经开始加载</span>
-            <span class="nx">modules</span><span class="p">[</span><span class="nx">el</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="nx">id</span><span class="o">:</span> <span class="nx">el</span><span class="p">,</span> 
-                <span class="nx">state</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span><span class="c1">//模块的加载状态    </span>
-                <span class="nx">deps</span><span class="o">:</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">deps</span><span class="p">,</span><span class="c1">//模块的依赖关系</span>
-                <span class="nx">factory</span><span class="o">:</span> <span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
-                <span class="nx">exportds</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span><span class="c1">//本模块回调函数callback的返回结果，供依赖于该模块的其他模块使用</span>
-            <span class="p">};</span>
-            <span class="c1">//模块开始加载时，放入加载队列，以便检测加载情况</span>
-            <span class="nx">loadings</span><span class="p">.</span><span class="nx">unshift</span><span class="p">(</span><span class="nx">el</span><span class="p">);</span>                       
-            <span class="c1">//递归的调用require函数加载依赖模块</span>
-            <span class="nx">require</span><span class="p">(</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">deps</span><span class="p">,</span><span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">callback</span><span class="p">);</span>
-            <span class="c1">//这时el模块的所有依赖都已经开始加载并存放在modules结构中了，可以检测循环依赖了</span>
-            <span class="nx">factorys</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">delay</span><span class="p">();</span>
-        <span class="p">}</span>
+<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">require</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span><span class="nx">callback</span><span class="p">){</span>
+    <span class="c1">//获取主模块的id</span>
+    <span class="nx">id</span> <span class="o">=</span> <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">getCurrentJs</span><span class="p">();</span>
 
-        <span class="k">if</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">el</span><span class="p">].</span><span class="nx">state</span> <span class="o">==</span> <span class="mi">2</span><span class="p">){</span>
-            <span class="nx">cn</span><span class="o">++</span><span class="p">;</span> <span class="c1">//已经加载的依赖模块数加1</span>
-        <span class="p">}</span>
-    <span class="p">});</span>
-    <span class="c1">//所有依赖全部加载完成</span>
-    <span class="k">if</span><span class="p">(</span><span class="nx">dn</span> <span class="o">==</span> <span class="nx">cn</span><span class="p">){</span>
-        <span class="nx">fireFactory</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span><span class="nx">args</span><span class="p">,</span><span class="nx">factory</span><span class="p">);</span>
+    <span class="c1">//将主模块main注册到modules中</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">]){</span>
+
+        <span class="c1">//将主模块main依赖中的name转换为id，id其实是模块的对应javascript文件的全路径</span>
+        <span class="kd">var</span> <span class="nx">depsId</span> <span class="o">=</span> <span class="p">[];</span> 
+        <span class="nx">deps</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
+            <span class="nx">depsId</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">getScriptId</span><span class="p">(</span><span class="nx">name</span><span class="p">));</span>
+        <span class="p">});</span>
+
+        <span class="c1">//将主模块main注册到modules列表中</span>
+        <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span>  <span class="o">=</span> <span class="p">{</span>
+            <span class="nx">id</span><span class="o">:</span> <span class="nx">id</span><span class="p">,</span> 
+            <span class="nx">state</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span><span class="c1">//模块的加载状态   </span>
+            <span class="nx">deps</span><span class="o">:</span><span class="nx">depsId</span><span class="p">,</span><span class="c1">//模块的依赖关系</span>
+            <span class="nx">callback</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
+            <span class="nx">exports</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span><span class="c1">//本模块回调函数callback的返回结果，供依赖于该模块的其他模块使用</span>
+            <span class="nx">color</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span>
+        <span class="p">};</span>
+        <span class="c1">//这里为main入口函数，需要将它的id也加入loadings列表，以便触发回调</span>
+        <span class="nx">loadings</span><span class="p">.</span><span class="nx">unshift</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>                       
     <span class="p">}</span>
-    <span class="c1">//检测依赖情况</span>
-    <span class="nx">checkDeps</span><span class="p">();</span>
+    <span class="c1">//加载依赖模块</span>
+    <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadDepsModule</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>这就是require函数的基本逻辑框架了，代码中使用了loadJS()，checkDeps(), 
-fireFactory()等函数。其中loadJS函数我们章节“RequireJS如何异步加载js模块”中已经实现了。
-下面我们分别来看看checkDeps()和fireFactory()的实现。</p>
-
-<p>checkDeps是用来检查加载队列loadings中模块的依赖情况的，
-一个模块的依赖全部加载完成后，就调用fireFactory执行该模块的回函数。</p>
+<p>可以说loadDepsModule是模块加载系统中最重要的函数了。 loadDepsModule函数主要是递归的加载一个模块的依赖模块，通过loadJS在dom结构中插入script元素来完成js文件的载入和执行。这里loadJS的callback函数也很值得研究。 每一个模块都是通过define函数定义的，由于callback函数在模块加载完成后才会执行,所以callback函数执行时模块已经存在于modules中了。相应的，我们也要将该模块放入loadings队列以便检查执行情况；同时递归的调用 loadDepsModule加载该模块的依赖模块。loadJS的在浏览器的onload事件触发时执行，这是整个模块加载系统的驱动力。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="kd">function</span> <span class="nx">checkDeps</span><span class="p">(){</span>
+<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadDepsModule</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">){</span>
+    <span class="c1">//依次处理本模块的依赖关系</span>
+    <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">deps</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">el</span><span class="p">){</span>
+        <span class="c1">//如果模块还没开始加载，则加载模块所在的js文件</span>
+        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">el</span><span class="p">]){</span>
+            <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadJS</span><span class="p">(</span><span class="nx">el</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
+                <span class="c1">//模块开始加载时，放入加载队列，以便检测加载情况</span>
+                <span class="nx">loadings</span><span class="p">.</span><span class="nx">unshift</span><span class="p">(</span><span class="nx">el</span><span class="p">);</span>                       
+                <span class="c1">//递归的调用loadModule函数加载依赖模块</span>
+                <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadDepsModule</span><span class="p">(</span><span class="nx">el</span><span class="p">);</span>
+                <span class="c1">//加载完成后执行依赖检查，如果依赖全部加载完成就执行callback函数</span>
+                <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">checkDeps</span><span class="p">();</span>  
+            <span class="p">});</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+<span class="p">}</span>   
+</code></pre></div>
+<p>下面我们再来分析一下checkDeps函数，该函数在每次onload事件触发时执行，检查模块列表中是否已经有满足执行条件的模块，然后开始执行。checkDeps也有一个小技巧，就是当存在满足执行条件的模块时会触发一次递归，因为该模块执行完成后，可能使得依赖于该模块的其他模块也满足了执行条件。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//检测模块的依赖关系是否处理完毕，该函数在每一次js的onload事件都会触发一次</span>
+<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">checkDeps</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
     <span class="c1">//遍历加载列表</span>
-    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="nx">loadings</span><span class="p">.</span><span class="nx">length</span><span class="p">,</span> <span class="nx">id</span><span class="p">;</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">loadings</span><span class="p">[</span><span class="o">--</span><span class="nx">i</span><span class="p">]){</span>
+    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="nx">loadings</span><span class="p">.</span><span class="nx">length</span><span class="p">,</span> <span class="nx">id</span><span class="p">;</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">loadings</span><span class="p">[</span><span class="o">--</span><span class="nx">i</span><span class="p">];){</span>
         <span class="kd">var</span> <span class="nx">obj</span> <span class="o">=</span> <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">],</span> <span class="nx">deps</span> <span class="o">=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">allloaded</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>                                   
         <span class="c1">//遍历每一个模块的加载</span>
+        <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">checkCycle</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span><span class="nx">id</span><span class="p">,</span><span class="nx">colorbase</span><span class="o">++</span><span class="p">);</span>
         <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">key</span> <span class="k">in</span> <span class="nx">deps</span><span class="p">){</span>
             <span class="c1">//如果存在未加载完的模块，则退出内层循环</span>
-            <span class="k">if</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">key</span><span class="p">].</span><span class="nx">state</span> <span class="o">!==</span> <span class="mi">2</span><span class="p">){</span>
+            <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">deps</span><span class="p">[</span><span class="nx">key</span><span class="p">]]</span> <span class="o">||</span> <span class="nx">modules</span><span class="p">[</span><span class="nx">deps</span><span class="p">[</span><span class="nx">key</span><span class="p">]].</span><span class="nx">state</span> <span class="o">!==</span> <span class="mi">2</span><span class="p">){</span>
                 <span class="nx">allloaded</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
                 <span class="k">break</span><span class="p">;</span>
             <span class="p">}</span>
@@ -350,31 +328,36 @@ fireFactory()等函数。其中loadJS函数我们章节“RequireJS如何异步�
 
         <span class="c1">//如果所有模块已经加载完成</span>
         <span class="k">if</span><span class="p">(</span><span class="nx">allloaded</span><span class="p">){</span>
-            <span class="nx">loadings</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span> <span class="c1">//从loadings列表中移除已经加载完成的模块                           </span>
-            <span class="nx">fireFactory</span><span class="p">(</span><span class="nx">obj</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">factory</span><span class="p">);</span>
+            <span class="nx">loadings</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span> <span class="c1">//从loadings列表中移除已经加载完成的模块                          </span>
+            <span class="c1">//执行模块的callback函数</span>
+            <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">fireFactory</span><span class="p">(</span><span class="nx">obj</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">callback</span><span class="p">);</span>
+            <span class="c1">//该模块执行完成后可能使其他模块也满足执行条件了，继续检查，直到没有模块满足allloaded条件</span>
+            <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">checkDeps</span><span class="p">();</span>
         <span class="p">}</span>
     <span class="p">}</span>       
-<span class="p">}</span>
+<span class="p">}</span>   
 </code></pre></div>
-<p>fireFactory的具体逻辑见如下代码，它的工作时从各个依赖模块收集返回值，然后调用factory：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="kd">function</span> <span class="nx">fireFactory</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span><span class="nx">deps</span><span class="p">,</span><span class="nx">factory</span><span class="p">){</span>
-    <span class="c1">//遍历id模块的依赖，为factory准备参数</span>
-    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">array</span> <span class="o">=</span> <span class="p">[]</span> <span class="p">,</span> <span class="nx">d</span><span class="p">;</span> <span class="nx">d</span> <span class="o">=</span> <span class="nx">deps</span><span class="p">[</span><span class="nx">i</span><span class="p">];)</span> <span class="p">{</span>
-        <span class="nx">array</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">d</span><span class="p">].</span><span class="nx">exports</span><span class="p">);</span>
+<p>最后我们分析一下，具体的执行函数fireFactory。我们知道，无论是require函数还是define函数，都有一个参数列表，fireFactory首先处理的问题就是收集各个依赖模块的返回值，构建callback函数的参数列表；然后调用callback函数，同时记录模块的返回值，以便其他依赖于该模块的模块作为参数使用。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//fireFactory的工作是从各个依赖模块收集返回值，然后调用该模块的后调函数</span>
+<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">fireFactory</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span><span class="nx">deps</span><span class="p">,</span><span class="nx">callback</span><span class="p">){</span>
+    <span class="kd">var</span> <span class="nx">params</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="c1">//遍历id模块的依赖，为calllback准备参数</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">d</span><span class="p">;</span> <span class="nx">d</span> <span class="o">=</span> <span class="nx">deps</span><span class="p">[</span><span class="nx">i</span><span class="o">++</span><span class="p">];)</span> <span class="p">{</span>
+        <span class="nx">params</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">d</span><span class="p">].</span><span class="nx">exports</span><span class="p">);</span>
     <span class="p">};</span>
-    <span class="c1">//在context对象上调用factory方法</span>
-    <span class="kd">var</span> <span class="nx">ret</span> <span class="o">=</span> <span class="nx">factory</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="nx">context</span><span class="p">,</span><span class="nx">array</span><span class="p">);</span> 
+    <span class="c1">//在context对象上调用callback方法</span>
+    <span class="kd">var</span> <span class="nx">ret</span> <span class="o">=</span> <span class="nx">callback</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span><span class="nx">params</span><span class="p">);</span>    
     <span class="c1">//记录模块的返回结果，本模块的返回结果可能作为依赖该模块的其他模块的回调函数的参数</span>
     <span class="k">if</span><span class="p">(</span><span class="nx">ret</span> <span class="o">!=</span> <span class="k">void</span> <span class="mi">0</span><span class="p">){</span>
         <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">ret</span><span class="p">;</span>
     <span class="p">}</span>
+    <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">state</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="c1">//标志模块已经加载并执行完成</span>
     <span class="k">return</span> <span class="nx">ret</span><span class="p">;</span>
 <span class="p">}</span>
 </code></pre></div>
-<p>这些内容是我用将近一周的业余时间的研究心得，希望对你有帮助。当然，这些代码都只是javascript加载系统的基本框架，如果有考虑疏忽的地方，还请你指正。我计划在最近两周给出javascript模块加载系统的一个完整的可用demo。</p>
+<p>这些内容是我用将近一周的业余时间的研究心得，希望对你有帮助。当然，这些代码都只是javascript加载系统的基本框架，如果有考虑疏忽的地方，还请你指正。文中的代码只是片段，完整的代码在我的github：<a href="https://github.com/foio/MyRequireJS">https://github.com/foio/MyRequireJS</a></p>
 
-<p>原则上本文是禁止转载的，但是如果你非要转载我也无法阻止。但是请各位转载时务必注明出处，尊重我的劳动成果。</p>
+<p>如果你认真的读到这里，我有理由相信你是一个对技术有追求的人，我和你是同类人。 本文是禁止转载的，希望我们互相尊重大家的劳动成果。</p>
 
       <footer class="entry-meta">
         <span class="entry-tags"><a href="/tags/#javascript  RequireJS" title="Pages tagged javascript  RequireJS" class="tag">javascript  RequireJS</a></span>
