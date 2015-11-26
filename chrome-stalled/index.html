@@ -5,25 +5,25 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>javascript的声明提前 &#8211; 积木村の研究所</title>
-<meta name="description" content="javascript">
-<meta name="keywords" content="javascript">
+<title>chrome的timeline中stalled问题解析 &#8211; 积木村の研究所</title>
+<meta name="description" content="性能">
+<meta name="keywords" content="chrome, stalled">
 
 
 
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="javascript的声明提前">
-<meta property="og:description" content="javascript">
-<meta property="og:url" content="/javascript-variable/">
+<meta property="og:title" content="chrome的timeline中stalled问题解析">
+<meta property="og:description" content="性能">
+<meta property="og:url" content="/chrome-stalled/">
 <meta property="og:site_name" content="积木村の研究所">
 
 
 
 
 
-<link rel="canonical" href="/javascript-variable/">
+<link rel="canonical" href="/chrome-stalled/">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
 
 
@@ -114,38 +114,55 @@ rel="stylesheet" type="text/css" -->
     <header class="header-title">
       <div class="header-title-wrap">
         
-          <h1 class="entry-title"><a href="/javascript-variable/" rel="bookmark" title="javascript的声明提前">javascript的声明提前</a></h1>
+          <h1 class="entry-title"><a href="/chrome-stalled/" rel="bookmark" title="chrome的timeline中stalled问题解析">chrome的timeline中stalled问题解析</a></h1>
         
-        <h2>July 10, 2014</h2>
+        <h2>November 26, 2015</h2>
         
       </div><!-- /.header-title-wrap -->
     </header>
     <div class="entry-content">
-      <blockquote>
-<p>众所周知，javascript有全局作用域和函数局部作用域(没有c，c++，java等强类型语言中的块作用域)。那下面一段代码的结果是什么呢？</p>
+      <p>在公司国做一个运营活动，上线后PM总是抱怨访问速度过慢，影响运营效果。然而从前端的角度来说我已经做了如下优化： css、js合并压缩、图片压缩、雪碧图、静态资源全部上CDN。但是依然很慢，实在s是困惑，通过chrome的timeline分析，发现有些请求确实很慢，但是大部分时间消耗在stalled阶段。如下图:</p>
+
+<figure>
+     <img src="/images/chrome-stalled.jpg" alt="chrome-stalled">
+</figure>
+
+<p>下文来分析具体原因。</p>
+
+<hr>
+
+<p>什么是stalled呢？下面是一段比较容易懂的解释：</p>
+
+<blockquote>
+<p>Time the request spent waiting before it could be sent. This time is inclusive of any time spent in proxy negotiation.Additionally, this time will include when the browser is waiting for an already established connection to become available for re-use, obeying Chrome’s maximum six TCP connection per origin rule.</p>
 </blockquote>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">scope</span> <span class="o">=</span> <span class="s2">&quot;global&quot;</span><span class="p">;</span>
-<span class="kd">function</span> <span class="nx">f</span><span class="p">(){</span>
-  <span class="nx">alter</span><span class="p">(</span><span class="nx">scope</span><span class="p">);</span>
-  
-  <span class="nx">alter</span><span class="p">(</span><span class="nx">scope</span><span class="p">);</span>
-<span class="p">}</span>
-<span class="nx">f</span><span class="p">();</span></code></pre></div>
+<p>也即是从TCP连接建立完成，到真正可以传输数据之间的时间差。先让我们要分析TCP连接为什么要等待这么久才能用？我用Wireshark抓包发现(如下图)，TCP连接过程中有多次重传，直到达到最大重传次数后连接被客户端重置。</p>
 
-<p>这段代码的执行结果为：</p>
+<figure>
+    <img src="/images/wireshark-error.png" alt="wireshark-error">
+</figure>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kc">undefined</span>
-<span class="nx">local</span></code></pre></div>
+<p>为什么会发生重传呢？</p>
 
-<p>输出local很容易理解，应用局部作用域的变量覆盖了全局作用域。但是输出undefined就有点奇怪了？</p>
+<blockquote>
+<p>The sender waits for an ACK for the byte-range sent to the client and when not received, resends the packets, after a particular interval. After a certain number of retries, the host is considered to be “down” and the sender gives up and tears down the TCP connection.</p>
+</blockquote>
 
-<p>这是由于函数作用域的特性导致的，局部变量在整个函数体中始终有定义，也就是说，在整个函数体中局部变量遮挡了全局变量，但是只有程序执行到var语句时局部变量才会被赋值。因此，上述过程等价于将函数内的变量的声明“提前”到函数体顶部，而变量的初始化仍然保留在原来位置，也就做“声明提前”。因为php也只有全局作用域和函数局部作用域，因此php的表现和javascript是一致的。</p>
+<p>TCP三次握手后，发送端发送数据后，一段时间内（不同的操作系统时间段不同）接收不到服务端ACK包，就会以
+某一时间间隔(时间间隔一般为指数型增长)重新发送，从重传开始到接收端正确响应的时间就是stalled阶段。而重传超过一定的次数（windows系统是5次），发送端就认为本次TCP连接已经down掉了，需要重新建立连接。
+对比以下，没有重传的http请求过程。如下图：</p>
+
+<figure>
+    <img src="/images/wireshark-normal.jpg" alt="wireshark-normal">
+</figure>
+
+<p>总结一下：stalled阶段时TCP连接的检测过程，如果检测成功就会继续使用该TCP连接发送数据，如果检测失败就会重新建立TCP连接。所以出现stalled阶段过长，往往是丢包所致，这也意味着网络或服务端有问题。</p>
 
       <footer class="entry-meta">
-        <span class="entry-tags"><a href="/tags/#javascript" title="Pages tagged javascript" class="tag">javascript</a></span>
-        <span><a href="/javascript-variable/" rel="bookmark" title="javascript的声明提前">javascript的声明提前</a> was published on <span class="entry-date date published updated"><time datetime="2014-07-10T00:00:00+08:00">July 10, 2014</time></span></span>
-        (revised: <span class="entry-date date modified"><time datetime="2014-07-10">07/10/2014</time></span>)
+        <span class="entry-tags"><a href="/tags/#chrome" title="Pages tagged chrome" class="tag">chrome</a><a href="/tags/#stalled" title="Pages tagged stalled" class="tag">stalled</a></span>
+        <span><a href="/chrome-stalled/" rel="bookmark" title="chrome的timeline中stalled问题解析">chrome的timeline中stalled问题解析</a> was published on <span class="entry-date date published updated"><time datetime="2015-11-26T00:00:00+08:00">November 26, 2015</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2015-11-26">11/26/2015</time></span>)
         <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
         
       </footer>
@@ -171,23 +188,23 @@ rel="stylesheet" type="text/css" -->
     <div class="read-more">
       
         <div class="read-more-header">
-          <a href="/scrum/" class="read-more-btn">Read More</a>
+          <a href="/requireJS/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/chrome-stalled/" title="chrome的timeline中stalled问题解析">chrome的timeline中stalled问题解析</a></h3>
-          <p>性能 <a href="/chrome-stalled/">Continue reading</a></p>
+          <h3><a href="/requireJS/" title="RequireJS结构分析，实现自己的模块加载系统">RequireJS结构分析，实现自己的模块加载系统</a></h3>
+          <p>javascript RequireJS <a href="/requireJS/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/requireJS/" title="RequireJS结构分析，实现自己的模块加载系统">RequireJS结构分析，实现自己的模块加载系统</a></h4>
-            <span>Published on November 08, 2015</span>
+            <h4><a href="/javascript-async/" title="在网页中异步加载javascript">在网页中异步加载javascript</a></h4>
+            <span>Published on November 03, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/javascript-async/" title="在网页中异步加载javascript">在网页中异步加载javascript</a></h4>
-            <span>Published on November 03, 2015</span>
+            <h4><a href="/jquery-event-research/" title="jQuery事件系统研究">jQuery事件系统研究</a></h4>
+            <span>Published on October 03, 2015</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

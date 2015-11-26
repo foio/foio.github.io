@@ -117,7 +117,15 @@
         <loc>/page21/index.html</loc>
     </url>
     
+    <url>
+        <loc>/page22/index.html</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/chrome-stalled/</loc>
+    </url>
     
     <url>
         <loc>/requireJS/</loc>
