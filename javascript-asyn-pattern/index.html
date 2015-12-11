@@ -5,25 +5,25 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>积木村の研究所</title>
-<meta name="description" content="this is a tech blog by foio">
-<meta name="keywords" content="tech, blog, modern">
+<title>Javascript异步编程模型进化 &#8211; 积木村の研究所</title>
+<meta name="description" content="Javascript异步编程模型进化,promise,generator,co">
+<meta name="keywords" content="javascript, promise, generator, co">
 
 
 
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="积木村の研究所">
-<meta property="og:description" content="this is a tech blog by foio">
-<meta property="og:url" content="/index.html">
+<meta property="og:title" content="Javascript异步编程模型进化">
+<meta property="og:description" content="Javascript异步编程模型进化,promise,generator,co">
+<meta property="og:url" content="/javascript-asyn-pattern/">
 <meta property="og:site_name" content="积木村の研究所">
 
 
 
 
 
-<link rel="canonical" href="/">
+<link rel="canonical" href="/javascript-asyn-pattern/">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
 
 
@@ -59,9 +59,13 @@ rel="stylesheet" type="text/css" -->
 
 
 
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
 </head>
 
-<body id="post-index" >
+<body id="post" >
 
 <!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
 <nav id="dl-menu" class="dl-menuwrapper" role="navigation">
@@ -103,31 +107,21 @@ rel="stylesheet" type="text/css" -->
 </nav><!-- /.dl-menuwrapper -->
 
 
-<div class="entry-header">
-  
-  
-  <div class="header-title">
-    <div class="header-title-wrap">
-      <h1>积木村の研究所</h1>
-      <h2></h2>
-    </div><!-- /.header-title-wrap -->
-  </div><!-- /.header-title -->
-</div><!-- /.entry-header -->
+
 
 <div id="main" role="main">
-  
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-12-10T00:00:00+08:00"><a href="/javascript-asyn-pattern/">December 10, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/javascript-asyn-pattern/" rel="bookmark" title="Javascript异步编程模型进化" itemprop="url">Javascript异步编程模型进化</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>Javascript语言是单线程的，没有复杂的同步互斥；但是，这并没有限制它的使用范围；相反，借助于Node，Javascript已经在某些场景下具备通吃前后端的能力了。近几年，多线程同步IO的模式已经在和单线程异步IO的模式的对决中败下阵来，Node也因此得名。接下来我们深入介绍一下Javascript的杀手锏，异步编程的发展历程。</p>
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/javascript-asyn-pattern/" rel="bookmark" title="Javascript异步编程模型进化">Javascript异步编程模型进化</a></h1>
+        
+        <h2>December 10, 2015</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>Javascript语言是单线程的，没有复杂的同步互斥；但是，这并没有限制它的使用范围；相反，借助于Node，Javascript已经在某些场景下具备通吃前后端的能力了。近几年，多线程同步IO的模式已经在和单线程异步IO的模式的对决中败下阵来，Node也因此得名。接下来我们深入介绍一下Javascript的杀手锏，异步编程的发展历程。</p>
 
 <p>让我们假设一个应用场景：一篇文章有10个章节，章节的数据是通过XHR异步请求的，章节必须按顺序显示。我们从这个问题出发，逐步探求从粗糙到优雅的解决方案。</p>
 
@@ -429,335 +423,60 @@ rel="stylesheet" type="text/css" -->
 
 <p>经历过复杂性才能达到简单性。我们从最开始的回调黑洞到最终的generator，越来越复杂也越来越简单。</p>
 
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#javascript" title="Pages tagged javascript" class="tag">javascript</a><a href="/tags/#promise" title="Pages tagged promise" class="tag">promise</a><a href="/tags/#generator" title="Pages tagged generator" class="tag">generator</a><a href="/tags/#co" title="Pages tagged co" class="tag">co</a></span>
+        <span><a href="/javascript-asyn-pattern/" rel="bookmark" title="Javascript异步编程模型进化">Javascript异步编程模型进化</a> was published on <span class="entry-date date published updated"><time datetime="2015-12-10T00:00:00+08:00">December 10, 2015</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2015-12-10">12/10/2015</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-12-02T00:00:00+08:00"><a href="/javascript-inheritance/">December 02, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+    
+<div style="max-width:800px;background-color:#fff;padding: 20px;margin:0 auto;">
+<!--高速版-->
+    <div id="SOHUCS" style="max-width:800px;"></div>
+    <script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+    <script type="text/javascript">
+        window.changyan.api.config({
+            appid: 'cyrgTvN9G',
+            conf: 'prod_e42e502ec2a5653d7d595968a1a242c1'
+        });
+    </script>
+</div>
+
+	        
+
+    
+    
+    <div class="read-more">
       
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/javascript-inheritance/" rel="bookmark" title="系统的研究Javascript继承实现机制" itemprop="url">系统的研究Javascript继承实现机制</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>老生常谈的问题，大部分人也不一定可以系统的理解。Javascript语言对继承实现的并不好，需要工程师自己去实现一套完整的继承机制。下面我们由浅入深的系统掌握使用javascript继承的技巧。</p>
-
-<h3 id="1-直接使用原型链">1. 直接使用原型链</h3>
-
-<p>这是最简粗暴的一种方式，基本没法用于具体的项目中。一个简单的demo如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">property</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">SuperType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getSuperValue</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">property</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">subproperty</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="c1">//继承</span>
-<span class="nx">SubType</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SuperType</span><span class="p">();</span>
-<span class="nx">SubType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getSubValue</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">subproperty</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubType</span><span class="p">();</span>
-</code></pre></div>
-<p>这种方式的问题是原型中的属性会被所用实例共享，这显然不是一种常规意义上的继承。</p>
-
-<h3 id="2-使用构造函数">2.使用构造函数</h3>
-
-<p>构造函数本质上也只是一个函数而已，可以在任何作用域中调用，在子构造函数中调用父构造函数，就可以实现简单的继承。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">colors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span><span class="s2">&quot;green&quot;</span><span class="p">}</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(){</span>
-    <span class="nx">SuperType</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>   
-<span class="p">}</span>
-<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubType</span><span class="p">();</span>
-</code></pre></div>
-<p>这种实现的问题太多了，比如没法共享函数，而且 <code>instance instanceof SuperType</code> 为false。</p>
-
-<h3 id="3-组合使用原型和构造函数">3. 组合使用原型和构造函数</h3>
-
-<p>结合上述的两种方法，就可以实现共享函数并且隔离属性的目的了。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">colors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span><span class="s2">&quot;green&quot;</span><span class="p">}</span>
-<span class="p">}</span>
-<span class="nx">SuperType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">sayName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//code</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="nx">age</span><span class="p">){</span>
-    <span class="nx">SuperType</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>  
-    <span class="k">this</span><span class="p">.</span><span class="nx">age</span> <span class="o">=</span> <span class="nx">age</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">SubType</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SuperType</span><span class="p">();</span>
-<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubTYpe</span><span class="p">();</span>
-</code></pre></div>
-<p>组合使用原型和构造函数是javascript中最常用的继承模式。使用这种方式，每个实例都有自己的属性，同时可以共享原型中的方法。但是这种方式的缺点是：无论什么情况，都会调用两次超类构造函数。一次是在创建子类原型时，另一次是在子类构造函数内部。这种问题该怎么解决呢？</p>
-
-<h3 id="4-寄生组合式继承">4. 寄生组合式继承</h3>
-
-<p>SubType的原型并不一定非要是SuperType的实例。只需是一个构造函数的原型是SuperType的原型的普通对象就可以了。</p>
-
-<p>Douglas Crockford的方法如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">obejct</span><span class="p">(</span><span class="nx">o</span><span class="p">){</span>
-    <span class="kd">function</span> <span class="nx">F</span><span class="p">(){};</span>
-    <span class="nx">F</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">o</span><span class="p">;</span>
-    <span class="k">return</span> <span class="k">new</span> <span class="nx">F</span><span class="p">();</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>其实这也就是ES5中Object.create的实现。那么我们可以修改本文中的第3种方案：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">inheritPrototype</span><span class="p">(</span><span class="nx">subType</span><span class="p">,</span><span class="nx">superType</span><span class="p">){</span>
-    <span class="kd">var</span> <span class="nx">prototype</span> <span class="o">=</span> <span class="nx">object</span><span class="p">(</span><span class="nx">superType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
-    <span class="nx">prototype</span><span class="p">.</span><span class="nx">constructor</span> <span class="o">=</span> <span class="nx">subType</span><span class="p">;</span>
-    <span class="nx">subType</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">prototype</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">colors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span><span class="s2">&quot;green&quot;</span><span class="p">}</span>
-<span class="p">}</span>
-<span class="nx">SuperType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">sayName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//code</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="nx">age</span><span class="p">){</span>
-    <span class="nx">SuperType</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>  
-    <span class="k">this</span><span class="p">.</span><span class="nx">age</span> <span class="o">=</span> <span class="nx">age</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">inheritPrototype</span><span class="p">(</span><span class="nx">SubType</span><span class="p">,</span><span class="nx">SuperType</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubTYpe</span><span class="p">();</span>
-</code></pre></div>
-<p>其实寄生组合式继承已经是一种非常好的继承实现机制了，足以应付日常使用。如果我们提出更高的要求：比如如何在子类中调用父类的方法呢？</p>
-
-<h3 id="5-simple-inheritance库的实现">5.simple-inheritance库的实现</h3>
-
-<p>看这么难懂的代码，起初我是拒绝的，但是深入之后才发现大牛就是大牛，精妙思想无处不在。我对每一行代码都有详细的注释。如果你想了解细节，请务必详细研究，读懂每一行。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//initializing用于控制类的初始化，非常巧妙，请留意下文中使用技巧</span>
-    <span class="c1">//fnTest返回一个正则比表达式，用于检测函数中是否含有_super，这样就可以按需重写，提高效率。当然浏览器如果不支持的话就返回一个通用正则表达式</span>
-    <span class="kd">var</span> <span class="nx">initializing</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span><span class="nx">fnTest</span> <span class="o">=</span> <span class="sr">/xyz/</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">xyz</span><span class="p">;})</span> <span class="o">?</span> <span class="sr">/\b_super\b/</span> <span class="o">:</span> <span class="sr">/.*/</span><span class="p">;</span>
-    <span class="c1">//所有类的基类Class,这里的this一般是window对象</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">Class</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){};</span>
-    <span class="c1">//对基类添加extend方法，用于从基类继承</span>
-    <span class="nx">Class</span><span class="p">.</span><span class="nx">extend</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">prop</span><span class="p">){</span>
-        <span class="c1">//保存当前类的原型</span>
-        <span class="kd">var</span> <span class="nx">_super</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">prototype</span><span class="p">;</span>
-        <span class="c1">//创建当前类的对象，用于赋值给子类的prototype，这里非常巧妙的使用父类实例作为子类的原型，而且避免了父类的初始化(通过闭包作用域的initializing控制)</span>
-        <span class="nx">initializing</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-        <span class="kd">var</span> <span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="k">this</span><span class="p">();</span>     
-        <span class="nx">initializing</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-        <span class="c1">//将参数prop中赋值到prototype中，这里的prop中一般是包括init函数和其他函数的对象</span>
-        <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">name</span> <span class="k">in</span> <span class="nx">prop</span><span class="p">){</span>
-            <span class="c1">//对应重名函数，需要特殊处理，处理后可以在子函数中使用this._super()调用父类同名构造函数, 这里的fnTest很巧妙:只有子类中含有_super字样时才处理从写以提高效率</span>
-            <span class="nx">prototype</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">=</span> <span class="k">typeof</span> <span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;function&quot;</span> <span class="o">&amp;&amp;</span> <span class="k">typeof</span> <span class="nx">_super</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;function&quot;</span> <span class="o">&amp;&amp;</span> <span class="nx">fnTest</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">])</span><span class="o">?</span>
-             <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="nx">fn</span><span class="p">){</span>
-                <span class="k">return</span> <span class="kd">function</span><span class="p">(){</span>
-                    <span class="c1">//_super在这里是我们的关键字，需要暂时存储一下</span>
-                    <span class="kd">var</span> <span class="nx">tmp</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_super</span><span class="p">;</span>  
-                    <span class="c1">//这里就可以通过this._super调用父类的构造函数了              </span>
-                    <span class="k">this</span><span class="p">.</span><span class="nx">_super</span> <span class="o">=</span> <span class="nx">_super</span><span class="p">[</span><span class="nx">name</span><span class="p">];</span>
-                    <span class="c1">//调用子类函数  </span>
-                    <span class="nx">fn</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">arguments</span><span class="p">);</span>
-                    <span class="c1">//复原_super，如果tmp为空就不需要复原了</span>
-                    <span class="nx">tmp</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_super</span> <span class="o">=</span> <span class="nx">tmp</span><span class="p">);</span>
-                <span class="p">}</span>
-             <span class="p">})(</span><span class="nx">name</span><span class="p">,</span><span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">])</span> <span class="o">:</span> <span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">];</span>
-        <span class="p">}</span>
-        <span class="c1">//当new一个对象时，实际上是调用该类原型上的init方法,注意通过new调用时传递的参数必须和init函数的参数一一对应</span>
-        <span class="kd">function</span> <span class="nx">Class</span><span class="p">(){</span>
-            <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">initializing</span> <span class="o">&amp;&amp;</span> <span class="k">this</span><span class="p">.</span><span class="nx">init</span><span class="p">){</span>
-                <span class="k">this</span><span class="p">.</span><span class="nx">init</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">arguments</span><span class="p">);</span>    
-            <span class="p">}</span>
-        <span class="p">}</span>       
-        <span class="c1">//给子类设置原型</span>
-        <span class="nx">Class</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">prototype</span><span class="p">;</span>
-        <span class="c1">//给子类设置构造函数</span>
-        <span class="nx">Class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">constructor</span> <span class="o">=</span> <span class="nx">Class</span><span class="p">;</span>
-        <span class="c1">//设置子类的extend方法，使得子类也可以通过extend方法被继承</span>
-        <span class="nx">Class</span><span class="p">.</span><span class="nx">extend</span> <span class="o">=</span> <span class="nx">arguments</span><span class="p">.</span><span class="nx">callee</span><span class="p">;</span>
-        <span class="k">return</span> <span class="nx">Class</span><span class="p">;</span>
-    <span class="p">}</span>
-<span class="p">})();</span>
-</code></pre></div>
-<p>通过使用simple-inheritance库，我们就可以通过很简单的方式实现继承了，是不是发现特别像强类型语言的继承。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">Human</span> <span class="o">=</span> <span class="nx">Class</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
-  <span class="nx">init</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">age</span><span class="p">,</span><span class="nx">name</span><span class="p">){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">age</span> <span class="o">=</span> <span class="nx">age</span><span class="p">;</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
-  <span class="p">},</span>
-  <span class="nx">say</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;I am a human&quot;</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="p">});</span>
-<span class="kd">var</span> <span class="nx">Man</span> <span class="o">=</span> <span class="nx">Human</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
-    <span class="nx">init</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">age</span><span class="p">,</span><span class="nx">name</span><span class="p">,</span><span class="nx">height</span><span class="p">){</span>
-        <span class="k">this</span><span class="p">.</span><span class="nx">_super</span><span class="p">(</span><span class="nx">age</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>
-        <span class="k">this</span><span class="p">.</span><span class="nx">height</span> <span class="o">=</span> <span class="nx">height</span><span class="p">;</span>
-    <span class="p">},</span>  
-    <span class="nx">say</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
-        <span class="k">this</span><span class="p">.</span><span class="nx">_super</span><span class="p">();</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;I am a man&quot;</span><span class="p">);</span>  
-    <span class="p">}</span>
-<span class="p">});</span>
-<span class="kd">var</span> <span class="nx">man</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Man</span><span class="p">(</span><span class="mi">21</span><span class="p">,</span><span class="s1">&#39;bob&#39;</span><span class="p">,</span><span class="s1">&#39;191&#39;</span><span class="p">);</span>
-<span class="nx">man</span><span class="p">.</span><span class="nx">say</span><span class="p">();</span>
-</code></pre></div>
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-
-<div class="pagination">
-  
-    Previous
-  
-  <ul class="inline-list">
-    <li>
+        <div class="read-more-header">
+          <a href="/javascript-inheritance/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/javascript-inheritance/" title="系统的研究Javascript继承实现机制">系统的研究Javascript继承实现机制</a></h3>
+          <p>系统的研究Javascript继承实现机制，分析simple-inheritance <a href="/javascript-inheritance/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
       
-        <span class="current-page">1</span>
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/chrome-stalled/" title="chrome的timeline中stalled问题解析">chrome的timeline中stalled问题解析</a></h4>
+            <span>Published on November 26, 2015</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/requireJS/" title="RequireJS结构分析，实现自己的模块加载系统">RequireJS结构分析，实现自己的模块加载系统</a></h4>
+            <span>Published on November 08, 2015</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
       
-    </li>
-    
-      <li>
-        
-          <a href="/page2">2</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page3">3</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page4">4</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page5">5</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page6">6</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page7">7</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page8">8</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page9">9</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page10">10</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page11">11</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page12">12</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page13">13</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page14">14</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page15">15</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page16">16</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page17">17</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page18">18</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page19">19</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page20">20</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page21">21</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page22">22</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page23">23</a>
-        
-      </li>
-    
-  </ul>
-  
-    <a href="/page2" class="btn">Next</a>
-  
-</div><!-- /.pagination -->
-
+    </div><!-- /.read-more -->
+  </article>
 </div><!-- /#main -->
+
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
@@ -768,7 +487,6 @@ rel="stylesheet" type="text/css" -->
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-          
-
+	        
 </body>
 </html>

@@ -121,7 +121,15 @@
         <loc>/page22/index.html</loc>
     </url>
     
+    <url>
+        <loc>/page23/index.html</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/javascript-asyn-pattern/</loc>
+    </url>
     
     <url>
         <loc>/javascript-inheritance/</loc>
