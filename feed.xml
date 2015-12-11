@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2015-12-11T14:53:25+08:00</updated>
+<updated>2015-12-11T15:36:59+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -168,7 +168,7 @@
           &lt;img src=&quot;/images/sequence-promise-timeline.gif&quot;/&gt;
  &lt;/figure&gt;&lt;/p&gt;
 
-&lt;p&gt;查看jsfiddle演示代码： &lt;a href=&quot;http://jsfiddle.net/cnfmkgm4/&quot;&gt;http://jsfiddle.net/cnfmkgm4/&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;查看jsfiddle演示代码： &lt;a href=&quot;http://jsfiddle.net/81k9nv6x/1/&quot;&gt;http://jsfiddle.net/81k9nv6x/1/&lt;/a&gt;&lt;/p&gt;
 
 &lt;h3 id=&quot;2-并发promise-一次性&quot;&gt;(2). 并发promise,一次性&lt;/h3&gt;
 
