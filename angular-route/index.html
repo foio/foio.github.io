@@ -1,0 +1,240 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>angular路由正则表达式 &#8211; 积木村の研究所</title>
+<meta name="description" content="angular路由正则表达式">
+<meta name="keywords" content="javascript">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="angular路由正则表达式">
+<meta property="og:description" content="angular路由正则表达式">
+<meta property="og:url" content="/angular-route/">
+<meta property="og:site_name" content="积木村の研究所">
+
+
+
+
+
+<link rel="canonical" href="/angular-route/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/angular-route/" rel="bookmark" title="angular路由正则表达式">angular路由正则表达式</a></h1>
+        
+        <h2>December 14, 2015</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>本文源于对stackoverflow上一道问题的思考:<a href="http://stackoverflow.com/questions/14216565/how-to-have-wildcards-in-angular-routes">如何在正则angular路由中使用正则表达式中的通配符*</a></p>
+
+<p>在使用angular的过程中，我们经常需要通过不同的url定位到不通过的页面。</p>
+
+<p>这时候我们就可以借助angular的routeProvider提供的when方法来实现，比如</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">myApp</span><span class="p">.</span><span class="nx">config</span><span class="p">([</span><span class="s1">&#39;$routeProvider&#39;</span><span class="p">,</span> <span class="s1">&#39;$httpProvider&#39;</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">$routeProvider</span><span class="p">,</span><span class="nx">$httpProvider</span><span class="p">)</span> <span class="p">{</span>
+     <span class="c1">//配置路由</span>
+     <span class="nx">$routeProvider</span><span class="p">.</span>
+         <span class="nx">when</span><span class="p">(</span><span class="s1">&#39;/tab1&#39;</span><span class="p">,</span> <span class="p">{</span>
+         <span class="nx">templateUrl</span><span class="o">:</span> <span class="s1">&#39;sections/tab1.html&#39;</span><span class="p">,</span>
+         <span class="nx">controller</span><span class="o">:</span> <span class="s1">&#39;Tab1Ctrl&#39;</span><span class="p">,</span>
+     <span class="p">}).</span>
+         <span class="nx">when</span><span class="p">(</span><span class="s1">&#39;/tab2&#39;</span><span class="p">,</span> <span class="p">{</span>
+         <span class="nx">templateUrl</span><span class="o">:</span> <span class="s1">&#39;sections/tab2.html&#39;</span><span class="p">,</span>
+         <span class="nx">controller</span><span class="o">:</span> <span class="s1">&#39;Tab2Ctrl&#39;</span><span class="p">,</span>
+     <span class="p">}).</span>
+         <span class="nx">when</span><span class="p">(</span><span class="s1">&#39;/tab3&#39;</span><span class="p">,</span> <span class="p">{</span>
+         <span class="nx">templateUrl</span><span class="o">:</span> <span class="s1">&#39;sections/tab3.html&#39;</span><span class="p">,</span>
+         <span class="nx">controller</span><span class="o">:</span> <span class="s1">&#39;Tab3Ctrl&#39;</span><span class="p">,</span>
+     <span class="p">}).</span>
+         <span class="nx">otherwise</span><span class="p">({</span>
+         <span class="nx">redirectTo</span><span class="o">:</span> <span class="s1">&#39;/tab1&#39;</span>
+     <span class="p">});</span>
+</code></pre></div>
+<p>when方法的原型是：when(path, route)，其中path</p>
+
+<ul>
+<li><p>path可以包括以冒号开头的命名组，比如/tab1/:item</p></li>
+<li><p>path可以包含以冒号开头并以星号结束的命名组，比如/tab1/:item*</p></li>
+<li><p>path可以包含以冒号开头并以问号结束可选的命名组，比如/tab1/:item?</p></li>
+</ul>
+
+<p>比如，path为：<code>/color/:color/largecode/:largecode*\/edit</code>会匹配<code>/color/brown/largecode/code/with/slashes/edit</code>
+会匹配：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">color: brown
+largecode: code/with/slashes.
+</code></pre></div>
+<p>但是如果我们要实现以<code>/tab1</code>开头的url全部路由到<code>/tab1</code>呢？比如<code>/tab1click</code>、<code>/tab1touch</code>等都路由到/tab1。用正则表达式描述就是：<code>/tab1.*</code>全部路由到<code>/tab1</code>，使用上述的when方法我们无能为力了。 于是有人出来叫喧说，angular的路由连正则表达式都不支持，实在太弱了，但是其实我们是有方法实现完全按正则进行路由分发地。angular有个$locationChangeStart事件，我们可以监听这个事件，修改location。下面的例子就可以实现以/<code>tab1</code>开头的url全部路由到<code>/tab1</code>，即<code>/tab1.*</code>全部路由到<code>/tab1</code>。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">myApp</span><span class="p">.</span><span class="nx">config</span><span class="p">()</span>
+<span class="p">.</span><span class="nx">run</span><span class="p">([</span><span class="s1">&#39;$rootScope&#39;</span><span class="p">,</span><span class="s1">&#39;$location&#39;</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">$rootScope</span><span class="p">,</span><span class="nx">$location</span><span class="p">){</span>
+    <span class="nx">$rootScope</span><span class="p">.</span><span class="nx">$on</span><span class="p">(</span><span class="s1">&#39;$locationChangeStart&#39;</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span><span class="nx">next</span><span class="p">,</span><span class="nx">current</span><span class="p">){</span>
+        <span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="sr">/#\/(tab1).*/i</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">next</span><span class="p">);</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">path</span> <span class="o">&amp;&amp;</span> <span class="nx">path</span><span class="p">[</span><span class="mi">1</span><span class="p">]){</span>
+            <span class="nx">$location</span><span class="p">.</span><span class="nx">path</span><span class="p">(</span><span class="s1">&#39;/tab1&#39;</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+<span class="p">}]);</span>
+</code></pre></div>
+<p>在事件$locationChangeStart触发时，我们就对路由的变化有了全部的控制，各种正则匹配自然不在话下。</p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#javascript" title="Pages tagged javascript" class="tag">javascript</a></span>
+        <span><a href="/angular-route/" rel="bookmark" title="angular路由正则表达式">angular路由正则表达式</a> was published on <span class="entry-date date published updated"><time datetime="2015-12-14T00:00:00+08:00">December 14, 2015</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2015-12-14">12/14/2015</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+
+    
+<div style="max-width:800px;background-color:#fff;padding: 20px;margin:0 auto;">
+<!--高速版-->
+    <div id="SOHUCS" style="max-width:800px;"></div>
+    <script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+    <script type="text/javascript">
+        window.changyan.api.config({
+            appid: 'cyrgTvN9G',
+            conf: 'prod_e42e502ec2a5653d7d595968a1a242c1'
+        });
+    </script>
+</div>
+
+	        
+
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/javascript-asyn-pattern/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/javascript-asyn-pattern/" title="Javascript异步编程模型进化">Javascript异步编程模型进化</a></h3>
+          <p>Javascript异步编程模型进化,promise,generator,co <a href="/javascript-asyn-pattern/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/javascript-inheritance/" title="系统的研究Javascript继承实现机制">系统的研究Javascript继承实现机制</a></h4>
+            <span>Published on December 02, 2015</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/chrome-stalled/" title="chrome的timeline中stalled问题解析">chrome的timeline中stalled问题解析</a></h4>
+            <span>Published on November 26, 2015</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+	        
+</body>
+</html>

@@ -128,6 +128,10 @@
 
     
     <url>
+        <loc>/angular-route/</loc>
+    </url>
+    
+    <url>
         <loc>/javascript-asyn-pattern/</loc>
     </url>
     

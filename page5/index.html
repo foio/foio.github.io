@@ -119,6 +119,144 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-05-12T00:00:00+08:00"><a href="/javascript-memoryleak/">May 12, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/javascript-memoryleak/" rel="bookmark" title="javascript 内存泄露研究" itemprop="url">javascript 内存泄露研究</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>这篇文章我们主要研究下，几种常见的内存泄露模式以及预防方法，最后说一下jquery容易造成内存泄露的地方。</p>
+
+<h3 id="1-ie8以下版本js和dom循环引用造成的内存泄露">1.IE8以下版本js和dom循环引用造成的内存泄露</h3>
+
+<hr>
+
+<p>使用简单基于引用记数技术的GC机制，都会因为循环引用而造成内存泄露，早期的php(&lt;=5.2)也会因为循环引用造成内存泄露。理论上说，现代浏览器一般使用基于标记清除的机制来回收内存。但是由于IE的dom结构使用Com组件实现，导致js的垃圾回收器无法回收dom造成的内存泄露。</p>
+
+<p>如下代码在IE&lt;=8中会造成内存泄露：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">setHandler</span><span class="p">()</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">elem</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span>
+  <span class="nx">elem</span><span class="p">.</span><span class="nx">onclick</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
+<span class="p">}</span></code></pre></div>
+
+<p>由于有作用域链的存在，以上代码即便function为空，也会存在循环引用，会在
+IE8以下版本的浏览器中造成内存泄露。</p>
+
+<h3 id="2-ie浏览器的跨页面内存泄露">2.IE浏览器的跨页面内存泄露</h3>
+
+<hr>
+
+<p>我们在动态创建dom片段结构并添加到dom时也会出现内存泄露，这种内存泄露，即使关闭页面也不会回收，只有当IE进程终止时才会回收。比如如下代码（其实这些代码应该很少出现在项目中，因为不会有人直接将事件绑定写成javascript内联函数），就会出现内存泄露：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//dom结构必须绑定javascript事件函数才会由内存泄露问题</span>
+<span class="kd">var</span> <span class="nx">parentDiv</span> <span class="o">=</span>
+    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;&lt;div onClick=&#39;foo()&#39;&gt;&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">childDiv</span> <span class="o">=</span>
+    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;&lt;div onClick=&#39;foo()&#39;&gt;&quot;</span><span class="p">);</span>
+
+<span class="c1">// 这里会造成内存泄露</span>
+<span class="nx">parentDiv</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
+<span class="nx">hostElement</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
+<span class="nx">hostElement</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
+<span class="nx">parentDiv</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
+<span class="nx">parentDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+<span class="nx">childDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span></code></pre></div>
+
+<p>这是因为，为临时父节点添加子节点时会创建临时的作用域变量，而将节点片段添加到根dom结构时，他们都会从根dom结构继承作用域，这就会导致临时作用域变量无法回收。避免这种内存泄露的最简单方法
+是改变dom插入顺序，防止创建临时作用域链。</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">parentDiv</span> <span class="o">=</span>
+    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;&lt;div onClick=&#39;foo()&#39;&gt;&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">childDiv</span> <span class="o">=</span>
+    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;&lt;div onClick=&#39;foo()&#39;&gt;&quot;</span><span class="p">);</span>
+
+<span class="c1">//改变了dom插入顺序，避免了临时作用域变量的创建，从而防止了内存泄露</span>
+<span class="nx">hostElement</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
+<span class="nx">parentDiv</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
+<span class="nx">hostElement</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
+<span class="nx">parentDiv</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
+<span class="nx">parentDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
+<span class="nx">childDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span></code></pre></div>
+
+<h3 id="3-ie9以下浏览器的xmlhttprequest造成的内存泄露">3.IE9以下浏览器的XMLHttpRequest造成的内存泄露</h3>
+
+<hr>
+
+<p>以下常用的代码，就会找出内存泄露。</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">xhr</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">XMLHttpRequest</span><span class="p">()</span> <span class="c1">// or ActiveX in older IE</span>
+<span class="nx">xhr</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/server.url&#39;</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span>
+<span class="nx">xhr</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">if</span><span class="p">(</span><span class="nx">xhr</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="nx">xhr</span><span class="p">.</span><span class="nx">status</span> <span class="o">==</span> <span class="mi">200</span><span class="p">)</span> <span class="p">{</span>            
+    <span class="c1">// ...</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+<span class="nx">xhr</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span></code></pre></div>
+
+<p>当请求完成时，xhr变量引用为0 了，应该会被垃圾回收啊，但是浏览器自己也需要持有一个XMLHttpRequest的引用用于管理请求的状态，而浏览器没有能正确处理。</p>
+
+<h3 id="4-闭包造成的内存泄露">4.闭包造成的内存泄露</h3>
+
+<hr>
+
+<p>Javascript解析器并不知道内嵌函数需要外部函数中的哪些局部变量，因此它会把外部函数中的全部变量都放在作用域对象中，这就会造成外层函数中的变量即便不使用也不会得到释放。如下代码：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">f</span><span class="p">()</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="s2">&quot;Large piece of data, probably received from server&quot;</span>
+  <span class="kd">function</span> <span class="nx">inner</span><span class="p">()</span> <span class="p">{</span>
+      <span class="c1">//inner中并没有使用data</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">inner</span>
+<span class="p">}</span></code></pre></div>
+
+<p>一种处理方式是在返回内嵌函数时将外部函数中不需要的便利设置为null，如下：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">f</span><span class="p">()</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="s2">&quot;Large piece of data, probably received from server&quot;</span>
+  <span class="kd">function</span> <span class="nx">inner</span><span class="p">()</span> <span class="p">{</span>
+      <span class="c1">//inner中并没有使用data</span>
+  <span class="p">}</span>
+  <span class="nx">data</span> <span class="o">=</span> <span class="kc">null</span>
+  <span class="k">return</span> <span class="nx">inner</span>
+<span class="p">}</span></code></pre></div>
+
+<h3 id="5-jquery是如何处理的，带来了什么新的问题">5.jQuery是如何处理的，带来了什么新的问题</h3>
+
+<hr>
+
+<p>我们经常使用<code>$.data()</code>来给dom结构绑定数据属性，jQuery的事件处理机制也在内部使用了<code>$.data()</code>API，其实jQuery的内部实现是为每个dom生产一个id，然后将数据存储在jQuyer.cache对象中。</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//生成唯一id</span>
+<span class="nx">elem</span><span class="p">[</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">expando</span> <span class="p">]</span> <span class="o">=</span> <span class="nx">id</span> <span class="o">=</span> <span class="o">++</span><span class="nx">jQuery</span><span class="p">.</span><span class="nx">uuid</span>
+<span class="c1">//将数据存储在cache对象中</span>
+<span class="nx">jQuery</span><span class="p">.</span><span class="nx">cache</span><span class="p">[</span><span class="nx">id</span><span class="p">][</span><span class="s1">&#39;prop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">val</span></code></pre></div>
+
+<p>这种方式避免了dom结构指向js对象，从而有效的防止了循环引用造成的内存泄露。看似完美，其实又带来了新的问题。以下代码存在内存泄露：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;&lt;div/&gt;&#39;</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">html</span><span class="p">(</span><span class="k">new</span> <span class="nb">Array</span><span class="p">(</span><span class="mi">1000</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;text&#39;</span><span class="p">))</span>
+  <span class="p">.</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="p">})</span>
+  <span class="p">.</span><span class="nx">appendTo</span><span class="p">(</span><span class="s1">&#39;#data&#39;</span><span class="p">)</span>
+<span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">).</span><span class="nx">innerHTML</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span></code></pre></div>
+
+<p>Dom结构已经被删除了，为什么还是会泄露内存呢？因为<code>jQuery.cache</code>中还保存这指向<code>function</code>的引用，而<code>function</code>中存在指向<code>div</code>片段的引用，这就导致<code>function</code>和<code>div</code>片段形成的整个闭包都无法被内存回收。</p>
+
+<p>嗯，就到这了，肚子饿了，觅食去。</p>
+
+<hr>
+
+<p>参考文档
+<a href="http://javascript.info/tutorial/memory-leaks#ie-lt-8-dom-js-memory-leak">http://javascript.info/tutorial/memory-leaks#ie-lt-8-dom-js-memory-leak</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-04-12T00:00:00+08:00"><a href="/jquery-callback/">April 12, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -326,122 +464,6 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 <hr>
 
 <p><a href="https://api.jquery.com/jQuery.Callbacks/">jQuery的callback方法文档</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-03-13T00:00:00+08:00"><a href="/jquery-ready-load/">March 13, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/jquery-ready-load/" rel="bookmark" title="jQuery的ready事件实现原理" itemprop="url">jQuery的ready事件实现原理</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>大家在面试的过程中，经常会被问到一个问题：ready与load那一个先执行，那一个后执行？答案是ready先执行，load后执行。</p>
-
-<p>DOM文档加载的步骤：
-要想理解为什么ready先执行，load后执行就要先了解下DOM文档加载的步骤：</p>
-
-<blockquote>
-<p>(1) 解析HTML结构。
-(2) 加载外部脚本和样式表文件。
-(3) 解析并执行脚本代码。
-(4) 构造HTML DOM模型。//ready
-(5) 加载图片等外部文件。
-(6) 页面加载完毕。//load</p>
-</blockquote>
-
-<p>从上面的描述中大家应该已经理解了吧，ready在第（4）步完成之后就执行了，但是load要在第（6）步完成之后才执行。</p>
-
-<p>所以有如下结论：</p>
-
-<blockquote>
-<p>ready与load的区别就在于资源文件的加载，ready构建了基本的DOM结构，所以对于代码来说应该越快加载越好。在一个高速浏览的时代，没人愿意等待答案。假如一个网站页面加载超过4秒，不好意思，你1/4的用户将面临着流失，所以对于框架来说用户体验是至关重要的，我们应该越早处理DOM越好，我们不需要等到图片资源都加载后才去处理框架的加载，图片资源过多load事件就会迟迟不会触发。</p>
-</blockquote>
-
-<p>我们经常使如下jQuery语句,用于在页面dom结构刚刚加载完成时,执行代码.</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//普通方式</span>
-<span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//your code here</span>
-<span class="p">});</span>
-<span class="c1">//简写方式</span>
-<span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//your code here</span>
-<span class="p">});</span></code></pre></div>
-
-<p>那么jquery的ready函数是如何实现的呢? 它时如何保证ready在load之前执行的呢?</p>
-
-<h3 id="1-现代浏览器通过domcontentloaded事件实现">1. 现代浏览器通过DOMContentLoaded事件实现</h3>
-
-<p>当HTML文档下载并解析完成以后，就会在document对象上触发DOMContentLoaded事件。这时，仅仅完成了HTML文档的解析（整张页面的DOM生成），所有外部资源（样式表、脚本、iframe等等）可能还没有下载结束。也就是说，这个事件比load事件，发生时间早得多。</p>
-
-<p>因此可以通过如下方式实现jQuery的ready函数.</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s2">&quot;DOMContentLoaded&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">//your code here</span>
-<span class="p">});</span></code></pre></div>
-
-<p>但是对于IE8以及以下的浏览器,世界就没有那么友好了. </p>
-
-<h3 id="2-低版本浏览器通过readystatechange事件实现">2. 低版本浏览器通过readystatechange事件实现?</h3>
-
-<p>写过AJAX原生代码的童鞋都知道, readystatechange用于表示XMLHttpRequest的状态发生改变,当readyState=2时表示AJAX执行成功. readystatechange也会在dom状态发生变化时触发.</p>
-
-<p>因此可以通过如下方式实现jQuery的ready函数.</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;interactive&quot;</span> <span class="o">||</span> <span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;complete&quot;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">initApplication</span><span class="p">();</span>
-  <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
-
-<p>但是readyState为interactive时, DOM结构并没有稳定, 此时依然会有脚本修改DOM元素,导致执行事件太早. readyState为complete时, 图片已经加载完毕, 所以complete虽然在window.onload前执行, 导致执行事件太晚.
-让我们看看jQuery的源码时如何实现的.</p>
-
-<h3 id="3-jquery在低版本浏览器上是如何实现ready方法的">3. jQuery在低版本浏览器上是如何实现ready方法的</h3>
-
-<p>jQuery源码中使用了Diego Perini 在 2007 年的时候报告的一种检测 IE 是否加载完成的方式的方法. 该方法通过使用 doScroll 方法调用，可以看下这哥们的<a href="http://javascript.nwbox.com/IEContentLoaded/">博客</a>。</p>
-
-<p>原理就是对于 IE 在非 iframe 内时，只有不断地通过能否执行 doScroll 判断 DOM 是否加载完毕。在上述中间隔 50 毫秒尝试去执行 doScroll，注意，由于页面没有加载完成的时候，调用 doScroll 会导致异常，所以使用了 try -catch 来捕获异常。</p>
-
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// 用于保证事件在onload之前执行</span>
-<span class="nb">document</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span> <span class="s2">&quot;onreadystatechange&quot;</span><span class="p">,</span> <span class="nx">completed</span> <span class="p">);</span>
-<span class="c1">// 如果是IE且不是iframe就通过不停的检查doScroll来判断dom结构是否ready</span>
-<span class="kd">var</span> <span class="nx">top</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-<span class="k">try</span> <span class="p">{</span>
-    <span class="nx">top</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">frameElement</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="nb">document</span><span class="p">.</span><span class="nx">documentElement</span><span class="p">;</span>
-<span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{}</span>
-<span class="k">if</span> <span class="p">(</span> <span class="nx">top</span> <span class="o">&amp;&amp;</span> <span class="nx">top</span><span class="p">.</span><span class="nx">doScroll</span> <span class="p">)</span> <span class="p">{</span>
-    <span class="p">(</span><span class="kd">function</span> <span class="nx">doScrollCheck</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="nx">jQuery</span><span class="p">.</span><span class="nx">isReady</span> <span class="p">)</span> <span class="p">{</span><span class="c1">//ready方法没有执行过</span>
-            <span class="k">try</span> <span class="p">{</span>
-                <span class="c1">// 检查是否可以向左scroll滑动,当dom结构还没有解析完成时会抛出异常</span>
-                <span class="nx">top</span><span class="p">.</span><span class="nx">doScroll</span><span class="p">(</span><span class="s2">&quot;left&quot;</span><span class="p">);</span>
-            <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
-                <span class="c1">//递归调用,直到当dom结构解析完成</span>
-                <span class="k">return</span> <span class="nx">setTimeout</span><span class="p">(</span> <span class="nx">doScrollCheck</span><span class="p">,</span> <span class="mi">50</span> <span class="p">);</span>
-            <span class="p">}</span>
-            <span class="c1">//没有发现异常,表示dom结构解析完成,删除之前绑定的onreadystatechange事件</span>
-            <span class="nx">detach</span><span class="p">();</span>
-
-            <span class="c1">//执行jQuery的ready方法</span>
-            <span class="nx">jQuery</span><span class="p">.</span><span class="nx">ready</span><span class="p">();</span>
-        <span class="p">}</span>
-    <span class="p">})();</span>
-<span class="p">}</span></code></pre></div>
-
-<p>当然,通过检查doScroll的方法也不是完美的, 这种实现的jQuery的ready方法执行时,readyState可能为interactive, 也可能为complete.  也即没法保证dom加载完成后立刻执行, 但是一定会在DOM结构稳定后, 且图片加载完毕前执行.</p>
-
-<hr>
-
-<p>参考文档</p>
-
-<p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState">MDN里面关于Document.readyState的文档</a>, <a href="http://www.cnblogs.com/zhangziqiu/archive/2011/06/27/domready.html">一篇关于dom ready的博客</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
