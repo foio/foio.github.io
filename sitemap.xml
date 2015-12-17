@@ -125,7 +125,15 @@
         <loc>/page23/index.html</loc>
     </url>
     
+    <url>
+        <loc>/page24/index.html</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/navigation-timing/</loc>
+    </url>
     
     <url>
         <loc>/angular-route/</loc>
