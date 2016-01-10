@@ -119,6 +119,29 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-06-11T00:00:00+08:00"><a href="/RESTful/">June 11, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/RESTful/" rel="bookmark" title="RESTful" itemprop="url">RESTful</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p><a href="http://en.wikipedia.org/wiki/Roy_Fielding">Roy Thomas Fielding</a> 在他的博士论文 《<a href="http://en.wikipedia.org/wiki/Roy_Fielding">Architectural Styles and the Design of Network-based Software Architectures</a>》提出了REST(<a href="http://www.ics.uci.edu/%7Efielding/pubs/dissertation/rest_arch_style.htm">Representational State Transfer</a>)概念。</p>
+
+<p>在网站即软件的时代，网站开发完全可以采用软件开发的模式。但是传统上，软件和网络是两个不同的领域，很少有交集；<a href="http://en.wikipedia.org/wiki/Roy_Fielding">Roy Thomas Fielding</a> 在他的博士论文中讨论了一种现代化的web设计原则，用于指导网站软件的设计。该原则有一下特点:</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">（1）每一个URI代表一种资源；
+（2）客户端和服务器之间，传递这种资源的某种表现层(xml,json,txt等)；
+（3）客户端通过四个HTTP动词(GET,POST,PUT,DELETE)，对服务器端资源进行操作，实现&quot;表现层状态转化&quot;。
+</code></pre></div>
+<p>如果一个架构符合REST原则，就称它为RESTful架构。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-06-10T00:00:00+08:00"><a href="/sibinnuosha/">June 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -213,30 +236,6 @@ rel="stylesheet" type="text/css" -->
 <p>问题在斯宾诺莎，就比在对宇宙的终极善性不抱信仰的人容易处理。斯宾诺莎认为，你如果把你的灾难照它的实质来看，作为那上起自时间的开端、下止于时间尽头的因缘环链一部分来看，就知道这灾难不过是对你的灾难，并非对宇宙的灾难，对宇宙讲，仅是加强最后和声的暂时不谐音而已。</p>
 
 <p>这说法我不能接受；我以为个别事件是什么就是什么，不因为纳入整体而变得不同。各个残酷行为永久是宇宙的一部分；后来发生的任何事决不能使这行为变恶为善，也不能把“完善性”赋予包含着它的那个整体。话虽如此，假若你合该不得不忍受比人的通常命运坏（或在你看来坏）的什么事，斯宾诺莎讲的想整体、或总之去想比你个人的悲痛更远大的事情，这样一条作人原则仍旧是有用的原则。甚至也有些时候，我们细想人类的生活连同其中含有的全部祸害和苦难，不过是宇宙生活里的沧海一粟，让人感到安慰。这种思想可能还不足构成宗教信仰，但是在这痛苦的世界上，倒是促使人神志清醒的一个助力，是救治完全绝望下的麻木不仁的解毒剂。</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-06-10T00:00:00+08:00"><a href="/mysql-stridx/">June 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/mysql-stridx/" rel="bookmark" title="mysql字符串索引问题" itemprop="url">mysql字符串索引问题</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>事情的起因是线上日志发现的mysql慢查询。100万数据量的标准，联合查询全部走索引的情况下，尽然要600多毫秒。很不解，但是将索引列由varchar(50)型改为bigint型后，数据提升了30倍。究其原因就索引树上搜索时要进行大量的比较操作，而字符串的比较比整数的比较耗时的多。</p>
-
-<p>所以建议一般情况下不要在字符串列建立索引，如果非要使用字符串索引，可以采用以下两种方法：</p>
-
-<blockquote>
-<p>1.只是用字符串的最左边n个字符建立索引，推荐n&lt;=10;比如index left(address,8),但是需要知道前缀索引不能在order by中使用，也不能用在索引覆盖上。</p>
-
-<p>2.对字符串使用hash方法将字符串转化为整数，address_key=hashToInt(address)，对address_key建立索引，查询时可以用如下查询where address_key = hashToInt(‘beijing,china’) and address = ‘beijing,china’;</p>
-</blockquote>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -403,7 +402,7 @@ rel="stylesheet" type="text/css" -->
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
-    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
 
   </footer>
 </div><!-- /.footer-wrapper -->

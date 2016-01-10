@@ -119,6 +119,30 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-06-10T00:00:00+08:00"><a href="/mysql-stridx/">June 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/mysql-stridx/" rel="bookmark" title="mysql字符串索引问题" itemprop="url">mysql字符串索引问题</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>事情的起因是线上日志发现的mysql慢查询。100万数据量的标准，联合查询全部走索引的情况下，尽然要600多毫秒。很不解，但是将索引列由varchar(50)型改为bigint型后，数据提升了30倍。究其原因就索引树上搜索时要进行大量的比较操作，而字符串的比较比整数的比较耗时的多。</p>
+
+<p>所以建议一般情况下不要在字符串列建立索引，如果非要使用字符串索引，可以采用以下两种方法：</p>
+
+<blockquote>
+<p>1.只是用字符串的最左边n个字符建立索引，推荐n&lt;=10;比如index left(address,8),但是需要知道前缀索引不能在order by中使用，也不能用在索引覆盖上。</p>
+
+<p>2.对字符串使用hash方法将字符串转化为整数，address_key=hashToInt(address)，对address_key建立索引，查询时可以用如下查询where address_key = hashToInt(‘beijing,china’) and address = ‘beijing,china’;</p>
+</blockquote>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-05-30T00:00:00+08:00"><a href="/firefox-addon/">May 30, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -207,45 +231,6 @@ try &quot;cfx test&quot; and then &quot;cfx run&quot;. Have fun!&quot;
 
 <hr>
 
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-05-10T00:00:00+08:00"><a href="/firefox-profile/">May 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/firefox-profile/" rel="bookmark" title="firefox profile" itemprop="url">firefox profile</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <blockquote>
-<p>profile是firefox的高级概念，开发者在扩展开发过程中一般使用不同的profile模拟不同的浏览器环境，用于测试扩展的兼容性。</p>
-</blockquote>
-
-<h1 id="什么是profile">什么是profile</h1>
-<div class="highlight"><pre><code class="language-text" data-lang="text">profile是firefox用户数据的集合，包括书签，设置信息，扩展，密码信息，浏览历史等数据。
-</code></pre></div>
-<hr>
-
-<h1 id="如何创建新的profile">如何创建新的profile</h1>
-<div class="highlight"><pre><code class="language-text" data-lang="text">使用firefox的命令行创建新的profile，该命令要求所用的firefox实例都关闭：
-firefox.exe -P
-</code></pre></div>
-<p>会打开如下窗口：
-<figure>
-    <img src="/images/firefox_profile.jpg"/>
-    <figcaption>firefox profile窗口</figcaption>
-</figure></p>
-
-<hr>
-
-<h1 id="如何使用新的profile">如何使用新的profile</h1>
-<div class="highlight"><pre><code class="language-text" data-lang="text">使用命令行启动firefox，假设上一步创建的新的profile文件为TestProfile，可以使用如下命令使用新的profile启动firefox浏览器
-firefox.exe -P  “TestProfile”
-</code></pre></div>
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
@@ -411,7 +396,7 @@ firefox.exe -P  “TestProfile”
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
-    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
 
   </footer>
 </div><!-- /.footer-wrapper -->

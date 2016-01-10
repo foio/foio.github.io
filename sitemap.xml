@@ -132,6 +132,10 @@
 
     
     <url>
+        <loc>/localstorage-webview/</loc>
+    </url>
+    
+    <url>
         <loc>/navigation-timing/</loc>
     </url>
     

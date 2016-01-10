@@ -119,6 +119,181 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-12-02T00:00:00+08:00"><a href="/javascript-inheritance/">December 02, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/javascript-inheritance/" rel="bookmark" title="系统的研究Javascript继承实现机制" itemprop="url">系统的研究Javascript继承实现机制</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>老生常谈的问题，大部分人也不一定可以系统的理解。Javascript语言对继承实现的并不好，需要工程师自己去实现一套完整的继承机制。下面我们由浅入深的系统掌握使用javascript继承的技巧。</p>
+
+<h3 id="1-直接使用原型链">1. 直接使用原型链</h3>
+
+<p>这是最简粗暴的一种方式，基本没法用于具体的项目中。一个简单的demo如下：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">property</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nx">SuperType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getSuperValue</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">property</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">subproperty</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="c1">//继承</span>
+<span class="nx">SubType</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SuperType</span><span class="p">();</span>
+<span class="nx">SubType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getSubValue</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">subproperty</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubType</span><span class="p">();</span>
+</code></pre></div>
+<p>这种方式的问题是原型中的属性会被所用实例共享，这显然不是一种常规意义上的继承。</p>
+
+<h3 id="2-使用构造函数">2.使用构造函数</h3>
+
+<p>构造函数本质上也只是一个函数而已，可以在任何作用域中调用，在子构造函数中调用父构造函数，就可以实现简单的继承。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">colors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span><span class="s2">&quot;green&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(){</span>
+    <span class="nx">SuperType</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>   
+<span class="p">}</span>
+<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubType</span><span class="p">();</span>
+</code></pre></div>
+<p>这种实现的问题太多了，比如没法共享函数，而且 <code>instance instanceof SuperType</code> 为false。</p>
+
+<h3 id="3-组合使用原型和构造函数">3. 组合使用原型和构造函数</h3>
+
+<p>结合上述的两种方法，就可以实现共享函数并且隔离属性的目的了。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">colors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span><span class="s2">&quot;green&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+<span class="nx">SuperType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">sayName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="c1">//code</span>
+<span class="p">}</span>
+<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="nx">age</span><span class="p">){</span>
+    <span class="nx">SuperType</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>  
+    <span class="k">this</span><span class="p">.</span><span class="nx">age</span> <span class="o">=</span> <span class="nx">age</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nx">SubType</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SuperType</span><span class="p">();</span>
+<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubTYpe</span><span class="p">();</span>
+</code></pre></div>
+<p>组合使用原型和构造函数是javascript中最常用的继承模式。使用这种方式，每个实例都有自己的属性，同时可以共享原型中的方法。但是这种方式的缺点是：无论什么情况，都会调用两次超类构造函数。一次是在创建子类原型时，另一次是在子类构造函数内部。这种问题该怎么解决呢？</p>
+
+<h3 id="4-寄生组合式继承">4. 寄生组合式继承</h3>
+
+<p>SubType的原型并不一定非要是SuperType的实例。只需是一个构造函数的原型是SuperType的原型的普通对象就可以了。</p>
+
+<p>Douglas Crockford的方法如下：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">obejct</span><span class="p">(</span><span class="nx">o</span><span class="p">){</span>
+    <span class="kd">function</span> <span class="nx">F</span><span class="p">(){};</span>
+    <span class="nx">F</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">o</span><span class="p">;</span>
+    <span class="k">return</span> <span class="k">new</span> <span class="nx">F</span><span class="p">();</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>其实这也就是ES5中Object.create的实现。那么我们可以修改本文中的第3种方案：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">inheritPrototype</span><span class="p">(</span><span class="nx">subType</span><span class="p">,</span><span class="nx">superType</span><span class="p">){</span>
+    <span class="kd">var</span> <span class="nx">prototype</span> <span class="o">=</span> <span class="nx">object</span><span class="p">(</span><span class="nx">superType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
+    <span class="nx">prototype</span><span class="p">.</span><span class="nx">constructor</span> <span class="o">=</span> <span class="nx">subType</span><span class="p">;</span>
+    <span class="nx">subType</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">prototype</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">colors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;red&quot;</span><span class="p">,</span><span class="s2">&quot;blue&quot;</span><span class="p">,</span><span class="s2">&quot;green&quot;</span><span class="p">}</span>
+<span class="p">}</span>
+<span class="nx">SuperType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">sayName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="c1">//code</span>
+<span class="p">}</span>
+<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="nx">age</span><span class="p">){</span>
+    <span class="nx">SuperType</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>  
+    <span class="k">this</span><span class="p">.</span><span class="nx">age</span> <span class="o">=</span> <span class="nx">age</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nx">inheritPrototype</span><span class="p">(</span><span class="nx">SubType</span><span class="p">,</span><span class="nx">SuperType</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubTYpe</span><span class="p">();</span>
+</code></pre></div>
+<p>其实寄生组合式继承已经是一种非常好的继承实现机制了，足以应付日常使用。如果我们提出更高的要求：比如如何在子类中调用父类的方法呢？</p>
+
+<h3 id="5-simple-inheritance库的实现">5.simple-inheritance库的实现</h3>
+
+<p>看这么难懂的代码，起初我是拒绝的，但是深入之后才发现大牛就是大牛，精妙思想无处不在。我对每一行代码都有详细的注释。如果你想了解细节，请务必详细研究，读懂每一行。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="c1">//initializing用于控制类的初始化，非常巧妙，请留意下文中使用技巧</span>
+    <span class="c1">//fnTest返回一个正则比表达式，用于检测函数中是否含有_super，这样就可以按需重写，提高效率。当然浏览器如果不支持的话就返回一个通用正则表达式</span>
+    <span class="kd">var</span> <span class="nx">initializing</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span><span class="nx">fnTest</span> <span class="o">=</span> <span class="sr">/xyz/</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">xyz</span><span class="p">;})</span> <span class="o">?</span> <span class="sr">/\b_super\b/</span> <span class="o">:</span> <span class="sr">/.*/</span><span class="p">;</span>
+    <span class="c1">//所有类的基类Class,这里的this一般是window对象</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">Class</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){};</span>
+    <span class="c1">//对基类添加extend方法，用于从基类继承</span>
+    <span class="nx">Class</span><span class="p">.</span><span class="nx">extend</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">prop</span><span class="p">){</span>
+        <span class="c1">//保存当前类的原型</span>
+        <span class="kd">var</span> <span class="nx">_super</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">prototype</span><span class="p">;</span>
+        <span class="c1">//创建当前类的对象，用于赋值给子类的prototype，这里非常巧妙的使用父类实例作为子类的原型，而且避免了父类的初始化(通过闭包作用域的initializing控制)</span>
+        <span class="nx">initializing</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="k">this</span><span class="p">();</span>     
+        <span class="nx">initializing</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="c1">//将参数prop中赋值到prototype中，这里的prop中一般是包括init函数和其他函数的对象</span>
+        <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">name</span> <span class="k">in</span> <span class="nx">prop</span><span class="p">){</span>
+            <span class="c1">//对应重名函数，需要特殊处理，处理后可以在子函数中使用this._super()调用父类同名构造函数, 这里的fnTest很巧妙:只有子类中含有_super字样时才处理从写以提高效率</span>
+            <span class="nx">prototype</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">=</span> <span class="k">typeof</span> <span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;function&quot;</span> <span class="o">&amp;&amp;</span> <span class="k">typeof</span> <span class="nx">_super</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;function&quot;</span> <span class="o">&amp;&amp;</span> <span class="nx">fnTest</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">])</span><span class="o">?</span>
+             <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="nx">fn</span><span class="p">){</span>
+                <span class="k">return</span> <span class="kd">function</span><span class="p">(){</span>
+                    <span class="c1">//_super在这里是我们的关键字，需要暂时存储一下</span>
+                    <span class="kd">var</span> <span class="nx">tmp</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_super</span><span class="p">;</span>  
+                    <span class="c1">//这里就可以通过this._super调用父类的构造函数了              </span>
+                    <span class="k">this</span><span class="p">.</span><span class="nx">_super</span> <span class="o">=</span> <span class="nx">_super</span><span class="p">[</span><span class="nx">name</span><span class="p">];</span>
+                    <span class="c1">//调用子类函数  </span>
+                    <span class="nx">fn</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">arguments</span><span class="p">);</span>
+                    <span class="c1">//复原_super，如果tmp为空就不需要复原了</span>
+                    <span class="nx">tmp</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_super</span> <span class="o">=</span> <span class="nx">tmp</span><span class="p">);</span>
+                <span class="p">}</span>
+             <span class="p">})(</span><span class="nx">name</span><span class="p">,</span><span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">])</span> <span class="o">:</span> <span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">];</span>
+        <span class="p">}</span>
+        <span class="c1">//当new一个对象时，实际上是调用该类原型上的init方法,注意通过new调用时传递的参数必须和init函数的参数一一对应</span>
+        <span class="kd">function</span> <span class="nx">Class</span><span class="p">(){</span>
+            <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">initializing</span> <span class="o">&amp;&amp;</span> <span class="k">this</span><span class="p">.</span><span class="nx">init</span><span class="p">){</span>
+                <span class="k">this</span><span class="p">.</span><span class="nx">init</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">arguments</span><span class="p">);</span>    
+            <span class="p">}</span>
+        <span class="p">}</span>       
+        <span class="c1">//给子类设置原型</span>
+        <span class="nx">Class</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">prototype</span><span class="p">;</span>
+        <span class="c1">//给子类设置构造函数</span>
+        <span class="nx">Class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">constructor</span> <span class="o">=</span> <span class="nx">Class</span><span class="p">;</span>
+        <span class="c1">//设置子类的extend方法，使得子类也可以通过extend方法被继承</span>
+        <span class="nx">Class</span><span class="p">.</span><span class="nx">extend</span> <span class="o">=</span> <span class="nx">arguments</span><span class="p">.</span><span class="nx">callee</span><span class="p">;</span>
+        <span class="k">return</span> <span class="nx">Class</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">})();</span>
+</code></pre></div>
+<p>通过使用simple-inheritance库，我们就可以通过很简单的方式实现继承了，是不是发现特别像强类型语言的继承。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">Human</span> <span class="o">=</span> <span class="nx">Class</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+  <span class="nx">init</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">age</span><span class="p">,</span><span class="nx">name</span><span class="p">){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">age</span> <span class="o">=</span> <span class="nx">age</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
+  <span class="p">},</span>
+  <span class="nx">say</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;I am a human&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">});</span>
+<span class="kd">var</span> <span class="nx">Man</span> <span class="o">=</span> <span class="nx">Human</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
+    <span class="nx">init</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">age</span><span class="p">,</span><span class="nx">name</span><span class="p">,</span><span class="nx">height</span><span class="p">){</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_super</span><span class="p">(</span><span class="nx">age</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">height</span> <span class="o">=</span> <span class="nx">height</span><span class="p">;</span>
+    <span class="p">},</span>  
+    <span class="nx">say</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">_super</span><span class="p">();</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">&quot;I am a man&quot;</span><span class="p">);</span>  
+    <span class="p">}</span>
+<span class="p">});</span>
+<span class="kd">var</span> <span class="nx">man</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Man</span><span class="p">(</span><span class="mi">21</span><span class="p">,</span><span class="s1">&#39;bob&#39;</span><span class="p">,</span><span class="s1">&#39;191&#39;</span><span class="p">);</span>
+<span class="nx">man</span><span class="p">.</span><span class="nx">say</span><span class="p">();</span>
+</code></pre></div>
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-11-26T00:00:00+08:00"><a href="/chrome-stalled/">November 26, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -164,258 +339,6 @@ rel="stylesheet" type="text/css" -->
 </figure>
 
 <p>总结一下：stalled阶段时TCP连接的检测过程，如果检测成功就会继续使用该TCP连接发送数据，如果检测失败就会重新建立TCP连接。所以出现stalled阶段过长，往往是丢包所致，这也意味着网络或服务端有问题。</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-11-08T00:00:00+08:00"><a href="/requireJS/">November 08, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/requireJS/" rel="bookmark" title="RequireJS结构分析，实现自己的模块加载系统" itemprop="url">RequireJS结构分析，实现自己的模块加载系统</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>近年来，前端变的越来越重，页面中的javascript代码量上升了一个量级，为了便于维护和团队协作，模块化是必经之路。针对javascript模块化，业界逐渐产出两种方案AMD和CMD，它们有什么区别呢？看看大牛玉帛在知乎上的回答:<a href="http://www.zhihu.com/question/20342350/answer/14828786">http://www.zhihu.com/question/20342350/answer/14828786</a>。</p>
-
-<p>其中最重要的区别是AMD是提前执行，CMD是延迟执行。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="c1">//CMD 推崇依赖就近，代表为seajs</span>
-<span class="nx">define</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">,</span><span class="nx">exports</span><span class="p">,</span><span class="nx">module</span><span class="p">){</span>
-    <span class="kd">var</span> <span class="nx">a</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./a&#39;</span><span class="p">);</span> 
-    <span class="nx">a</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>
-    <span class="kd">var</span> <span class="nx">b</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./b&#39;</span><span class="p">);</span>
-    <span class="nx">b</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>
-<span class="p">})</span>
-
-<span class="c1">//AMD 推崇依赖前置，代表为requireJs</span>
-<span class="c1">//by foio.github.io</span>
-<span class="nx">define</span><span class="p">([</span><span class="s1">&#39;./a&#39;</span><span class="p">,</span><span class="s1">&#39;./b&#39;</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="nx">b</span><span class="p">){</span>
-    <span class="nx">a</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>    
-    <span class="nx">b</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>本篇文章我们实现一个自己的requreJS,我并不打算在源码中处理浏览器兼容性等细节，过于关注细节，反而会影响我们从宏观上理解代码机构。本文的目的是实现一个基本可用的javascript模块加载系统，带领读者理解要实现一个模块加载系统需要的知识结构。了解几种在网页中异步加载javascript的方案（可以参考<a href="http://foio.github.io/javascript-async/">我的另一篇博客</a>），对理解本文有很大帮助。我提出如下两个基本问题：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">(1).RequireJS是如何异步加载js模块
-(2).RequireJS是如何处理模块间的依赖关系的(包括如何处理循环依赖)
-</code></pre></div>
-<p>接下来我就来分别分析这两个问题。在开始之前，我们先看一下本文中javascript代码的层次结构。</p>
-
-<figure>
-<img src="/images/require-structure.png" alt="require structure">
-</figure>
-
-<p>从图中可以看出，模块加载系统的require和define的实现，主要借助于几个子函数(矩形表示)和两个基本数据结构(椭圆形表示)，其中蓝色矩形表示存在递归调用。下文主要围绕着这个结构图展开，阅读过程中请随时参阅此图。</p>
-
-<hr>
-
-<h2 id="1-requirejs是如何异步加载js模块">1. RequireJS是如何异步加载js模块</h2>
-
-<p>如果你看过<a href="http://foio.github.io/javascript-async/">这篇专门讲解如何异步加载javascript模块的文章</a>，就会发现RequireJS用的就是其中的<code>script dom element</code>的方法。下面是具体实现的伪代码。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="c1">//foioRequireJS的js加载函数 </span>
-<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadJS</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">callback</span><span class="p">){</span>
-    <span class="c1">//创建script节点</span>
-    <span class="kd">var</span> <span class="nx">node</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;script&quot;</span><span class="p">);</span>
-    <span class="nx">node</span><span class="p">.</span><span class="nx">type</span><span class="o">=</span><span class="s2">&quot;text/javascript&quot;</span><span class="p">;</span>
-    <span class="c1">//监听脚本加载完成事件，针对符合W3C标准的浏览器监听onload事件即可</span>
-    <span class="nx">node</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-        <span class="k">if</span><span class="p">(</span><span class="nx">callback</span><span class="p">){</span>
-            <span class="nx">callback</span><span class="p">();</span>
-        <span class="p">}</span>
-    <span class="p">};</span>
-    <span class="c1">//监听onerror事件处理javascript加载失败的情况</span>
-    <span class="nx">node</span><span class="p">.</span><span class="nx">onerror</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-        <span class="k">throw</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">&#39;load script:&#39;</span><span class="o">+</span><span class="nx">url</span><span class="o">+</span><span class="s2">&quot; failed!&quot;</span><span class="p">);</span> 
-    <span class="p">}</span>
-    <span class="nx">node</span><span class="p">.</span><span class="nx">src</span><span class="o">=</span><span class="nx">url</span><span class="p">;</span>
-    <span class="c1">//插入到head中</span>
-    <span class="kd">var</span> <span class="nx">head</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="s2">&quot;head&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">];</span>
-    <span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div>
-<h2 id="2-requirejs如何按顺序加载模块">2. RequireJS如何按顺序加载模块</h2>
-
-<p>用过RequireJS都知道，它主要就是两个函数require和define。其中define用于定义模块，require用于执行模块。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="c1">//c.js</span>
-<span class="nx">define</span><span class="p">(</span><span class="nx">id</span><span class="p">,[</span><span class="s1">&#39;a&#39;</span><span class="p">,</span><span class="s1">&#39;b&#39;</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">a</span><span class="p">,</span><span class="nx">b</span><span class="p">){</span>
-    <span class="k">return</span> <span class="kd">function</span><span class="p">(){</span>
-        <span class="nx">a</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>    
-        <span class="nx">b</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>    
-        <span class="c1">//doSomething();</span>
-    <span class="p">}</span>   
-<span class="p">});</span>
-
-<span class="c1">//logic.js</span>
-<span class="nx">require</span><span class="p">(</span><span class="nx">id</span><span class="p">,[</span><span class="s1">&#39;c&#39;</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">c</span><span class="p">){</span>
-    <span class="k">return</span> <span class="kd">function</span><span class="p">(){</span>
-        <span class="nx">c</span><span class="p">.</span><span class="nx">doSomething</span><span class="p">();</span>
-        <span class="c1">//doSomething();</span>
-    <span class="p">}</span>   
-<span class="p">});</span>
-</code></pre></div>
-<p>要保证javascript模块的执行顺序，首先必须组织好依赖关系。</p>
-
-<h3 id="1-组织依赖关系">(1)组织依赖关系</h3>
-
-<p>为了组织RquireJS需要哪些数据结构呢？看起来无从下手，我们可以对问题进行拆分。</p>
-
-<h4 id="模块放在哪里，如何标记模块的加载状态？"><1>.模块放在哪里，如何标记模块的加载状态？</h4>
-
-<p>moudules存储了所有已经开始加载的模块，包括加载状态信息、依赖模块信息、模块的回调函数、以及回调函数callback返回的结果。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="nx">modules</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="p">...</span>
-    <span class="nx">id</span><span class="o">:</span><span class="p">{</span>
-        <span class="nx">state</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span><span class="c1">//模块的加载状态    </span>
-        <span class="nx">deps</span><span class="o">:</span><span class="p">[],</span><span class="c1">//模块的依赖关系</span>
-        <span class="nx">factory</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
-        <span class="nx">exportds</span><span class="o">:</span> <span class="p">{},</span><span class="c1">//本模块回调函数callback的返回结果，供依赖于该模块的其他模块使用</span>
-    <span class="p">}</span>   
-    <span class="p">...</span> 
-<span class="p">}</span>
-</code></pre></div>
-<h4 id="正在加载但是还没有加载完成的模块id列表"><2>.正在加载但是还没有加载完成的模块id列表</h4>
-
-<p>每个脚本加载完成事件onload触发时，都需要检查loading队列，确认哪些模块的依赖已经加载完成，是否可以执行</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="nx">loadings</span> <span class="o">=</span> <span class="p">[</span>
-    <span class="p">...</span>
-    <span class="nx">id</span><span class="p">,</span>
-    <span class="p">...</span>
-<span class="p">]</span>
-</code></pre></div>
-<h3 id="2-define函数的基本实现">(2). define函数的基本实现</h3>
-
-<p>再次强调，本文的目的是理解结构，而不是具体实现，因此代码中不会考虑浏览器兼容性，也不会考虑逻辑的完整性。define函数主要目的
-是将模块注册到factorys列表中，方便require可以找到。同时必须处理循环依赖问题。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">define</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
-    <span class="c1">//根据模块名获取模块的url</span>
-    <span class="kd">var</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">getCurrentJs</span><span class="p">();</span>
-    <span class="c1">//将依赖中的name转换为id，id其实是模块javascript文件的全路径</span>
-    <span class="kd">var</span> <span class="nx">depsId</span> <span class="o">=</span> <span class="p">[];</span> 
-    <span class="nx">deps</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
-        <span class="nx">depsId</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">getScriptId</span><span class="p">(</span><span class="nx">name</span><span class="p">));</span>
-    <span class="p">});</span>
-    <span class="c1">//如果模块没有注册，就将模块加入modules列表</span>
-    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">]){</span>
-            <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="nx">id</span><span class="o">:</span> <span class="nx">id</span><span class="p">,</span> 
-                <span class="nx">state</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span><span class="c1">//模块的加载状态   </span>
-                <span class="nx">deps</span><span class="o">:</span><span class="nx">depsId</span><span class="p">,</span><span class="c1">//模块的依赖关系</span>
-                <span class="nx">callback</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
-                <span class="nx">exports</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span><span class="c1">//本模块回调函数callback的返回结果，供依赖于该模块的其他模块使用</span>
-                <span class="nx">color</span><span class="o">:</span> <span class="mi">0</span><span class="p">,</span>
-            <span class="p">};</span>
-    <span class="p">}</span>
-<span class="p">};</span>
-</code></pre></div>
-<h3 id="3-require函数的基本实现">(3). require函数的基本实现</h3>
-
-<p>require函数的实现是相当复杂的，我们先确立程序的基本框架，再逐步深入到具体细节。 其实require函数主要的逻辑就是将main模块放入modules和loadings队列。然后就开始调用loadDepsModule加载main模块的依赖模块。
-下面我们来看loadDepsModule的实现。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">require</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span><span class="nx">callback</span><span class="p">){</span>
-    <span class="c1">//获取主模块的id</span>
-    <span class="nx">id</span> <span class="o">=</span> <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">getCurrentJs</span><span class="p">();</span>
-
-    <span class="c1">//将主模块main注册到modules中</span>
-    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">]){</span>
-
-        <span class="c1">//将主模块main依赖中的name转换为id，id其实是模块的对应javascript文件的全路径</span>
-        <span class="kd">var</span> <span class="nx">depsId</span> <span class="o">=</span> <span class="p">[];</span> 
-        <span class="nx">deps</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
-            <span class="nx">depsId</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">getScriptId</span><span class="p">(</span><span class="nx">name</span><span class="p">));</span>
-        <span class="p">});</span>
-
-        <span class="c1">//将主模块main注册到modules列表中</span>
-        <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">]</span>  <span class="o">=</span> <span class="p">{</span>
-            <span class="nx">id</span><span class="o">:</span> <span class="nx">id</span><span class="p">,</span> 
-            <span class="nx">state</span><span class="o">:</span> <span class="mi">1</span><span class="p">,</span><span class="c1">//模块的加载状态   </span>
-            <span class="nx">deps</span><span class="o">:</span><span class="nx">depsId</span><span class="p">,</span><span class="c1">//模块的依赖关系</span>
-            <span class="nx">callback</span><span class="o">:</span> <span class="nx">callback</span><span class="p">,</span><span class="c1">//模块的回调函数</span>
-            <span class="nx">exports</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span><span class="c1">//本模块回调函数callback的返回结果，供依赖于该模块的其他模块使用</span>
-            <span class="nx">color</span><span class="o">:</span><span class="mi">0</span><span class="p">,</span>
-        <span class="p">};</span>
-        <span class="c1">//这里为main入口函数，需要将它的id也加入loadings列表，以便触发回调</span>
-        <span class="nx">loadings</span><span class="p">.</span><span class="nx">unshift</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>                       
-    <span class="p">}</span>
-    <span class="c1">//加载依赖模块</span>
-    <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadDepsModule</span><span class="p">(</span><span class="nx">id</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>可以说loadDepsModule是模块加载系统中最重要的函数了。 loadDepsModule函数主要是递归的加载一个模块的依赖模块，通过loadJS在dom结构中插入script元素来完成js文件的载入和执行。这里loadJS的callback函数也很值得研究。 每一个模块都是通过define函数定义的，由于callback函数在模块加载完成后才会执行,所以callback函数执行时模块已经存在于modules中了。相应的，我们也要将该模块放入loadings队列以便检查执行情况；同时递归的调用 loadDepsModule加载该模块的依赖模块。loadJS的在浏览器的onload事件触发时执行，这是整个模块加载系统的驱动力。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
-<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadDepsModule</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">){</span>
-    <span class="c1">//依次处理本模块的依赖关系</span>
-    <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">deps</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">el</span><span class="p">){</span>
-        <span class="c1">//如果模块还没开始加载，则加载模块所在的js文件</span>
-        <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">el</span><span class="p">]){</span>
-            <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadJS</span><span class="p">(</span><span class="nx">el</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
-                <span class="c1">//模块开始加载时，放入加载队列，以便检测加载情况</span>
-                <span class="nx">loadings</span><span class="p">.</span><span class="nx">unshift</span><span class="p">(</span><span class="nx">el</span><span class="p">);</span>                       
-                <span class="c1">//递归的调用loadModule函数加载依赖模块</span>
-                <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">loadDepsModule</span><span class="p">(</span><span class="nx">el</span><span class="p">);</span>
-                <span class="c1">//加载完成后执行依赖检查，如果依赖全部加载完成就执行callback函数</span>
-                <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">checkDeps</span><span class="p">();</span>  
-            <span class="p">});</span>
-        <span class="p">}</span>
-    <span class="p">});</span>
-<span class="p">}</span>   
-</code></pre></div>
-<p>下面我们再来分析一下checkDeps函数，该函数在每次onload事件触发时执行，检查模块列表中是否已经有满足执行条件的模块，然后开始执行。checkDeps也有一个小技巧，就是当存在满足执行条件的模块时会触发一次递归，因为该模块执行完成后，可能使得依赖于该模块的其他模块也满足了执行条件。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//检测模块的依赖关系是否处理完毕，该函数在每一次js的onload事件都会触发一次</span>
-<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">checkDeps</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//遍历加载列表</span>
-    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="nx">loadings</span><span class="p">.</span><span class="nx">length</span><span class="p">,</span> <span class="nx">id</span><span class="p">;</span> <span class="nx">id</span> <span class="o">=</span> <span class="nx">loadings</span><span class="p">[</span><span class="o">--</span><span class="nx">i</span><span class="p">];){</span>
-        <span class="kd">var</span> <span class="nx">obj</span> <span class="o">=</span> <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">],</span> <span class="nx">deps</span> <span class="o">=</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">allloaded</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>                                   
-        <span class="c1">//遍历每一个模块的加载</span>
-        <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">checkCycle</span><span class="p">(</span><span class="nx">deps</span><span class="p">,</span><span class="nx">id</span><span class="p">,</span><span class="nx">colorbase</span><span class="o">++</span><span class="p">);</span>
-        <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">key</span> <span class="k">in</span> <span class="nx">deps</span><span class="p">){</span>
-            <span class="c1">//如果存在未加载完的模块，则退出内层循环</span>
-            <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">modules</span><span class="p">[</span><span class="nx">deps</span><span class="p">[</span><span class="nx">key</span><span class="p">]]</span> <span class="o">||</span> <span class="nx">modules</span><span class="p">[</span><span class="nx">deps</span><span class="p">[</span><span class="nx">key</span><span class="p">]].</span><span class="nx">state</span> <span class="o">!==</span> <span class="mi">2</span><span class="p">){</span>
-                <span class="nx">allloaded</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-                <span class="k">break</span><span class="p">;</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-
-        <span class="c1">//如果所有模块已经加载完成</span>
-        <span class="k">if</span><span class="p">(</span><span class="nx">allloaded</span><span class="p">){</span>
-            <span class="nx">loadings</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="nx">i</span><span class="p">,</span><span class="mi">1</span><span class="p">);</span> <span class="c1">//从loadings列表中移除已经加载完成的模块                          </span>
-            <span class="c1">//执行模块的callback函数</span>
-            <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">fireFactory</span><span class="p">(</span><span class="nx">obj</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">deps</span><span class="p">,</span> <span class="nx">obj</span><span class="p">.</span><span class="nx">callback</span><span class="p">);</span>
-            <span class="c1">//该模块执行完成后可能使其他模块也满足执行条件了，继续检查，直到没有模块满足allloaded条件</span>
-            <span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">checkDeps</span><span class="p">();</span>
-        <span class="p">}</span>
-    <span class="p">}</span>       
-<span class="p">}</span>   
-</code></pre></div>
-<p>最后我们分析一下，具体的执行函数fireFactory。我们知道，无论是require函数还是define函数，都有一个参数列表，fireFactory首先处理的问题就是收集各个依赖模块的返回值，构建callback函数的参数列表；然后调用callback函数，同时记录模块的返回值，以便其他依赖于该模块的模块作为参数使用。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//fireFactory的工作是从各个依赖模块收集返回值，然后调用该模块的后调函数</span>
-<span class="nx">foioRequireJS</span><span class="p">.</span><span class="nx">fireFactory</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">id</span><span class="p">,</span><span class="nx">deps</span><span class="p">,</span><span class="nx">callback</span><span class="p">){</span>
-    <span class="kd">var</span> <span class="nx">params</span> <span class="o">=</span> <span class="p">[];</span>
-    <span class="c1">//遍历id模块的依赖，为calllback准备参数</span>
-    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">d</span><span class="p">;</span> <span class="nx">d</span> <span class="o">=</span> <span class="nx">deps</span><span class="p">[</span><span class="nx">i</span><span class="o">++</span><span class="p">];)</span> <span class="p">{</span>
-        <span class="nx">params</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">modules</span><span class="p">[</span><span class="nx">d</span><span class="p">].</span><span class="nx">exports</span><span class="p">);</span>
-    <span class="p">};</span>
-    <span class="c1">//在context对象上调用callback方法</span>
-    <span class="kd">var</span> <span class="nx">ret</span> <span class="o">=</span> <span class="nx">callback</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="nx">global</span><span class="p">,</span><span class="nx">params</span><span class="p">);</span>    
-    <span class="c1">//记录模块的返回结果，本模块的返回结果可能作为依赖该模块的其他模块的回调函数的参数</span>
-    <span class="k">if</span><span class="p">(</span><span class="nx">ret</span> <span class="o">!=</span> <span class="k">void</span> <span class="mi">0</span><span class="p">){</span>
-        <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">ret</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="nx">modules</span><span class="p">[</span><span class="nx">id</span><span class="p">].</span><span class="nx">state</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span> <span class="c1">//标志模块已经加载并执行完成</span>
-    <span class="k">return</span> <span class="nx">ret</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>这些内容是我用将近一周的业余时间的研究心得，希望对你有帮助。当然，这些代码都只是javascript加载系统的基本框架，如果有考虑疏忽的地方，还请你指正。文中的代码只是片段，完整的代码在我的github：<a href="https://github.com/foio/MyRequireJS">https://github.com/foio/MyRequireJS</a></p>
-
-<p>如果你认真的读到这里，我有理由相信你是一个对技术有追求的人，我和你是同类人。 本文是禁止转载的，希望我们互相尊重大家的劳动成果。</p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -582,7 +505,7 @@ rel="stylesheet" type="text/css" -->
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
-    <span>&copy; 2015 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
 
   </footer>
 </div><!-- /.footer-wrapper -->
