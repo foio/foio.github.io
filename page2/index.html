@@ -119,6 +119,73 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-12-17T00:00:00+08:00"><a href="/navigation-timing/">December 17, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/navigation-timing/" rel="bookmark" title="使用navigation timing统计网页加载速度" itemprop="url">使用navigation timing统计网页加载速度</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>前端页面加载速度的优化是一个系统性的工程，包括常见资源合并压缩、静态资源请求多域名化、CDN等。用户请求显示一个网页的详细过程也是十分复杂，包括DNS解析、建立TCP连接、加载HTML以及静态资源、渲染页面dom结构等多个阶段，任何一个阶段出现瓶颈都会影响用户体验，我们如何在真实的用户环境中准确的统计各个阶段的耗时呢？本文给出一个可行的方案。</p>
+
+<p>借助于W3C的Navigation Timing API(目前大多数浏览器都已经支持，包括IE9以上版本)，该API通过window.performance提供页面加载相关的信息，我们这里只需要关注window.performance.timing。打开chrome开发工具的console标签，输入window.performance.timing，典型的输出如下：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">connectEnd: 1450349863256
+connectStart: 1450349863216
+domComplete: 1450349864919
+domContentLoadedEventEnd: 1450349864091
+domContentLoadedEventStart: 1450349864066
+domInteractive: 1450349864066
+domLoading: 1450349863308
+domainLookupEnd: 1450349863216
+domainLookupStart: 1450349863169
+fetchStart: 1450349863167
+loadEventEnd: 1450349864920
+loadEventStart: 1450349864919
+navigationStart: 1450349863167
+redirectEnd: 0
+redirectStart: 0
+requestStart: 1450349863256
+responseEnd: 1450349863299
+responseStart: 1450349863298
+secureConnectionStart: 0
+unloadEventEnd: 0
+unloadEventStart: 0
+</code></pre></div>
+<p>其中有各种浏览器事件的开始时间和结束时间，具体各个事件的涵义，可以参考W3C标准，这张图描述的非常清晰。</p>
+
+<p><figure>
+         <img src="/images/navigation-timing.jpg"/>
+</figure></p>
+
+<p>比如我们要获取dns的时间：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">domainLookupEnd-domainLookupStart
+</code></pre></div>
+<p>连接建立耗时：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">connectEnd-connectStart
+</code></pre></div>
+<p>目前这些数据都可以在浏览器中读到，将他们发布到服务端机器上，就可以统计分析用户真实网络环境先的各项指标了。
+发布到服务端机器的一种最简单的方法就是：将这些数据作为参数请求一个后端文件，然后我们就可以在access日志中得到这些数据。一段伪代码如下：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nb">window</span><span class="p">.</span><span class="nx">performace</span><span class="p">){</span>
+    <span class="kd">var</span> <span class="nx">timing</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">performance</span><span class="p">.</span><span class="nx">timing</span><span class="p">.</span><span class="nx">toJSON</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">params</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">ntItem</span> <span class="k">in</span> <span class="nx">timing</span><span class="p">){</span>
+        <span class="nx">params</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">ntItem</span><span class="o">+</span><span class="s1">&#39;=&#39;</span><span class="o">+</span><span class="nx">timing</span><span class="p">[</span><span class="nx">ntItem</span><span class="p">]);</span>
+    <span class="p">}</span>
+    <span class="kd">var</span> <span class="nx">targetUrl</span> <span class="o">=</span> <span class="s1">&#39;www.baidu.com?&#39;</span><span class="o">+</span><span class="nx">params</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;&amp;&#39;</span><span class="p">);</span>
+    <span class="nx">ajaxGet</span><span class="p">(</span><span class="nx">targetUrl</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>在服务端我们就可以从access日志中得到Navigation Timing API提供的时间信息了。</p>
+
+<p>本文参考W3C文档：<a href="http://w3c.github.io/navigation-timing/">http://w3c.github.io/navigation-timing/</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-12-14T00:00:00+08:00"><a href="/angular-route/">December 14, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -176,322 +243,6 @@ largecode: code/with/slashes.
 <span class="p">}]);</span>
 </code></pre></div>
 <p>在事件$locationChangeStart触发时，我们就对路由的变化有了全部的控制，各种正则匹配自然不在话下。</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-12-10T00:00:00+08:00"><a href="/javascript-asyn-pattern/">December 10, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/javascript-asyn-pattern/" rel="bookmark" title="Javascript异步编程模型进化" itemprop="url">Javascript异步编程模型进化</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>Javascript语言是单线程的，没有复杂的同步互斥；但是，这并没有限制它的使用范围；相反，借助于Node，Javascript已经在某些场景下具备通吃前后端的能力了。近几年，多线程同步IO的模式已经在和单线程异步IO的模式的对决中败下阵来，Node也因此得名。接下来我们深入介绍一下Javascript的杀手锏，异步编程的发展历程。</p>
-
-<p>让我们假设一个应用场景：一篇文章有10个章节，章节的数据是通过XHR异步请求的，章节必须按顺序显示。我们从这个问题出发，逐步探求从粗糙到优雅的解决方案。</p>
-
-<hr>
-
-<h2 id="1-回忆往昔之callback">1.回忆往昔之callback</h2>
-
-<p>在那个年代，javascript仅限于前端的简单事件处理，这是异步编程的最基本模式了。
-比如监听dom事件，在dom事件发生时触发相应的回调。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">element</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;click&#39;</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//response to user click    </span>
-<span class="p">});</span>
-</code></pre></div>
-<p>比如通过定时器执行异步任务。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//do something 1s later </span>
-<span class="p">},</span> <span class="mi">1000</span><span class="p">);</span>
-</code></pre></div>
-<p>但是这种模式注定无法处理复杂的业务逻辑的。假设有N个异步任务，每一个任务必须在上一个任务完成后触发，于是就有了如下的代码，这就产生了回调黑洞。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">doAsyncJob1</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="nx">doAsyncJob2</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-        <span class="nx">doAsyncJob3</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-            <span class="nx">doAsyncJob4</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-                <span class="c1">//Black hole    </span>
-            <span class="p">});</span>
-        <span class="p">})</span>  
-    <span class="p">});</span>
-<span class="p">});</span>
-</code></pre></div>
-<hr>
-
-<h2 id="2-活在当下之promise">2.活在当下之promise</h2>
-
-<p>针对上文的回调黑洞问题，有人提出了开源的promise/A+规范，具体规范见如下地址：<a href="https://promisesaplus.com/">https://promisesaplus.com/</a>。promise代表了一个异步操作的结果，其状态必须符合下面几个要求：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">一个Promise必须处在其中之一的状态：pending, fulfilled 或 rejected.
-如果是pending状态,则promise可以转换到fulfilled或rejected状态。
-如果是fulfilled状态,则promise不能转换成任何其它状态。
-如果是rejected状态,则promise不能转换成任何其它状态。
-</code></pre></div>
-<h3 id="2-1-promise基本用法">2.1 promise基本用法</h3>
-
-<p>promise有then方法，可以添加在异步操作到达fulfilled状态和rejected状态的处理函数。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">promise</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">successHandler</span><span class="p">,</span><span class="nx">failedHandler</span><span class="p">);</span>
-</code></pre></div>
-<p>而then方法同时也会返回一个promise对象，这样我们就可以链式处理了。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">promise</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="nx">successHandler</span><span class="p">,</span><span class="nx">failedHandler</span><span class="p">).</span><span class="nx">then</span><span class="p">().</span><span class="nx">then</span><span class="p">();</span>
-</code></pre></div>
-<p>MDN上的一张图，比较清晰的描述了Pomise各个状态之间的转换。</p>
-
-<figure>
-          <img src="/images/promises.png"/>
- </figure>
-
-<p>假设上文中的doAsyncJob都返回一个promise对象，那我们看看如何用promise处理回调黑洞：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">doAsyncJob1</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="nx">doAsyncJob2</span><span class="p">();;</span>
-<span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="nx">doAsyncJob3</span><span class="p">();</span>
-<span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="nx">doAsyncJob4</span><span class="p">();</span> 
-<span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="c1">//......);</span>
-</code></pre></div>
-<p>这种编程方式是不是清爽多了。我们最经常使用的jQuery已经实现了promise规范,在调用$.ajax时可以写成这样了：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">options</span> <span class="o">=</span> <span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span><span class="nx">url</span><span class="o">:</span><span class="s1">&#39;the-url-to-get-data&#39;</span><span class="p">};</span>
-<span class="nx">$</span><span class="p">.</span><span class="nx">ajax</span><span class="p">(</span><span class="nx">options</span><span class="p">).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
-                    <span class="c1">//success handler</span>
-                <span class="p">},</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
-                    <span class="c1">//failed handler</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>我们可以使用ES6的Promise的构造函数生成自己的promise对象，Promise构造函数的参数为一个函数，该函数接收两个函数(resolve,reject)作为参数，并在成功时调用resolve，失败时调用reject。如下代码生成一个拥有随机结果的promise。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">RandomPromiseJob</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="k">new</span> <span class="nx">Promise</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">resolve</span><span class="p">,</span><span class="nx">reject</span><span class="p">){</span>
-        <span class="kd">var</span> <span class="nx">res</span> <span class="o">=</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span><span class="o">*</span><span class="mi">10</span><span class="p">)</span><span class="o">%</span><span class="mi">2</span><span class="p">;</span>   
-        <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-            <span class="k">if</span><span class="p">(</span><span class="nx">res</span><span class="p">){</span>
-                <span class="nx">resolve</span><span class="p">(</span><span class="nx">res</span><span class="p">);</span>
-            <span class="p">}</span><span class="k">else</span><span class="p">{</span>
-                <span class="nx">reject</span><span class="p">(</span><span class="nx">res</span><span class="p">);</span>
-            <span class="p">}</span>
-        <span class="p">},</span> <span class="mi">1000</span><span class="p">)</span>
-    <span class="p">});</span>     
-<span class="p">}</span>
-
-<span class="nx">RandomPromiseJob</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;success&#39;</span><span class="p">);</span>
-<span class="p">},</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;failed&#39;</span><span class="p">);</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>jsfiddle演示地址：<a href="http://jsfiddle.net/panrq4t7/">http://jsfiddle.net/panrq4t7/</a></p>
-
-<p>promise错误处理也十分灵活，在promise构造函数中发生异常时，会自动设置promise的状态为rejected，从而触发相应的函数。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">new</span> <span class="nx">Promise</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">resolve</span><span class="p">,</span><span class="nx">reject</span><span class="p">){</span>
-    <span class="nx">resolve</span><span class="p">(</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="s1">&#39;I am not json&#39;</span><span class="p">));</span>
-<span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="kc">undefined</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>其中then(undefined,function(data)可以简写为catch。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">new</span> <span class="nx">Promise</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">resolve</span><span class="p">,</span><span class="nx">reject</span><span class="p">){</span>
-    <span class="nx">resolve</span><span class="p">(</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="s1">&#39;I am not json&#39;</span><span class="p">));</span>
-<span class="p">}).</span><span class="k">catch</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">message</span><span class="p">);</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>jsfiddle演示地址：<a href="http://jsfiddle.net/x696ysv2/">http://jsfiddle.net/x696ysv2/</a></p>
-
-<h3 id="2-2-一个更复杂的例子">2.2 一个更复杂的例子</h3>
-
-<p>promise的功能绝不仅限于上文这种小打小闹的应用。对于篇头提到的一篇文章10个章节异步请求，顺序展示的问题，如果使用回调处理章节之间的依赖逻辑，显然会产生回调黑洞; 而使用promise模式，则代码形式优雅而且逻辑清晰。假设我们有一个包含10个章节内容的数组，并有一个返回promise对象的getChaper函数：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">chapterStrs</span> <span class="o">=</span> <span class="p">[</span>
-  <span class="s1">&#39;chapter1&#39;</span><span class="p">,</span><span class="s1">&#39;chapter2&#39;</span><span class="p">,</span><span class="s1">&#39;chapter3&#39;</span><span class="p">,</span><span class="s1">&#39;chapter4&#39;</span><span class="p">,</span><span class="s1">&#39;chapter5&#39;</span><span class="p">,</span>
-  <span class="s1">&#39;chapter6&#39;</span><span class="p">,</span><span class="s1">&#39;chapter7&#39;</span><span class="p">,</span><span class="s1">&#39;chapter8&#39;</span><span class="p">,</span><span class="s1">&#39;chapter9&#39;</span><span class="p">,</span><span class="s1">&#39;chapter10&#39;</span><span class="p">,</span>
-<span class="p">];</span>
-
-<span class="kd">var</span> <span class="nx">getChapter</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">chapterStr</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="nx">get</span><span class="p">(</span><span class="s1">&#39;&lt;p&gt;&#39;</span> <span class="o">+</span> <span class="nx">chapterStr</span> <span class="o">+</span> <span class="s1">&#39;&lt;/p&gt;&#39;</span><span class="p">,</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">round</span><span class="p">(</span><span class="nb">Math</span><span class="p">.</span><span class="nx">random</span><span class="p">()</span><span class="o">*</span><span class="mi">2</span><span class="p">));</span>
-<span class="p">};</span>
-</code></pre></div>
-<p>下面我们探讨一下如何优雅高效的使用promise处理这个问题。</p>
-
-<h3 id="1-顺序promise">(1). 顺序promise</h3>
-
-<p>顺序promise主要是通过对promise的then方法的链式调用产生的。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//按顺序请求章节数据并展示</span>
-<span class="nx">chapterStrs</span><span class="p">.</span><span class="nx">reduce</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">sequence</span><span class="p">,</span> <span class="nx">chapterStr</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">sequence</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">getChapter</span><span class="p">(</span><span class="nx">chapterStr</span><span class="p">);</span>
-    <span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">chapter</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">addToPage</span><span class="p">(</span><span class="nx">chapter</span><span class="p">);</span>
-    <span class="p">});</span>
-<span class="p">},</span> <span class="nx">Promise</span><span class="p">.</span><span class="nx">resolve</span><span class="p">());</span>
-</code></pre></div>
-<p>这种方法有一个问题，XHR请求是串行的，没有充分利用浏览器的并行性。网络请求timeline和显示效果图如下：
-<figure>
-          <img src="/images/sequence-promise.gif"/>
- </figure>
-<figure style="width:340px;margin:0 auto">
-          <img src="/images/sequence-promise-timeline.gif"/>
- </figure></p>
-
-<p>查看jsfiddle演示代码： <a href="http://jsfiddle.net/81k9nv6x/1/">http://jsfiddle.net/81k9nv6x/1/</a></p>
-
-<h3 id="2-并发promise-一次性">(2). 并发promise,一次性</h3>
-
-<p>Promise类有一个all方法，其接受一个promise数组:</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">([</span><span class="nx">promise1</span><span class="p">,</span><span class="nx">promise2</span><span class="p">,...,</span><span class="nx">promise10</span><span class="p">]).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>只有promise数组中的promise全部兑现，才会调用then方法。使用Promise.all，我们可以并发性的进行网络请求，并在所有请求返回后在集中进行数据展示。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//并发请求章节数据，一次性按顺序展示章节</span>
-<span class="nx">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">(</span><span class="nx">chapterStrs</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">getChapter</span><span class="p">)).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">chapters</span><span class="p">){</span>
-    <span class="nx">chapters</span><span class="p">.</span><span class="nx">forEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">chapter</span><span class="p">){</span>
-        <span class="nx">addToPage</span><span class="p">(</span><span class="nx">chapter</span><span class="p">);</span>
-    <span class="p">});</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>这种方法也有一个问题，要等到所有数据加载完成后，才会一次性展示全部章节。效果图如下：</p>
-
-<figure>
-          <img src="/images/parallel-promise.gif"/>
- </figure>
-
-<figure style="width:340px;margin:0 auto">
-          <img src="/images/parallel-promise-timeline.gif"/>
- </figure>
-
-<p>查看jsfiddle演示代码：<a href="http://jsfiddle.net/7ops845a/">http://jsfiddle.net/7ops845a/</a></p>
-
-<h3 id="3-并发promise，渐进式">(3). 并发promise，渐进式</h3>
-
-<p>其实，我们可以做到并发的请求数据，尽快展示满足顺序条件的章节：即前面的章节展示后就可以展示当前章节，而不用等待后续章节的网络请求。基本思路是：先创建一批并行的promise，然后通过链式调用then方法控制展示顺序。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">chapterStrs</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">getChapter</span><span class="p">).</span><span class="nx">reduce</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">sequence</span><span class="p">,</span> <span class="nx">chapterStrPromise</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">sequence</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-            <span class="k">return</span> <span class="nx">chapterStrPromise</span><span class="p">;</span>
-    <span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">chapter</span><span class="p">){</span>
-      <span class="nx">addToPage</span><span class="p">(</span><span class="nx">chapter</span><span class="p">);</span>
-    <span class="p">});</span>
-  <span class="p">},</span> <span class="nx">Promise</span><span class="p">.</span><span class="nx">resolve</span><span class="p">());</span>
-</code></pre></div>
-<p>效果如下：
-<figure>
-          <img src="/images/parallel-promise.gif"/>
- </figure>
-<figure style="width:340px;margin:0 auto">
-          <img src="/images/parallel-sequence-promise.gif"/>
- </figure></p>
-
-<p>查看jsfiddle演示代码：<a href="http://jsfiddle.net/fuog1ejg/">http://jsfiddle.net/fuog1ejg/</a></p>
-
-<p>这三种模式基本上概括了使用Pormise控制并发的方式，你可以根据业务需求，确定各个任务之间的依赖关系，从而做出选择。</p>
-
-<h3 id="2-3-promise的实现">2.3 promise的实现</h3>
-
-<p>ES6中已经实现了promise规范，在新版的浏览器和node中我们可以放心使用了。对于ES5及其以下版本，我们可以借助第三方库实现，q(<a href="https://github.com/kriskowal/q">https://github.com/kriskowal/q</a>)是一个非常优秀的实现，angular使用的就是它，你可以放心使用。下一篇文章准备实现一个自己的promise。</p>
-
-<hr>
-
-<h2 id="3-憧憬未来之generater">3.憧憬未来之generater</h2>
-
-<p>异步编程的一种解决方案叫做&quot;协程&quot;（coroutine），意思是多个线程互相协作，完成异步任务。随着ES6中对协程的支持，这种方案也逐渐进入人们的视野。Generator函数是协程在 ES6 的实现.</p>
-
-<h3 id="3-1-generator三大基本特性">3.1 Generator三大基本特性</h3>
-
-<p>让我们先从三个方面了解generator。</p>
-
-<h3 id="1-控制权移交">(1) 控制权移交</h3>
-
-<p>在普通函数名前面加*号就可以生成generator函数，该函数返回一个指针，每一次调用next函数，就会移动该指针到下一个yield处，直到函数结尾。通过next函数就可以控制generator函数的执行。如下所示：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="o">*</span><span class="nx">gen</span><span class="p">(){</span>
-    <span class="k">yield</span> <span class="s1">&#39;I&#39;</span><span class="p">;</span>
-    <span class="k">yield</span> <span class="s1">&#39;love&#39;</span><span class="p">;</span>
-    <span class="k">yield</span> <span class="s1">&#39;Javascript&#39;</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">g</span> <span class="o">=</span> <span class="nx">gen</span><span class="p">();</span>
-<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">g</span><span class="p">.</span><span class="nx">next</span><span class="p">().</span><span class="nx">value</span><span class="p">);</span> <span class="c1">//I </span>
-<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">g</span><span class="p">.</span><span class="nx">next</span><span class="p">().</span><span class="nx">value</span><span class="p">);</span> <span class="c1">//love</span>
-<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">g</span><span class="p">.</span><span class="nx">next</span><span class="p">().</span><span class="nx">value</span><span class="p">);</span> <span class="c1">//Javascript</span>
-</code></pre></div>
-<p>next函数返回一个对象{value:&#39;love&#39;,done:false}，其中value表示yield返回值，done表示generator函数是否执行完成。这样写有点low？试试这种语法。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">v</span> <span class="nx">of</span> <span class="nx">gen</span><span class="p">()){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">v</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div>
-<h3 id="2-分步数据传递">(2) 分步数据传递</h3>
-
-<p>next()函数中可以传递参数，作为yield的返回值，传递到函数体内部。这里有点tricky，next参数作为上一次执行yeild的返回值。理解“上一次”很重要。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span><span class="o">*</span> <span class="nx">gen</span><span class="p">(</span><span class="nx">x</span><span class="p">){</span>
-  <span class="kd">var</span> <span class="nx">y</span> <span class="o">=</span> <span class="k">yield</span> <span class="nx">x</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="k">yield</span> <span class="nx">y</span> <span class="o">+</span> <span class="mi">2</span><span class="p">;</span>
-  <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">g</span> <span class="o">=</span> <span class="nx">gen</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">g</span><span class="p">.</span><span class="nx">next</span><span class="p">())</span> <span class="c1">// { value: 2, done: false }</span>
-<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">g</span><span class="p">.</span><span class="nx">next</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="c1">// { value: 4, done: true }</span>
-<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">g</span><span class="p">.</span><span class="nx">next</span><span class="p">());</span> <span class="c1">//{ value: 1, done: true }</span>
-</code></pre></div>
-<p>比如这里的g.next(2)，参数2为上一步yield x + 1 的返回值赋给y，从而我们就可以在接下来的代码中使用。这就是generator数据传递的基本方法了。</p>
-
-<h3 id="3-异常传递">(3) 异常传递</h3>
-
-<p>通过generator函数返回的指针，我们可以向函数内部传递异常，这也使得异步任务的异常处理机制得到保证。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span><span class="o">*</span> <span class="nx">gen</span><span class="p">(</span><span class="nx">x</span><span class="p">){</span>
-  <span class="k">try</span> <span class="p">{</span>
-    <span class="kd">var</span> <span class="nx">y</span> <span class="o">=</span> <span class="k">yield</span> <span class="nx">x</span> <span class="o">+</span> <span class="mi">2</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">e</span><span class="p">){</span> 
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">e</span><span class="p">);</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="nx">y</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">g</span> <span class="o">=</span> <span class="nx">gen</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-<span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">g</span><span class="p">.</span><span class="nx">next</span><span class="p">());</span> <span class="c1">//{ value: 3, done: false }</span>
-<span class="nx">g</span><span class="p">.</span><span class="k">throw</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">);</span> <span class="c1">//error</span>
-</code></pre></div>
-<h3 id="3-2-用generator实现异步操作">3.2 用generator实现异步操作</h3>
-
-<p>仍然使用本文中的getChapter方法，该方法返回一个promise，我们看一下如何使用generator处理异步回调。gen方法在执行到yield指令时返回的result.value是promise对象，然后我们通过next方法将promise的结果返回到gen函数中，作为addToPage的参数。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="o">*</span><span class="nx">gen</span><span class="p">(){</span>
-    <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="k">yield</span> <span class="nx">getChapter</span><span class="p">(</span><span class="s1">&#39;I love Javascript&#39;</span><span class="p">);</span>
-    <span class="nx">addToPage</span><span class="p">(</span><span class="nx">result</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">g</span> <span class="o">=</span> <span class="nx">gen</span><span class="p">();</span>
-<span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">g</span><span class="p">.</span><span class="nx">next</span><span class="p">();</span>
-<span class="nx">result</span><span class="p">.</span><span class="nx">value</span><span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">){</span>
-    <span class="nx">g</span><span class="p">.</span><span class="nx">next</span><span class="p">(</span><span class="nx">data</span><span class="p">);</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>gen函数的代码，和普通同步函数几乎没有区别，只是多了一条yield指令。</p>
-
-<p>jsfiddle地址如下：<a href="http://jsfiddle.net/fhnc07rq/3/">http://jsfiddle.net/fhnc07rq/3/</a></p>
-
-<h3 id="3-3-使用co进行规范化异步操作">3.3 使用co进行规范化异步操作</h3>
-
-<p>虽然gen函数本身非常干净，只需要一条yield指令即可实现异步操作。但是我却需要一堆代码，用于控制gen函数、向gen函数传递参数。有没有更规范的方式呢？其实只需要将这些操作进行封装，co库为我们做了这些（<a href="https://github.com/tj/co">https://github.com/tj/co</a>）。那么我们用generator和co实现上文的逐步加载10个章节数据的操作。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="o">*</span><span class="nx">gen</span><span class="p">(){</span>
-    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nx">i</span><span class="o">&lt;</span><span class="nx">chapterStrs</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span><span class="nx">i</span><span class="o">++</span><span class="p">){</span>
-        <span class="nx">addToPage</span><span class="p">(</span><span class="k">yield</span> <span class="nx">getChapter</span><span class="p">(</span><span class="nx">chapterStrs</span><span class="p">[</span><span class="nx">i</span><span class="p">]));</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="nx">co</span><span class="p">(</span><span class="nx">gen</span><span class="p">);</span>
-</code></pre></div>
-<p>jsfiddle演示地址：<a href="http://jsfiddle.net/0hvtL6e9/">http://jsfiddle.net/0hvtL6e9/</a></p>
-
-<p>这种方法的效果类似于上文中提到“顺序promise”,我们能不能实现上文的“并发promise，渐进式”呢？代码如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="o">*</span><span class="nx">gen</span><span class="p">(){</span>
-  <span class="kd">var</span> <span class="nx">charperPromises</span> <span class="o">=</span> <span class="nx">chapterStrs</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="nx">getChapter</span><span class="p">);</span>
-  <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nx">i</span><span class="o">&lt;</span><span class="nx">charperPromises</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span><span class="nx">i</span><span class="o">++</span><span class="p">){</span>
-        <span class="nx">addToPage</span><span class="p">(</span><span class="k">yield</span> <span class="nx">charperPromises</span><span class="p">[</span><span class="nx">i</span><span class="p">]);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="nx">co</span><span class="p">(</span><span class="nx">gen</span><span class="p">);</span>
-</code></pre></div>
-<p>jsfiddle演示地址： <a href="http://jsfiddle.net/gr6n3azz/1/">http://jsfiddle.net/gr6n3azz/1/</a></p>
-
-<p>经历过复杂性才能达到简单性。我们从最开始的回调黑洞到最终的generator，越来越复杂也越来越简单。</p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -645,6 +396,12 @@ largecode: code/with/slashes.
       <li>
         
           <a href="/page24">24</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page25">25</a>
         
       </li>
     

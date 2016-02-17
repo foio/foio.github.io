@@ -119,6 +119,64 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-08-12T00:00:00+08:00"><a href="/nginx-empty-domain/">August 12, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/nginx-empty-domain/" rel="bookmark" title="nginx,防止他人域名指向自己机器" itemprop="url">nginx,防止他人域名指向自己机器</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>总有一些人，热衷于窃取他人的劳动果实。比如好事者用一个空头域名指向你的主机，从而利用你的网站内容提升他自己的域名排名。比如我就发现有两个空头域名sunrisenet.cn、mbagroup.cn指向了我的网站，我们该如何防止这种情况发生呢?</p>
+
+<h2 id="方法1：将来自其他域名的访问导向自己的域名">方法1：将来自其他域名的访问导向自己的域名</h2>
+<div class="highlight"><pre><code class="language-text" data-lang="text"> server {
+     listen 80 default;
+     server_name _;
+     rewrite ^(.*) http://www.xuanhao360.com;
+ }
+ server {
+     listen 80;
+     server_name  www.xuanhao360.com;
+     root /var/www;
+     index  index.html;
+     ......
+ }
+</code></pre></div>
+<h2 id="方法2：对来自其他域名的访问返回500错误">方法2：对来自其他域名的访问返回500错误</h2>
+<div class="highlight"><pre><code class="language-text" data-lang="text">server {
+        listen 80 default;
+        server_name _;
+        return 500;
+}
+ server {
+     listen 80;
+     server_name  www.xuanhao360.com;
+     root /var/www;
+     index  index.html;
+     ......
+ }
+</code></pre></div>
+<h2 id="方法3：黑名单">方法3：黑名单</h2>
+<div class="highlight"><pre><code class="language-text" data-lang="text"> server {
+     listen 80 default;
+     server_name sunrisenet.cn;
+     return 500;
+ }
+ server {
+     listen 80;
+     server_name  www.xuanhao360.com;
+     root /var/www;
+     index  index.html;
+     ......
+ }
+</code></pre></div>
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-08-10T00:00:00+08:00"><a href="/php-safe/">August 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -234,151 +292,6 @@ rel="stylesheet" type="text/css" -->
 <div class="highlight"><pre><code class="language-text" data-lang="text">max_input_vars = 1000 
 </code></pre></div>
 <p>设置用户输入生成的最大变量值。防止利用大量无用变量造成php程序hashtable冲突导致占用大量系统资源。建议执行为默认1000个值。 </p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-07-30T00:00:00+08:00"><a href="/linux-expects/">July 30, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/linux-expects/" rel="bookmark" title="linux expect详解" itemprop="url">linux expect详解</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>Expect是一个用来处理<strong>交互</strong>的命令。借助Expect，我们可以将交互过程写在一个脚本上，使之自动化完成。形象的说，ssh登录，ftp登录等都符合<strong>交互</strong>的定义。下文我们首先提出一个问题，然后介绍基础知四个命令，最后提出解决方法。</p>
-
-<h2 id="问题">问题</h2>
-
-<blockquote>
-<p>如何从机器A上ssh到机器B上，然后执行机器B上的命令？如何使之自动化完成？</p>
-</blockquote>
-
-<hr>
-
-<h2 id="四个命令">四个命令</h2>
-
-<p>Expect中最关键的四个命令是send,expect,spawn,interact。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">send：用于向进程发送字符串
-expect：从进程接收字符串
-spawn：启动新的进程
-interact：允许用户交互
-</code></pre></div>
-<h3 id="1-send命令">1. send命令</h3>
-
-<p>send命令接收一个字符串参数，并将该参数发送到进程。</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect1</span><span class="mf">.1</span><span class="o">&gt;</span> <span class="n">send</span> <span class="s">&quot;hello world</span><span class="se">\n</span><span class="s">&quot;</span>
-<span class="n">hello</span> <span class="n">world</span></code></pre></div>
-
-<h3 id="2-expect命令">2. expect命令</h3>
-
-<hr>
-
-<h4 id="1-基础知识">(1)基础知识</h4>
-
-<p>expect命令和send命令正好相反，expect通常是用来等待一个进程的反馈。expect可以接收一个字符串参数，也可以接收正则表达式参数。和上文的send命令结合，现在我们可以看一个最简单的交互式的例子：</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">&quot;hi</span><span class="se">\n</span><span class="s">&quot;</span>
-<span class="n">send</span> <span class="s">&quot;hello there!</span><span class="se">\n</span><span class="s">&quot;</span></code></pre></div>
-
-<p>这两行代码的意思是：从<strong>标准输入</strong>中等到hi和换行键后，向<strong>标准输出</strong>输出hello there。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">tips： $expect_out(buffer)存储了所有对expect的输入，&lt;$expect_out(0,string)&gt;存储了匹配到expect参数的输入。
-</code></pre></div>
-<p>比如如下程序：</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">&quot;hi</span><span class="se">\n</span><span class="s">&quot;</span>
-<span class="n">send</span> <span class="s">&quot;you typed &lt;$expect_out(buffer)&gt;&quot;</span>
-<span class="n">send</span> <span class="s">&quot;but I only expected &lt;$expect_out(0,string)&gt;&quot;</span></code></pre></div>
-
-<p>当在标准输入中输入</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">test
-hi
-</code></pre></div>
-<p>是，运行结果如下</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">you typed: test
-hi
-I only expect: hi
-</code></pre></div>
-<hr>
-
-<h4 id="2-模式-动作">(2)模式-动作</h4>
-
-<p>expect最常用的语法是来自tcl语言的模式-动作。这种语法极其灵活，下面我们就各种语法分别说明。</p>
-
-<p>单一分支模式语法：</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">&quot;hi&quot;</span> <span class="p">{</span><span class="n">send</span> <span class="s">&quot;You said hi&quot;</span><span class="p">}</span></code></pre></div>
-
-<p>匹配到hi后，会输出&quot;you said hi&quot;</p>
-
-<p>多分支模式语法：</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">&quot;hi&quot;</span> <span class="p">{</span> <span class="n">send</span> <span class="s">&quot;You said hi</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">}</span> \
-<span class="s">&quot;hello&quot;</span> <span class="p">{</span> <span class="n">send</span> <span class="s">&quot;Hello yourself</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">}</span> \
-<span class="s">&quot;bye&quot;</span> <span class="p">{</span> <span class="n">send</span> <span class="s">&quot;That was unexpected</span><span class="se">\n</span><span class="s">&quot;</span> <span class="p">}</span></code></pre></div>
-
-<p>匹配到hi,hello,bye任意一个字符串时，执行相应的输出。等同于如下写法：</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="p">{</span>
-<span class="s">&quot;hi&quot;</span> <span class="p">{</span> <span class="n">send</span> <span class="s">&quot;You said hi</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">}</span>
-<span class="s">&quot;hello&quot;</span> <span class="p">{</span> <span class="n">send</span> <span class="s">&quot;Hello yourself</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">}</span>
-<span class="s">&quot;bye&quot;</span> <span class="p">{</span> <span class="n">send</span> <span class="s">&quot;That was unexpected</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">}</span>
-<span class="p">}</span></code></pre></div>
-
-<hr>
-
-<h3 id="3-spawn命令">3. spawn命令</h3>
-
-<p>上文的所有demo都是和标准输入输出进行交互，但是我们跟希望他可以和某一个进程进行交互。spawm命令就是用来启动新的进程的。spawn后的send和expect命令都是和spawn打开的进程进行交互的。结合上文的send和expect命令我们可以看一下更复杂的程序段了。</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">set</span> <span class="n">timeout</span> <span class="o">-</span><span class="mi">1</span>
-<span class="n">spawn</span> <span class="n">ftp</span> <span class="n">ftp</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">com</span>      <span class="c1">//打开新的进程，该进程用户连接远程ftp服务器</span>
-<span class="n">expect</span> <span class="s">&quot;Name&quot;</span>             <span class="c1">//进程返回Name时</span>
-<span class="n">send</span> <span class="s">&quot;user</span><span class="se">\r</span><span class="s">&quot;</span>        <span class="c1">//向进程输入anonymous\r</span>
-<span class="n">expect</span> <span class="s">&quot;Password:&quot;</span>        <span class="c1">//进程返回Password:时</span>
-<span class="n">send</span> <span class="s">&quot;123456</span><span class="se">\r</span><span class="s">&quot;</span>    <span class="c1">//向进程输入don@libes.com\r</span>
-<span class="n">expect</span> <span class="s">&quot;ftp&gt; &quot;</span>            <span class="c1">//进程返回ftp&gt;时</span>
-<span class="n">send</span> <span class="s">&quot;binary</span><span class="se">\r</span><span class="s">&quot;</span>           <span class="c1">//向进程输入binary\r</span>
-<span class="n">expect</span> <span class="s">&quot;ftp&gt; &quot;</span>            <span class="c1">//进程返回ftp&gt;时</span>
-<span class="n">send</span> <span class="s">&quot;get test.tar.gz</span><span class="se">\r</span><span class="s">&quot;</span>  <span class="c1">//向进程输入get test.tar.gz\r</span></code></pre></div>
-
-<p>这段代码的作用是登录到ftp服务器ftp ftp.uu.net上，并以二进制的方式下载服务器上的文件test.tar.gz。程序中有详细的注释。</p>
-
-<hr>
-
-<h3 id="4-interact">4.interact</h3>
-
-<p>到现在为止，我们已经可以结合spawn、expect、send自动化的完成很多任务了。但是，如何让人在适当的时候干预这个过程了。比如下载完ftp文件时，仍然可以停留在ftp命令行状态，以便手动的执行后续命令。interact可以达到这些目的。下面的demo在自动登录ftp后，允许用户交互。</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">spawn</span> <span class="n">ftp</span> <span class="n">ftp</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">com</span>
-<span class="n">expect</span> <span class="s">&quot;Name&quot;</span>
-<span class="n">send</span> <span class="s">&quot;user</span><span class="se">\r</span><span class="s">&quot;</span>
-<span class="n">expect</span> <span class="s">&quot;Password:&quot;</span>
-<span class="n">send</span> <span class="s">&quot;123456</span><span class="se">\r</span><span class="s">&quot;</span>
-<span class="n">interact</span></code></pre></div>
-
-<hr>
-
-<h3 id="解决方法">解决方法</h3>
-
-<p>上文中提到：</p>
-
-<blockquote>
-<p>如何从机器A上ssh到机器B上，然后执行机器B上的命令？如何使之自动化完成？</p>
-</blockquote>
-
-<p>下面一段脚本实现了从机器A登录到机器B，然后执行机器B上的pwd命令，并停留在B机器上，等待用户交互。具体含义请参考上文。</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cp">#!/home/tools/bin/64/expect -f</span>
- <span class="n">set</span> <span class="n">timeout</span> <span class="o">-</span><span class="mi">1</span>  
- <span class="n">spawn</span> <span class="n">ssh</span> <span class="err">$</span><span class="n">BUser</span><span class="err">@$</span><span class="n">BHost</span>
- <span class="n">expect</span>  <span class="s">&quot;*password:&quot;</span> <span class="p">{</span> <span class="n">send</span> <span class="s">&quot;$password</span><span class="se">\r</span><span class="s">&quot;</span> <span class="p">}</span>
- <span class="n">expect</span>  <span class="s">&quot;$*&quot;</span> <span class="p">{</span> <span class="n">send</span> <span class="s">&quot;pwd</span><span class="se">\r</span><span class="s">&quot;</span> <span class="p">}</span>
- <span class="n">interact</span></code></pre></div>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -532,6 +445,12 @@ I only expect: hi
       <li>
         
           <a href="/page24">24</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page25">25</a>
         
       </li>
     

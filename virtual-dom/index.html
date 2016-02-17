@@ -1,0 +1,401 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>全面理解虚拟DOM，实现虚拟DOM &#8211; 积木村の研究所</title>
+<meta name="description" content="深入分析虚拟DOM的原理,并实现自己的虚拟DOM">
+<meta name="keywords" content="javascript, virtual dom">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="全面理解虚拟DOM，实现虚拟DOM">
+<meta property="og:description" content="深入分析虚拟DOM的原理,并实现自己的虚拟DOM">
+<meta property="og:url" content="/virtual-dom/">
+<meta property="og:site_name" content="积木村の研究所">
+
+
+
+
+
+<link rel="canonical" href="/virtual-dom/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/virtual-dom/" rel="bookmark" title="全面理解虚拟DOM，实现虚拟DOM">全面理解虚拟DOM，实现虚拟DOM</a></h1>
+        
+        <h2>February 16, 2016</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>最近一两年前端最火的技术莫过于ReactJS，即便你没用过也该听过，ReactJS由业界顶尖的互联网公司facebook提出，其本身有很多先进的设计思路，比如页面UI组件化、虚拟DOM等。本文将带你解开虚拟DOM的神秘面纱，不仅要理解其原理，而且要实现一个基本可用的虚拟DOM。</p>
+
+<h2 id="1-为什么需要虚拟dom">1.为什么需要虚拟DOM</h2>
+
+<p>DOM是很慢的，其元素非常庞大，页面的性能问题鲜有由JS引起的，大部分都是由DOM操作引起的。如果对前端工作进行抽象的话，主要就是维护状态和更新视图；而更新视图和维护状态都需要DOM操作。其实近年来，前端的框架主要发展方向就是解放DOM操作的复杂性。</p>
+
+<p>在jQuery出现以前，我们直接操作DOM结构，这种方法复杂度高，兼容性也较差；有了jQuery强大的选择器以及高度封装的API，我们可以更方便的操作DOM，jQuery帮我们处理兼容性问题，同时也使DOM操作变得简单；但是聪明的程序员不可能满足于此，各种MVVM框架应运而生，有angularJS、avalon、vue.js等，MVVM使用数据双向绑定，使得我们完全不需要操作DOM了，更新了状态视图会自动更新，更新了视图数据状态也会自动更新，可以说MMVM使得前端的开发效率大幅提升，但是其大量的事件绑定使得其在复杂场景下的执行性能堪忧；有没有一种兼顾开发效率和执行效率的方案呢？ReactJS就是一种不错的方案，虽然其将JS代码和HTML代码混合在一起的设计有不少争议，但是其引入的Virtual DOM(虚拟DOM)却是得到大家的一致认同的。</p>
+
+<h2 id="2-理解虚拟dom">2.理解虚拟DOM</h2>
+
+<p>虚拟的DOM的核心思想是：对复杂的文档DOM结构，提供一种方便的工具，进行最小化地DOM操作。这句话，也许过于抽象，却基本概况了虚拟DOM的设计思想</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">(1) 提供一种方便的工具，使得开发效率得到保证
+(2) 保证最小化的DOM操作，使得执行效率得到保证
+</code></pre></div>
+<h3 id="1-用js表示dom结构">(1).用JS表示DOM结构</h3>
+
+<p>DOM很慢，而javascript很快，用javascript对象可以很容易地表示DOM节点。DOM节点包括标签、属性和子节点，通过VElement表示如下。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//虚拟dom，参数分别为标签名、属性对象、子DOM列表</span>
+<span class="kd">var</span> <span class="nx">VElement</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">tagName</span><span class="p">,</span> <span class="nx">props</span><span class="p">,</span> <span class="nx">children</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">//保证只能通过如下方式调用：new VElement</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="k">this</span> <span class="k">instanceof</span> <span class="nx">VElement</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="k">new</span> <span class="nx">VElement</span><span class="p">(</span><span class="nx">tagName</span><span class="p">,</span> <span class="nx">props</span><span class="p">,</span> <span class="nx">children</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="c1">//可以通过只传递tagName和children参数</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">util</span><span class="p">.</span><span class="nx">isArray</span><span class="p">(</span><span class="nx">props</span><span class="p">))</span> <span class="p">{</span>
+        <span class="nx">children</span> <span class="o">=</span> <span class="nx">props</span><span class="p">;</span>
+        <span class="nx">props</span> <span class="o">=</span> <span class="p">{};</span>
+    <span class="p">}</span>
+
+    <span class="c1">//设置虚拟dom的相关属性</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">tagName</span> <span class="o">=</span> <span class="nx">tagName</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">props</span> <span class="o">=</span> <span class="nx">props</span> <span class="o">||</span> <span class="p">{};</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">children</span> <span class="o">=</span> <span class="nx">children</span> <span class="o">||</span> <span class="p">[];</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">key</span> <span class="o">=</span> <span class="nx">props</span> <span class="o">?</span> <span class="nx">props</span><span class="p">.</span><span class="nx">key</span> <span class="o">:</span> <span class="k">void</span> <span class="mi">666</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="nx">util</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">children</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">child</span><span class="p">,</span> <span class="nx">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">child</span> <span class="k">instanceof</span> <span class="nx">VElement</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">count</span> <span class="o">+=</span> <span class="nx">child</span><span class="p">.</span><span class="nx">count</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nx">children</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span> <span class="o">+</span> <span class="nx">child</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="nx">count</span><span class="o">++</span><span class="p">;</span>
+    <span class="p">});</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">count</span> <span class="o">=</span> <span class="nx">count</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>通过VElement，我们可以很简单地用javascript表示DOM结构。比如</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">vdom</span> <span class="o">=</span> <span class="nx">velement</span><span class="p">(</span><span class="s1">&#39;div&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="s1">&#39;id&#39;</span><span class="o">:</span> <span class="s1">&#39;container&#39;</span> <span class="p">},</span> <span class="p">[</span>
+    <span class="nx">velement</span><span class="p">(</span><span class="s1">&#39;h1&#39;</span><span class="p">,</span> <span class="p">{</span> <span class="nx">style</span><span class="o">:</span> <span class="s1">&#39;color:red&#39;</span> <span class="p">},</span> <span class="p">[</span><span class="s1">&#39;simple virtual dom&#39;</span><span class="p">]),</span>
+    <span class="nx">velement</span><span class="p">(</span><span class="s1">&#39;p&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;hello world&#39;</span><span class="p">]),</span>
+    <span class="nx">velement</span><span class="p">(</span><span class="s1">&#39;ul&#39;</span><span class="p">,</span> <span class="p">[</span><span class="nx">velement</span><span class="p">(</span><span class="s1">&#39;li&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;item #1&#39;</span><span class="p">]),</span> <span class="nx">velement</span><span class="p">(</span><span class="s1">&#39;li&#39;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;item #2&#39;</span><span class="p">])]),</span>
+<span class="p">]);</span>
+</code></pre></div>
+<p>上面的javascript代码可以表示如下DOM结构：</p>
+<div class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;div</span> <span class="na">id=</span><span class="s">&quot;container&quot;</span><span class="nt">&gt;</span>
+    <span class="nt">&lt;h1</span> <span class="na">style=</span><span class="s">&quot;color:red&quot;</span><span class="nt">&gt;</span>simple virtual dom<span class="nt">&lt;/h1&gt;</span>
+    <span class="nt">&lt;p&gt;</span>hello world<span class="nt">&lt;/p&gt;</span>
+    <span class="nt">&lt;ul&gt;</span>
+        <span class="nt">&lt;li&gt;</span>item #1<span class="nt">&lt;/li&gt;</span>
+        <span class="nt">&lt;li&gt;</span>item #2<span class="nt">&lt;/li&gt;</span>
+    <span class="nt">&lt;/ul&gt;</span>   
+<span class="nt">&lt;/div&gt;</span>
+</code></pre></div>
+<p>同样我们可以很方便地根据虚拟DOM树构建出真实的DOM树。具体思路：根据虚拟DOM节点的属性和子节点递归地构建出真实的DOM树。见如下代码：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">VElement</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">render</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">//创建标签</span>
+    <span class="kd">var</span> <span class="nx">el</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">tagName</span><span class="p">);</span>
+    <span class="c1">//设置标签的属性</span>
+    <span class="kd">var</span> <span class="nx">props</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">;</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">propName</span> <span class="k">in</span> <span class="nx">props</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kd">var</span> <span class="nx">propValue</span> <span class="o">=</span> <span class="nx">props</span><span class="p">[</span><span class="nx">propName</span><span class="p">]</span>
+        <span class="nx">util</span><span class="p">.</span><span class="nx">setAttr</span><span class="p">(</span><span class="nx">el</span><span class="p">,</span> <span class="nx">propName</span><span class="p">,</span> <span class="nx">propValue</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="c1">//依次创建子节点的标签</span>
+    <span class="nx">util</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">children</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">child</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//如果子节点仍然为velement，则递归的创建子节点，否则直接创建文本类型节点</span>
+        <span class="kd">var</span> <span class="nx">childEl</span> <span class="o">=</span> <span class="p">(</span><span class="nx">child</span> <span class="k">instanceof</span> <span class="nx">VElement</span><span class="p">)</span> <span class="o">?</span> <span class="nx">child</span><span class="p">.</span><span class="nx">render</span><span class="p">()</span> <span class="o">:</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createTextNode</span><span class="p">(</span><span class="nx">child</span><span class="p">);</span>
+        <span class="nx">el</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">childEl</span><span class="p">);</span>
+    <span class="p">});</span>
+
+    <span class="k">return</span> <span class="nx">el</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>对一个虚拟的DOM对象VElement，调用其原型的render方法，就可以产生一颗真实的DOM树。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">    <span class="nx">vdom</span><span class="p">.</span><span class="nx">render</span><span class="p">();</span>
+</code></pre></div>
+<p>既然我们可以用JS对象表示DOM结构，那么当数据状态发生变化而需要改变DOM结构时，我们先通过JS对象表示的虚拟DOM计算出实际DOM需要做的最小变动，然后再操作实际DOM，从而避免了粗放式的DOM操作带来的性能问题。</p>
+
+<h3 id="2-比较两棵虚拟dom树的差异">(2).比较两棵虚拟DOM树的差异</h3>
+
+<p>在用JS对象表示DOM结构后，当页面状态发生变化而需要操作DOM时，我们可以先通过虚拟DOM计算出对真实DOM的最小修改量，然后再修改真实DOM结构(因为真实DOM的操作代价太大)。</p>
+
+<p>如下图所示，两个虚拟DOM之间的差异已经标红：
+<figure>
+    <img src="/images/vdom-diff.png" alt="virtual dom difference">
+</figure></p>
+
+<p>为了便于说明问题，我当然选取了最简单的DOM结构，两个简单DOM之间的差异似乎是显而易见的，但是真实场景下的DOM结构很复杂，我们必须借助于一个有效的DOM树比较算法。</p>
+
+<p>设计一个diff算法有两个要点：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">如何比较两个两棵DOM树
+如何记录节点之间的差异
+</code></pre></div>
+<p><1> 如何比较两个两棵DOM树</p>
+
+<p>计算两棵树之间差异的常规算法复杂度为O(n<sup>3</sup>)，一个文档的DOM结构有上百个节点是很正常的情况，这种复杂度无法应用于实际项目。针对前端的具体情况：我们很少跨级别的修改DOM节点，通常是修改节点的属性、调整子节点的顺序、添加子节点等。因此，我们只需要对同级别节点进行比较，避免了diff算法的复杂性。对同级别节点进行比较的常用方法是深度优先遍历：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">diff</span><span class="p">(</span><span class="nx">oldTree</span><span class="p">,</span> <span class="nx">newTree</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">//节点的遍历顺序</span>
+    <span class="kd">var</span> <span class="nx">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> 
+    <span class="c1">//在遍历过程中记录节点的差异</span>
+    <span class="kd">var</span> <span class="nx">patches</span> <span class="o">=</span> <span class="p">{};</span> 
+    <span class="c1">//深度优先遍历两棵树</span>
+    <span class="nx">dfsWalk</span><span class="p">(</span><span class="nx">oldTree</span><span class="p">,</span> <span class="nx">newTree</span><span class="p">,</span> <span class="nx">index</span><span class="p">,</span> <span class="nx">patches</span><span class="p">);</span> 
+    <span class="k">return</span> <span class="nx">patches</span><span class="p">;</span> 
+<span class="p">}</span>
+</code></pre></div>
+<p><2>如何记录节点之间的差异</p>
+
+<p>由于我们对DOM树采取的是同级比较，因此节点之间的差异可以归结为4种类型：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">修改节点属性, 用PROPS表示
+修改节点文本内容, 用TEXT表示
+替换原有节点, 用REPLACE表示
+调整子节点，包括移动、删除等，用REORDER表示
+</code></pre></div>
+<p>对于节点之间的差异，我们可以很方便地使用上述四种方式进行记录，比如当旧节点被替换时：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="nx">REPLACE</span><span class="p">,</span><span class="nx">node</span><span class="o">:</span><span class="nx">newNode</span><span class="p">}</span>
+</code></pre></div>
+<p>而当旧节点的属性被修改时：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="nx">PROPS</span><span class="p">,</span><span class="nx">props</span><span class="o">:</span> <span class="nx">newProps</span><span class="p">}</span>
+</code></pre></div>
+<p>在深度优先遍历的过程中，每个节点都有一个编号，如果对应的节点有变化，只需要把相应变化的类别记录下来即可。下面是具体实现：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">dfsWalk</span><span class="p">(</span><span class="nx">oldNode</span><span class="p">,</span> <span class="nx">newNode</span><span class="p">,</span> <span class="nx">index</span><span class="p">,</span> <span class="nx">patches</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">currentPatch</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">newNode</span> <span class="o">===</span> <span class="kc">null</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//依赖listdiff算法进行标记为删除</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">util</span><span class="p">.</span><span class="nx">isString</span><span class="p">(</span><span class="nx">oldNode</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nx">util</span><span class="p">.</span><span class="nx">isString</span><span class="p">(</span><span class="nx">newNode</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">oldNode</span> <span class="o">!==</span> <span class="nx">newNode</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">//如果是文本节点则直接替换文本</span>
+            <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
+                <span class="nx">type</span><span class="o">:</span> <span class="nx">patch</span><span class="p">.</span><span class="nx">TEXT</span><span class="p">,</span>
+                <span class="nx">content</span><span class="o">:</span> <span class="nx">newNode</span>
+            <span class="p">});</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">oldNode</span><span class="p">.</span><span class="nx">tagName</span> <span class="o">===</span> <span class="nx">newNode</span><span class="p">.</span><span class="nx">tagName</span> <span class="o">&amp;&amp;</span> <span class="nx">oldNode</span><span class="p">.</span><span class="nx">key</span> <span class="o">===</span> <span class="nx">newNode</span><span class="p">.</span><span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//节点类型相同</span>
+        <span class="c1">//比较节点的属性是否相同</span>
+        <span class="kd">var</span> <span class="nx">propsPatches</span> <span class="o">=</span> <span class="nx">diffProps</span><span class="p">(</span><span class="nx">oldNode</span><span class="p">,</span> <span class="nx">newNode</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">propsPatches</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
+                <span class="nx">type</span><span class="o">:</span> <span class="nx">patch</span><span class="p">.</span><span class="nx">PROPS</span><span class="p">,</span>
+                <span class="nx">props</span><span class="o">:</span> <span class="nx">propsPatches</span>
+            <span class="p">});</span>
+        <span class="p">}</span>
+        <span class="c1">//比较子节点是否相同</span>
+        <span class="nx">diffChildren</span><span class="p">(</span><span class="nx">oldNode</span><span class="p">.</span><span class="nx">children</span><span class="p">,</span> <span class="nx">newNode</span><span class="p">.</span><span class="nx">children</span><span class="p">,</span> <span class="nx">index</span><span class="p">,</span> <span class="nx">patches</span><span class="p">,</span> <span class="nx">currentPatch</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="c1">//节点的类型不同，直接替换</span>
+        <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span> <span class="nx">type</span><span class="o">:</span> <span class="nx">patch</span><span class="p">.</span><span class="nx">REPLACE</span><span class="p">,</span> <span class="nx">node</span><span class="o">:</span> <span class="nx">newNode</span> <span class="p">});</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="nx">currentPatch</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">patches</span><span class="p">[</span><span class="nx">index</span><span class="p">]</span> <span class="o">=</span> <span class="nx">currentPatch</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>比如对上文图中的两颗虚拟DOM树，可以用如下数据结构记录它们之间的变化：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">patches</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="mi">1</span><span class="o">:</span><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="nx">REPLACE</span><span class="p">,</span><span class="nx">node</span><span class="o">:</span><span class="nx">newNode</span><span class="p">},</span> <span class="c1">//h1节点变成h5</span>
+        <span class="mi">5</span><span class="o">:</span><span class="p">{</span><span class="nx">type</span><span class="o">:</span><span class="nx">REORDER</span><span class="p">,</span><span class="nx">moves</span><span class="o">:</span><span class="nx">changObj</span><span class="p">}</span> <span class="c1">//ul新增了子节点li</span>
+    <span class="p">}</span>
+</code></pre></div>
+<h3 id="3-对真实dom进行最小化修改">(3).对真实DOM进行最小化修改</h3>
+
+<p>通过虚拟DOM计算出两颗真实DOM树之间的差异后，我们就可以修改真实的DOM结构了。上文深度优先遍历过程产生了用于记录两棵树之间差异的数据结构patches, 通过使用patches我们可以方便对真实DOM做最小化的修改。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//将差异应用到真实DOM</span>
+<span class="kd">function</span> <span class="nx">applyPatches</span><span class="p">(</span><span class="nx">node</span><span class="p">,</span> <span class="nx">currentPatches</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">util</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">currentPatches</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">currentPatch</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">switch</span> <span class="p">(</span><span class="nx">currentPatch</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">//当修改类型为REPLACE时</span>
+            <span class="k">case</span> <span class="nx">REPLACE</span><span class="o">:</span>
+                <span class="kd">var</span> <span class="nx">newNode</span> <span class="o">=</span> <span class="p">(</span><span class="k">typeof</span> <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">node</span> <span class="o">===</span> <span class="s1">&#39;String&#39;</span><span class="p">)</span>
+                 <span class="o">?</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createTextNode</span><span class="p">(</span><span class="nx">currentPatch</span><span class="p">.</span><span class="nx">node</span><span class="p">)</span> 
+                 <span class="o">:</span> <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">render</span><span class="p">();</span>
+                <span class="nx">node</span><span class="p">.</span><span class="nx">parentNode</span><span class="p">.</span><span class="nx">replaceChild</span><span class="p">(</span><span class="nx">newNode</span><span class="p">,</span> <span class="nx">node</span><span class="p">);</span>
+                <span class="k">break</span><span class="p">;</span>
+            <span class="c1">//当修改类型为REORDER时</span>
+            <span class="k">case</span> <span class="nx">REORDER</span><span class="o">:</span>
+                <span class="nx">reoderChildren</span><span class="p">(</span><span class="nx">node</span><span class="p">,</span> <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">moves</span><span class="p">);</span>
+                <span class="k">break</span><span class="p">;</span>
+            <span class="c1">//当修改类型为PROPS时</span>
+            <span class="k">case</span> <span class="nx">PROPS</span><span class="o">:</span>
+                <span class="nx">setProps</span><span class="p">(</span><span class="nx">node</span><span class="p">,</span> <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">props</span><span class="p">);</span>
+                <span class="k">break</span><span class="p">;</span>
+            <span class="c1">//当修改类型为TEXT时</span>
+            <span class="k">case</span> <span class="nx">TEXT</span><span class="o">:</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">node</span><span class="p">.</span><span class="nx">textContent</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">node</span><span class="p">.</span><span class="nx">textContent</span> <span class="o">=</span> <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">content</span><span class="p">;</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                    <span class="nx">node</span><span class="p">.</span><span class="nx">nodeValue</span> <span class="o">=</span> <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">content</span><span class="p">;</span>
+                <span class="p">}</span>
+                <span class="k">break</span><span class="p">;</span>
+            <span class="k">default</span><span class="o">:</span>
+                <span class="k">throw</span> <span class="k">new</span> <span class="nb">Error</span><span class="p">(</span><span class="s1">&#39;Unknow patch type &#39;</span> <span class="o">+</span> <span class="nx">currentPatch</span><span class="p">.</span><span class="nx">type</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>至此，虚拟DOM的基本原理已经基本讲解完成了；我们也一起实现了一个基本可用的虚拟DOM。本文中只给出了关键的源代码，<a href="https://github.com/foio/vdom-demo">全部源代码请参考我的github</a>。</p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#javascript" title="Pages tagged javascript" class="tag">javascript</a><a href="/tags/#virtual dom" title="Pages tagged virtual dom" class="tag">virtual dom</a></span>
+        <span><a href="/virtual-dom/" rel="bookmark" title="全面理解虚拟DOM，实现虚拟DOM">全面理解虚拟DOM，实现虚拟DOM</a> was published on <span class="entry-date date published updated"><time datetime="2016-02-16T00:00:00+08:00">February 16, 2016</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2016-02-16">02/16/2016</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+
+    
+<div style="max-width:800px;background-color:#fff;padding: 20px;margin:0 auto;">
+<!--高速版-->
+    <div id="SOHUCS" style="max-width:800px;"></div>
+    <script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+    <script type="text/javascript">
+        window.changyan.api.config({
+            appid: 'cyrgTvN9G',
+            conf: 'prod_e42e502ec2a5653d7d595968a1a242c1'
+        });
+    </script>
+</div>
+
+	        
+
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/localstorage-webview/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/localstorage-webview/" title="使用localstorage和预加载做到webview秒开">使用localstorage和预加载做到webview秒开</a></h3>
+          <p>使用localstorage和预加载做到webview秒开 <a href="/localstorage-webview/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/navigation-timing/" title="使用navigation timing统计网页加载速度">使用navigation timing统计网页加载速度</a></h4>
+            <span>Published on December 17, 2015</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/angular-route/" title="angular正则表达式路由">angular正则表达式路由</a></h4>
+            <span>Published on December 14, 2015</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+	        
+</body>
+</html>

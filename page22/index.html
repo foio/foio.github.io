@@ -119,6 +119,100 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-05-30T00:00:00+08:00"><a href="/firefox-addon/">May 30, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/firefox-addon/" rel="bookmark" title="firefox扩展开发之Add-ons SDK" itemprop="url">firefox扩展开发之Add-ons SDK</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>firefox扩展开发主要有两种模式：</p>
+
+<blockquote>
+<p>1.Add-ons SDK扩展，sdk的特点是简单，适合初级玩家。这种开发方式最快的入门方法就是阅读<a href="https://developer.mozilla.org/en-US/Add-ons/SDK">mozilla的官方文档</a>。</p>
+
+<p>2.bootstrap扩展，这种扩展开发方式从无到有完全手动，需要学习firefox的界面描述语言，适合高级玩家。 可以参考<a href="http://www.ibm.com/developerworks/cn/web/wa-lo-firefox-ext/">IMB developwoker上的一篇入门文章</a></p>
+</blockquote>
+
+<p>本人属于初级玩家，所以本文主要描述使用Add-ons SDK建立一个具有基本功能的扩展。</p>
+
+<hr>
+
+<h1 id="1-环境篇">1.环境篇</h1>
+
+<p>下载python2.5、2.6或者2.7，firefox，<a href="https://ftp.mozilla.org/pub/mozilla.org/labs/jetpack/addon-sdk-1.16.zip">Add-ons SDK</a> 。确保python在系统的path中。解压下载的sdk的zip文件，在命令行模式下运行：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">cd add-ons 
+bin\active
+#如果active(主要是初始化一些变量)运行成功，会改变当前的命令行前缀，类似如下:
+(C:\Users\mozilla\sdk\addon-sdk) C:\Users\Work\sdk\addon-sdk&gt;
+#接下来继续在当前命令行测试环境是否ok，运行如下命令
+cfg
+#第一行的输出应该是：Usage: cfx [options] [command]
+</code></pre></div>
+<p>到此为止，扩展开发环境就算ok了。如果遇到问题，请浏览<a href="https://developer.mozilla.org/en-US/Add-ons/SDK/Tutorials/Installation">官方文档</a></p>
+
+<hr>
+
+<h1 id="2-工具篇">2.工具篇</h1>
+
+<h1 id="1-用cfx-init产生扩展的基本框架">(1) 用cfx init产生扩展的基本框架</h1>
+
+<p>工欲善其事，必先利其器，好的工具能够大幅度提高开发效率。我要介绍的工具是cfx。</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">mkdir my-addon
+cd my-addon 
+cfx init
+* lib directory created
+* data directory created
+* test directory created
+* doc directory created
+* README.md written
+* package.json written
+* test/test-main.js written
+* lib/main.js written
+* doc/main.md written
+Your sample add-on is now ready for testing:
+try &quot;cfx test&quot; and then &quot;cfx run&quot;. Have fun!&quot;
+</code></pre></div>
+<hr>
+
+<h1 id="2-实现扩展的具体逻辑">(2)实现扩展的具体逻辑</h1>
+
+<p>扩展的具体逻辑在lib/main.js中。假如我们的想在浏览器的工具栏上实现一个button，点击后在新的tab页面中打开www.baidu.com。具体的逻辑代码如下：</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">widgets</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;sdk/widget&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">tabs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;sdk/tabs&quot;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">widget</span> <span class="o">=</span> <span class="nx">widgets</span><span class="p">.</span><span class="nx">Widget</span><span class="p">({</span>
+  <span class="nx">id</span><span class="o">:</span> <span class="s2">&quot;mozilla-link&quot;</span><span class="p">,</span>
+  <span class="nx">label</span><span class="o">:</span> <span class="s2">&quot;Mozilla website&quot;</span><span class="p">,</span>
+  <span class="nx">contentURL</span><span class="o">:</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;sdk/self&quot;</span><span class="p">).</span><span class="nx">data</span><span class="p">.</span><span class="nx">url</span><span class="p">(</span><span class="s2">&quot;icon-16.png&quot;</span><span class="p">),</span>
+  <span class="nx">onClick</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">tabs</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s2">&quot;http://developer.mozilla.org/&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">});</span></code></pre></div>
+
+<p>当然你也可以自定义button的icon，只需要替换data目录下的icon-16.png，icon-32.png，icon-64.png</p>
+
+<hr>
+
+<h1 id="3-浏览器中测试">(3)浏览器中测试</h1>
+
+<p>使用cfx run在firefox中测试开发中扩展，cfx run命令会启动firefox并安装该插件。</p>
+
+<hr>
+
+<h1 id="4-打包">(4)打包</h1>
+
+<p>使用cfx xpi打包插件为xpi包。打包后的xpi文件就可以直接使用浏览器安装了。</p>
+
+<hr>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-05-10T00:00:00+08:00"><a href="/firefox-profile/">May 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -152,36 +246,6 @@ firefox.exe -P
 <div class="highlight"><pre><code class="language-text" data-lang="text">使用命令行启动firefox，假设上一步创建的新的profile文件为TestProfile，可以使用如下命令使用新的profile启动firefox浏览器
 firefox.exe -P  “TestProfile”
 </code></pre></div>
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-04-16T00:00:00+08:00"><a href="/sci/">April 16, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/sci/" rel="bookmark" title="投的一篇sci论文" itemprop="url">投的一篇sci论文</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>将毕业论文整理后投出，来来回回修改将近一年，终于发表了，第一作者当然是导师了，呵呵。</p>
-
-<hr>
-
-<h3 id="title">title</h3>
-
-<p><a href="http://www.sciencedirect.com/science/article/pii/S0923596514000502">Robust vision tracking by online random ferns and template library</a></p>
-
-<h3 id="abstract">Abstract</h3>
-
-<blockquote>
-<p>In this paper, we proposed a robust tracking algorithm with an appearance model based on random ferns and template library. We adopt random Gaussian difference to generate binary features which depend on two randomly selected points and their corresponding Gaussian blur kernels. Semi-naive Bayes based random ferns are adopted as the discriminative model, and a template library including both positive templates and negative templates is used as generative model, the co-training of both discriminative and generative models gives our tracker the ability to separate foreground and background samples accurately. Besides, we also come up with a fragment based method which combines global ferns and local ferns to handle the occlusion problem. Experimental results demonstrated that the proposed algorithm performs well in terms of accuracy and robustness.</p>
-</blockquote>
-
-<p>论文全文google吧！</p>
-
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
@@ -334,6 +398,12 @@ firefox.exe -P  “TestProfile”
       <li>
         
           <a href="/page24">24</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page25">25</a>
         
       </li>
     

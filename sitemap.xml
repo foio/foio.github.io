@@ -129,7 +129,15 @@
         <loc>/page24/index.html</loc>
     </url>
     
+    <url>
+        <loc>/page25/index.html</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/virtual-dom/</loc>
+    </url>
     
     <url>
         <loc>/localstorage-webview/</loc>

@@ -119,6 +119,46 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-01-02T00:00:00+08:00"><a href="/mongo-atom/">January 02, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/mongo-atom/" rel="bookmark" title="关于mongo原子操作的探讨" itemprop="url">关于mongo原子操作的探讨</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <blockquote>
+<p>众所周知，Redis采用的是异步I/O非阻塞的单进程模型，每一条Redis命令都是原子性的。那么mongoDB呢？ mongo有哪些原子操作呢？有哪些实现事务性操作的技巧呢？</p>
+</blockquote>
+
+<h3 id="1-对单个文档的原子性修改">1.对单个文档的原子性修改</h3>
+
+<p>mongoDB保证了对单个document的多个filed的原子性修改。如果需要对单个文档进行原子性的CAS操作(check and set)，可以使用findAndModify操作。</p>
+
+<p>比如下面就是一条原子性的CAS操作，首先选择_id为123的文档（注意这里只选择了一个文档），然后对计数器count加1，将status字段变为true，并返回修改后的结果。</p>
+
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">db</span><span class="p">.</span><span class="nx">colleciton</span><span class="p">.</span><span class="nx">findAndModify</span><span class="p">({</span><span class="nx">query</span><span class="o">:</span><span class="p">{</span><span class="nx">_id</span><span class="o">:</span><span class="s1">&#39;123&#39;</span><span class="p">},</span><span class="nx">$inc</span><span class="o">:</span><span class="p">{</span><span class="nx">count</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span><span class="nx">$update</span><span class="o">:</span><span class="p">{</span><span class="nx">status</span><span class="o">:</span><span class="kc">true</span><span class="p">}},</span><span class="k">new</span><span class="o">:</span><span class="kc">true</span><span class="p">);</span></code></pre></div>
+
+<h3 id="2-对多个文档使用-isolate操作符">2.对多个文档使用$isolate操作符</h3>
+
+<p><code>$isolate</code>操作符可以对多个文档的修改提供隔离性。针对其他线程的并发写操作，<code>$isolate</code>保证了提交前其他线程无法修改对应的文档。针对其他线程的读操作，<code>$isolate</code>保证了其他线程读取不到未提交的数据。</p>
+
+<p>但是<code>$isolate</code>有验证的性能问题，因为这种情况下线程持有锁的时间较长，严重的影响mongo的并发性。另外，<code>$isolate</code>也无法保证多个文档修改的一致性(all-or-nothing)，$isolate失败是可能只修改了部分文档。</p>
+
+<h3 id="3-从语意层面实现事务性操作">3.从语意层面实现事务性操作</h3>
+
+<p>mongoDB官方提供了一种做法，即两阶段提交(two-phase commit)，基本的原理就是利用了写操作的幂等性。具体实现可以看官网的详细讲解。但是利用幂等性来实现事务性有一个重要的前置条件：业务不在乎中间态的不一致。幂等性可以保证最终的一致性，但是会出现中间的不一致状态。</p>
+
+<hr>
+
+<p>参考资料: (1) <a href="http://docs.mongodb.org/manual/core/write-operations-atomicity/">mongoDB原子性与实务</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-12-10T00:00:00+08:00"><a href="/hive-function/">December 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -181,135 +221,6 @@ rel="stylesheet" type="text/css" -->
 <hr>
 
 <p>参考资料: <a href="https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF">hive内置函数</a>, <a href="https://github.com/foio/hive-extension-examples">hive自定义函数demo</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-10-23T00:00:00+08:00"><a href="/php-extension-autoload/">October 23, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/php-extension-autoload/" rel="bookmark" title="php扩展中autoload的实现" itemprop="url">php扩展中autoload的实现</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>我们在写web应用程序时通常对每个类都建立一个 PHP 源文件。为了使用这些源文件，我们就需要在每个脚本开头写大量的的包含语句(include,require)。在 PHP 5 中，不再需要这样了。我们可__autoload()函数和spl_autoload_register函数实现实现自己的加载源文件的机制，它们会在试图使用尚未被定义的类时自动调用。通过调用这些函数，脚本引擎在 PHP 出错失败前有了最后一个机会加载所需的类。本文的主要目标是讲述如何在扩展中用C语言实现自动加载源文件的机制，但是在这之前我们先熟悉一下在PHP脚本中实现自动加载的方法。</p>
-
-<h3 id="1-在php脚本中实现自动加载">1. 在php脚本中实现自动加载</h3>
-
-<p>在 PHP 5 中我们可以定义一个 __autoload() 函数，它会在试图使用尚未被定义的类时自动调用，这样我们就可以定义一些自己的加载规则了。</p>
-<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
-<span class="k">function</span> <span class="nf">__autoload</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">require_once</span> <span class="nv">$class_name</span> <span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="nv">$obj</span>  <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass1</span><span class="p">();</span>
-<span class="nv">$obj2</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass2</span><span class="p">();</span>
-<span class="cp">?&gt;</span><span class="x"></span>
-</code></pre></div>
-<p>使用<code>spl_autoload_register</code>我们可以一次注册多个加载函数，PHP会在试图使用尚未被定义的类时按注册顺序调用。</p>
-<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
-<span class="k">function</span> <span class="nf">autoload_services</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span>
-<span class="p">{</span>
-    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">&#39;services/&#39;</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="nv">$file</span><span class="p">))</span>
-    <span class="p">{</span>
-        <span class="k">require_once</span><span class="p">(</span><span class="nv">$file</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="k">function</span> <span class="nf">autoload_vos</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span>
-<span class="p">{</span>
-    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">&#39;vos/&#39;</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="nv">$file</span><span class="p">))</span>
-    <span class="p">{</span>
-        <span class="k">require_once</span><span class="p">(</span><span class="nv">$file</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">&#39;autoload_services&#39;</span><span class="p">);</span>
-<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">&#39;autoload_vos&#39;</span><span class="p">);</span>
-<span class="cp">?&gt;</span><span class="x"></span>
-</code></pre></div>
-<h3 id="2-在php扩展中实现自动加载">2. 在php扩展中实现自动加载</h3>
-
-<p>最近在写一个php扩展，其中一个功能就是实现类的自动加载，其实也是通过在内核中调用<code>spl_autoload_register</code>函数来实现。使用zend API调用<code>spl_autoload_register</code>函数还是相对简单的，下面我们主要讲一下如何在内核中实现<code>inclue/require/include_once/require_once</code>等指令的功能。其实<code>inclue/require/include_once/require_once</code>等指令主要是读入文件编译并执行，下面的方法就是完成了这些操作，代码中有详细的注释。</p>
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cm">/*</span>
-<span class="cm">*  loader_import首先将PHP源文件编译成op_array，然后依次执行op_array中的opcode</span>
-<span class="cm">*/</span>
-<span class="kt">int</span> <span class="nf">loader_import</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">len</span> <span class="n">TSRMLS_DC</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">zend_file_handle</span> <span class="n">file_handle</span><span class="p">;</span>
-    <span class="n">zend_op_array</span>   <span class="o">*</span><span class="n">op_array</span><span class="p">;</span>
-    <span class="kt">char</span> <span class="n">realpath</span><span class="p">[</span><span class="n">MAXPATHLEN</span><span class="p">];</span>
-
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">VCWD_REALPATH</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">realpath</span><span class="p">))</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="p">}</span>
-
-    <span class="n">file_handle</span><span class="p">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">path</span><span class="p">;</span>
-    <span class="n">file_handle</span><span class="p">.</span><span class="n">free_filename</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="n">file_handle</span><span class="p">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">ZEND_HANDLE_FILENAME</span><span class="p">;</span>
-    <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-    <span class="n">file_handle</span><span class="p">.</span><span class="n">handle</span><span class="p">.</span><span class="n">fp</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-
-    <span class="c1">//调用zend API编译源文件</span>
-    <span class="n">op_array</span> <span class="o">=</span> <span class="n">zend_compile_file</span><span class="p">(</span><span class="o">&amp;</span><span class="n">file_handle</span><span class="p">,</span> <span class="n">ZEND_INCLUDE</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
-
-    <span class="k">if</span> <span class="p">(</span><span class="n">op_array</span> <span class="o">&amp;&amp;</span> <span class="n">file_handle</span><span class="p">.</span><span class="n">handle</span><span class="p">.</span><span class="n">stream</span><span class="p">.</span><span class="n">handle</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kt">int</span> <span class="n">dummy</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">)</span> <span class="p">{</span>
-            <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span> <span class="o">=</span> <span class="n">path</span><span class="p">;</span>
-        <span class="p">}</span>
-
-        <span class="c1">//将源文件注册到执行期间的全局变量(EG)的include_files列表中，这样就标记了源文件已经包含过了</span>
-        <span class="n">zend_hash_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">EG</span><span class="p">(</span><span class="n">included_files</span><span class="p">),</span> <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">dummy</span><span class="p">,</span>
-                <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">),</span> <span class="nb">NULL</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="n">zend_destroy_file_handle</span><span class="p">(</span><span class="o">&amp;</span><span class="n">file_handle</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
-
-    <span class="c1">//开始执行op_array</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">op_array</span><span class="p">)</span> <span class="p">{</span>
-        <span class="n">zval</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-        <span class="c1">//保存原来的执行环境，包括active_op_array,opline_ptr等</span>
-        <span class="n">zval</span> <span class="o">**</span> <span class="n">__old_return_value_pp</span>   <span class="o">=</span>  <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">);</span>
-        <span class="n">zend_op</span> <span class="o">**</span> <span class="n">__old_opline_ptr</span>     <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">opline_ptr</span><span class="p">);</span> 
-        <span class="n">zend_op_array</span> <span class="o">*</span> <span class="n">__old_op_array</span>  <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">);</span>
-        <span class="c1">//保存环境完成后，初始化本次执行环境，替换op_array</span>
-        <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">result</span><span class="p">;</span>
-        <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span>      <span class="o">=</span> <span class="n">op_array</span><span class="p">;</span>
-
-<span class="cp">#if ((PHP_MAJOR_VERSION == 5) &amp;&amp; (PHP_MINOR_VERSION &gt; 2)) || (PHP_MAJOR_VERSION &gt; 5)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">))</span> <span class="p">{</span>
-            <span class="n">zend_rebuild_symbol_table</span><span class="p">(</span><span class="n">TSRMLS_C</span><span class="p">);</span>
-        <span class="p">}</span>
-<span class="cp">#endif</span>
-        <span class="c1">//调用zend API执行源文件的op_array</span>
-        <span class="n">zend_execute</span><span class="p">(</span><span class="n">op_array</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
-        <span class="c1">//op_array执行完成后销毁，要不然就要内存泄露了，哈哈</span>
-        <span class="n">destroy_op_array</span><span class="p">(</span><span class="n">op_array</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
-        <span class="n">efree</span><span class="p">(</span><span class="n">op_array</span><span class="p">);</span>
-        <span class="c1">//通过检查执行期间的全局变量(EG)的exception是否被标记来确定是否有异常</span>
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">EG</span><span class="p">(</span><span class="n">exception</span><span class="p">))</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">*</span><span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">))</span> <span class="p">{</span>
-                <span class="n">zval_ptr_dtor</span><span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">));</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-        <span class="c1">//ok,执行到这里说明源文件的op_array已经执行完成了，我们要恢复原来的执行环境了</span>
-        <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="n">__old_return_value_pp</span><span class="p">;</span>
-        <span class="n">EG</span><span class="p">(</span><span class="n">opline_ptr</span><span class="p">)</span>           <span class="o">=</span> <span class="n">__old_opline_ptr</span><span class="p">;</span> 
-        <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span>      <span class="o">=</span> <span class="n">__old_op_array</span><span class="p">;</span> 
-
-        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></div>
-<hr>
-
-<p>学习php扩展开发需要你对zend API以及PHP内核比较熟悉，推荐以下参考资料
- <a href="http://www.walu.cc/phpbook/index.md">php扩展入门博客</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -463,6 +374,12 @@ rel="stylesheet" type="text/css" -->
       <li>
         
           <a href="/page24">24</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page25">25</a>
         
       </li>
     

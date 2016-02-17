@@ -326,7 +326,7 @@ localstorage的兼容性问题
 
 <h3 id="3-基于fis3的localstorage集成解决方案">3.基于fis3的localstorage集成解决方案</h3>
 
-<p><a href="http://fis.baidu.com/">FIS3</a>作为一个优秀的前端工程化解决方案，其在业界的影响无处不在。作为狼长的一员，我们在项目中也大量使用FIS3，下面我们讨论一下如何将localstorage集成到FIS3的编译流程中。</p>
+<p><a href="http://fis.baidu.com/">FIS3</a>作为一个优秀的前端工程化解决方案，其在业界的影响无处不在。作为狼厂的一员，我们在项目中也大量使用FIS3，下面我们讨论一下如何将localstorage集成到FIS3的编译流程中。</p>
 
 <p>我们的目的是将通过FIS3工程化处理后的文件列表传递到monkeyLoader，以实现基于localstorage的加载。FIS3提供了静态资源映射表，当某个文件包含字符 <strong>RESOURCE_MAP</strong>，就会用表结构数据替换此字符，而该表记录了各个原始静态资源经过工程化后的目标文件。基于此，我们只需要对monkeyLoader进行简单的封装即可。下面是具体的封装代码：</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">fisMonkeyLoader</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">resourceMap</span><span class="p">,</span><span class="nx">resourceList</span><span class="p">){</span>
@@ -357,7 +357,7 @@ localstorage的兼容性问题
 
 <h3 id="4-通过预加载解决首次加载过慢问题">4.通过预加载解决首次加载过慢问题</h3>
 
-<p>针对目前常见的hybrid加载，我们可以通过让native客户端预加载webview从而提升首次速度。我们的实现是：客户端在启动时打开一个1px大小(用户不可见)的webview用于提前加载某些重要的页面，而这些页面通过上文中的localstorage机制存储了几乎全部js和css静态资源，从而得到webview秒开的体验。</p>
+<p>针对目前常见的hybrid架构，我们可以通过让native客户端预加载webview从而提升首次速度。我们的实现是：客户端在启动时打开一个1px大小(用户不可见)的webview用于提前加载某些重要的页面，而这些页面通过上文中的localstorage机制存储了几乎全部js和css静态资源，从而得到webview秒开的体验。</p>
 
       <footer class="entry-meta">
         <span class="entry-tags"><a href="/tags/#javascript" title="Pages tagged javascript" class="tag">javascript</a></span>
@@ -391,20 +391,20 @@ localstorage的兼容性问题
           <a href="/navigation-timing/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/navigation-timing/" title="使用navigation timing统计网页加载速度">使用navigation timing统计网页加载速度</a></h3>
-          <p>navigation timing,统计网页加载速度,window.performance <a href="/navigation-timing/">Continue reading</a></p>
+          <h3><a href="/virtual-dom/" title="全面理解虚拟DOM，实现虚拟DOM">全面理解虚拟DOM，实现虚拟DOM</a></h3>
+          <p>深入分析虚拟DOM的原理,并实现自己的虚拟DOM <a href="/virtual-dom/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/angular-route/" title="angular正则表达式路由">angular正则表达式路由</a></h4>
-            <span>Published on December 14, 2015</span>
+            <h4><a href="/navigation-timing/" title="使用navigation timing统计网页加载速度">使用navigation timing统计网页加载速度</a></h4>
+            <span>Published on December 17, 2015</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/javascript-asyn-pattern/" title="Javascript异步编程模型进化">Javascript异步编程模型进化</a></h4>
-            <span>Published on December 10, 2015</span>
+            <h4><a href="/angular-route/" title="angular正则表达式路由">angular正则表达式路由</a></h4>
+            <span>Published on December 14, 2015</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

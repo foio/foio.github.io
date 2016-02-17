@@ -16,14 +16,14 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="积木村の研究所">
 <meta property="og:description" content="this is a tech blog by foio">
-<meta property="og:url" content="/page23/index.html">
+<meta property="og:url" content="/page25/index.html">
 <meta property="og:site_name" content="积木村の研究所">
 
 
 
 
 
-<link rel="canonical" href="/page23/">
+<link rel="canonical" href="/page25/">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
 
 
@@ -119,73 +119,73 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-04-16T00:00:00+08:00"><a href="/sci/">April 16, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <span class="entry-date date published updated"><time datetime="2013-06-11T00:00:00+08:00"><a href="/nginxci/">June 11, 2013</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
     
-      <h1 class="entry-title"><a href="/sci/" rel="bookmark" title="投的一篇sci论文" itemprop="url">投的一篇sci论文</a></h1>
+      <h1 class="entry-title"><a href="/nginxci/" rel="bookmark" title="nginx下codeIgniter的rewrite设置" itemprop="url">nginx下codeIgniter的rewrite设置</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>将毕业论文整理后投出，来来回回修改将近一年，终于发表了，第一作者当然是导师了，呵呵。</p>
+    <p>本文假设CodeIgniter放在webroot的ci目录下。如果CodeIgniter直接放在webroot下，可同样参看本文，只需要将最后几步略去。</p>
 
-<hr>
-
-<h3 id="title">title</h3>
-
-<p><a href="http://www.sciencedirect.com/science/article/pii/S0923596514000502">Robust vision tracking by online random ferns and template library</a></p>
-
-<h3 id="abstract">Abstract</h3>
-
-<blockquote>
-<p>In this paper, we proposed a robust tracking algorithm with an appearance model based on random ferns and template library. We adopt random Gaussian difference to generate binary features which depend on two randomly selected points and their corresponding Gaussian blur kernels. Semi-naive Bayes based random ferns are adopted as the discriminative model, and a template library including both positive templates and negative templates is used as generative model, the co-training of both discriminative and generative models gives our tracker the ability to separate foreground and background samples accurately. Besides, we also come up with a fragment based method which combines global ferns and local ferns to handle the occlusion problem. Experimental results demonstrated that the proposed algorithm performs well in terms of accuracy and robustness.</p>
-</blockquote>
-
-<p>论文全文google吧！</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2013-12-01T00:00:00+08:00"><a href="/svn-post/">December 01, 2013</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/svn-post/" rel="bookmark" title="svn常用命令" itemprop="url">svn常用命令</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>发现很多人，包括很多同事对svn的命令只停留在checkout、commit、revert等基本的操作。其实svn还有其他一些更高级的用法，下面是3种最常用的命令。</p>
-
-<hr>
-
-<h2 id="1-查看某个svn模块-文件提交记录">1.查看某个svn模块/文件提交记录</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text">基于日期: svn log -r {2012-04-01}:{2012-04-05} Test.java
-基于版本号: svn log -r 1001:1003 Test.java
+<p>CodeIgniter要求如下形式的路径：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">host:port/ci/index.php/controller/method/params
 </code></pre></div>
-<p>其中<strong>参数-r</strong>后面可以是日期，也可以是svn版本号</p>
-
-<hr>
-
-<h2 id="2-比较某个svn模块-文件的各个版本">2.比较某个svn模块/文件的各个版本</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text">基于版本号: svn diff -r 1001:1003 Test.java
-基于常量: svn diff -r PREV:COMMITTED Test.java
+<p>在apache和lighttpd中，如果路径中发现index.php，就会找到index.php，我们只需要简单保证这种格式：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">/index.php/controller/method/params
 </code></pre></div>
+<p>但是在nginx中/index.php会被当成文件路径的一部分，按以上格式访问服务器，服务器寻找路径 /index.php/controller/method/ 下的 params 文件，显然params不存在，导致php-fpm找不到文件，进而出现no input，也即nginx通过以上格式无法找到index.php文件。这就需要我们手动的设置。为了处理这些问题我们要保证php-fpm找到codeIgniter框架index.php且codeIgniter框架可以正确的解析出controller和method。</p>
+
 <hr>
 
-<h2 id="3-将当前工作copy的模块-文件恢复到历史版本">3.将当前工作copy的模块/文件恢复到历史版本</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text">基于版本号: svn merge -r 1003:1001 Test.java
+<p>主要有两个步骤：</p>
+
+<h4 id="1-配置nginx重写规则">1.配置nginx重写规则</h4>
+<div class="highlight"><pre><code class="language-text" data-lang="text">#保证php-fpm找到codeIgniter框架index.php
+location /ci/ {
+    if (!-e $request_filename) {
+        rewrite ^/ci/(.*)$ /ci/index.php/$1 last;   # last 表示本次重写以后，继续寻找下一个匹配规则，也即会继续匹配location /ci/index.php
+    }
+}
+
+location /ci/index.php {
+    fastcgi_pass   unix:/var/run/php5-fpm.sock;
+    include        fastcgi_params;
+    fastcgi_param  SCRIPT_FILENAME    /var/www/ci/index.php;  # 这个是关键，手动设置SCRIPT_FILENAME，可以保证php-fpm找到ci的index.php
+}
 </code></pre></div>
-<p>merge的意思可以简单的理解为<strong>将diff的差异应用到本地工作copy</strong></p>
-
-<hr>
-
-<blockquote>
-<p><strong>这里有svn的更多资料</strong>  <a href="http://svndoc.iusesvn.com/svnbook/">click</a>.</p>
-</blockquote>
-
+<h4 id="2-配置codeigniter框架">2.配置codeIgniter框架</h4>
+<div class="highlight"><pre><code class="language-text" data-lang="text">#保证codeIgniter框架可以正确的解析出controller和method
+#修改CodeIgniter使用REQUEST_URI来处理mvc参数，而不是默认的AUTO
+/*
+|--------------------------------------------------------------------------
+| URI PROTOCOL
+|--------------------------------------------------------------------------
+|
+| This item determines which server global should be used to retrieve the
+| URI string.  The default setting of &#39;AUTO&#39; works for most servers.
+| If your links do not seem to work, try one of the other delicious flavors:
+|
+| &#39;AUTO&#39;            Default - auto detects
+| &#39;PATH_INFO&#39;       Uses the PATH_INFO
+| &#39;QUERY_STRING&#39;    Uses the QUERY_STRING
+| &#39;REQUEST_URI&#39;     Uses the REQUEST_URI
+| &#39;ORIG_PATH_INFO&#39;  Uses the ORIG_PATH_INFO
+|
+*/
+//$config[&#39;uri_protocol&#39;]   = &#39;AUTO&#39;;
+$config[&#39;uri_protocol&#39;] = &#39;REQUEST_URI&#39;;
+</code></pre></div>
+<p>如果你的CodeIgniter直接在webroot目录中，到这里就应该配置成功了，此时</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">$_SERVER[&#39;REQUEST_URI&#39;]=&#39;/controller/model/params&#39;
+</code></pre></div>
+<p>但是对于本例而言，CodeIgniter在webroot的ci目录下，此时</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">$_SERVER[&#39;REQUEST_URI&#39;]=&#39;/ci/controller/model/params&#39;
+</code></pre></div>
+<p>可以在CodeIgniter的index.php的最开始hack一下,加上如下语句,替换掉最开始的ci目录:</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">$_SERVER[&#39;REQUEST_URI&#39;] = preg_replace(&#39;/\/ci/&#39;,&#39;&#39;,$_SERVER[&#39;REQUEST_URI&#39;] ); 
+</code></pre></div>
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
@@ -193,7 +193,7 @@ rel="stylesheet" type="text/css" -->
 <div class="pagination">
   
     
-      <a href="/page22" class="btn">Previous</a>
+      <a href="/page24" class="btn">Previous</a>
     
   
   <ul class="inline-list">
@@ -331,7 +331,7 @@ rel="stylesheet" type="text/css" -->
     
       <li>
         
-          <span class="current-page">23</span>
+          <a href="/page23">23</a>
         
       </li>
     
@@ -343,13 +343,13 @@ rel="stylesheet" type="text/css" -->
     
       <li>
         
-          <a href="/page25">25</a>
+          <span class="current-page">25</span>
         
       </li>
     
   </ul>
   
-    <a href="/page24" class="btn">Next</a>
+    Next
   
 </div><!-- /.pagination -->
 
