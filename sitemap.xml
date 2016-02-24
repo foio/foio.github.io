@@ -136,6 +136,10 @@
 
     
     <url>
+        <loc>/mvvm-overview/</loc>
+    </url>
+    
+    <url>
         <loc>/virtual-dom/</loc>
     </url>
     

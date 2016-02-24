@@ -1,0 +1,10 @@
+digraph G{
+	rankdir=LR;
+	View [shape=box];
+	ViewModel [shape=box];
+	Model [shape=box];
+	View -> ViewModel[label=notify];
+	ViewModel -> View[label=update];
+	Model -> ViewModel[label=notify];
+	ViewModel -> Model[label=update];
+}

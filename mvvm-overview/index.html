@@ -1,0 +1,343 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>如何实现一个MVVM框架 &#8211; 积木村の研究所</title>
+<meta name="description" content="实现MVVM框架, Model View ViewModel">
+<meta name="keywords" content="javascript, MVVM">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="如何实现一个MVVM框架">
+<meta property="og:description" content="实现MVVM框架, Model View ViewModel">
+<meta property="og:url" content="/mvvm-overview/">
+<meta property="og:site_name" content="积木村の研究所">
+
+
+
+
+
+<link rel="canonical" href="/mvvm-overview/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/mvvm-overview/" rel="bookmark" title="如何实现一个MVVM框架">如何实现一个MVVM框架</a></h1>
+        
+        <h2>February 24, 2016</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>MVVM(Model View ViewModel)最初由微软在Windows Presentation Foundation（WPF）和Silverlight中引入，近年来、它作为MVC的一种替代方案在前端也如日中天。像其他MV*一样，MVVM中的Model代表着我们应用的数据；而View代表着用户界面；最重要的是ViewModel，可以将其看作一个拥有双向数据处理能力的转换器，它将模型数据传递到视图，并将视图指令传递到模型。MVVM框架将前端工程师从繁琐的DOM操作中彻底地解放出来，让我们可以更专注于自己的业务。</p>
+
+<p>接下来我们探讨一种实现双向绑定的方案，本文适合实际使用过MVVM框架的人阅读，包括AngularJS、Avalon等。最终效果如下：</p>
+
+<p><a class="jsbin-embed" href="http://jsbin.com/vasaqekozi/embed?output">JS Bin on jsbin.com</a></p>
+
+<script src="http://static.jsbin.com/js/embed.min.js?3.35.9"></script>
+
+<p><a href="https://github.com/foio/mvvm-demo">详细源代码在请到github下载</a>。</p>
+
+<h2 id="1-基本功能">1.基本功能</h2>
+
+<p>双向绑定作为MVVM框架的最大特点，是如何实现的呢？MVVM数据流示意图如下：</p>
+
+<figure style="width:80%;margin:0 auto">
+    <img src="/images/mvvm.png" alt="mvvm overview">
+</figure>
+
+<p>示意图中可以看出双向数据流：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">View将变动通知到ViewModel，然后ViewModel对Model进行更新。
+Model将变动通知到ViewModel，然后ViewModel对View进行更新。
+</code></pre></div>
+<p>其中最核心的功能是对视图(View)和模型(Model)变动的监听。</p>
+
+<h3 id="1-视图变动的监听">(1).视图变动的监听</h3>
+
+<p>MVVM框架都是通过相应的指令，在HTML中声明式的标记出需要监听的DOM节点。本文实现中，我们主要涉及到两个指令：<code>foio-controller</code>、<code>foio-model</code>以及一个表达式{{}}。
+比如：</p>
+<div class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">foio-model=</span><span class="s">&quot;nickname&quot;</span><span class="nt">&gt;</span>
+</code></pre></div>
+<p>上述指令foio-model，声明将View中的input的变动通知到Model中的nickname。通过对的视图节点(input)注册监听函数就可以得到视图(input)的变动了。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//对视图中的input节点注册input事件监听函数</span>
+<span class="kd">var</span> <span class="nx">elem</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">elem</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span><span class="s1">&#39;oninput&#39;</span><span class="p">,</span> <span class="nx">callback</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="2-模型变动的监听">(2).模型变动的监听</h3>
+
+<p>对模型变动的监听可以通过ECMAScript5中的API实现。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">obj</span><span class="p">,</span> <span class="nx">prop</span><span class="p">,</span> <span class="nx">descriptor</span><span class="p">)</span>
+</code></pre></div>
+<p>可以通过该API为对象添加一个属性，并设置该属性的gett函数和set函数，在访问属性时会触发相应的get函数和set函数。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">air</span> <span class="o">=</span> <span class="p">{};</span>
+<span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">air</span><span class="p">,</span> <span class="s1">&#39;temperature&#39;</span><span class="p">,</span> <span class="p">{</span>
+    <span class="nx">get</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;get!&#39;</span><span class="p">);</span>
+    <span class="p">},</span>
+    <span class="nx">set</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;set!&#39;</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="nx">air</span><span class="p">.</span><span class="nx">temperature</span> <span class="o">=</span> <span class="mi">15</span><span class="p">;</span> <span class="c1">//output: set!</span>
+<span class="nx">air</span><span class="p">.</span><span class="nx">temperature</span><span class="p">;</span>    <span class="c1">//outpu: get!</span>
+</code></pre></div>
+<p>我们可以在set函数中得到模型的变动，并将相关变动通知到ViewModel。</p>
+
+<h2 id="2-总体实现">2.总体实现</h2>
+
+<p>MVVM的主要流程包括(View)视图扫描、(Model)模型构建、以及关联视图和模型(ViewModel)</p>
+
+<h3 id="1-view-视图-扫描">(1)View(视图)扫描</h3>
+
+<p>处理View(视图)必然涉及到对DOM结构的扫描，通过扫描抽取指令(本文只有三种指令，foio-controller、foio-model、)；并对相应的节点进行如下处理：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">绑定通知函数，用于在视图更新时通知ViewModel
+绑定更新函数，用于在模型更新时通过该函数更新视图
+</code></pre></div>
+<p>针对不同的节点类型，这些通知函数和更新函数都是预先定义好的，存储在<code>directives</code>结构中。在节点扫描过程中，当遇到指令时，就通过executeBindings函数对相应的节点进行绑定处理。流程图如下：</p>
+
+<figure style="width:80%;margin:0 auto">
+    <img src="/images/mvvm-flow.png" alt="mvvm overview">
+</figure>
+
+<h3 id="2-model-模型-构建">(2)Model(模型)构建</h3>
+
+<p>而对Model的处理也主要是注册监听函数，用于在Model变化时得到通知，如上图所示。controller中的每一个变量都通过<code>Object.defineProperty(obj, prop, descriptor)</code>定义到Model上，其中descriptor上的get函数可以用于搜集依赖，而set函数则用于通知依赖于该Model的视图进行更新。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">descriptor</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">dependencyList</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="nx">get</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="c1">//搜集依赖</span>
+            <span class="nx">dependencyList</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+            <span class="k">return</span> <span class="nx">value</span><span class="p">;</span>
+        <span class="p">},</span>
+    <span class="nx">set</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">newVal</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">oldVal</span> <span class="o">===</span> <span class="nx">newVal</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="nx">oldVal</span> <span class="o">=</span> <span class="nx">newVal</span><span class="p">;</span>
+            <span class="c1">//通知依赖于该Model的视图进行更新</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">dependIdx</span> <span class="k">in</span> <span class="nx">dependencyList</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">dependencyList</span><span class="p">[</span><span class="nx">dependIdx</span><span class="p">].</span><span class="nx">updateView</span><span class="p">(</span><span class="nx">newVal</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="3-关联模型和视图">(3)关联模型和视图</h3>
+
+<p>View(视图)扫描的结果是一个元素集合</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">bindings</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="nx">type</span><span class="o">:</span> <span class="nx">type</span><span class="p">,</span> <span class="c1">//指令类型</span>
+                    <span class="nx">element</span><span class="o">:</span> <span class="nx">elem</span><span class="p">,</span> <span class="c1">//DOM节点</span>
+                    <span class="nx">expr</span><span class="o">:</span> <span class="nx">value</span><span class="p">,</span> <span class="c1">//绑定的变量名称</span>
+                <span class="p">},</span>
+                <span class="p">{...}</span>
+            <span class="p">]</span>
+</code></pre></div>
+<p>而Model(模型)构建的结果也是一个集合：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">vmodels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="nx">controller1</span><span class="o">:</span> <span class="p">{</span>
+                <span class="nx">expr1</span><span class="o">:</span> <span class="nx">value1</span><span class="p">,</span>
+                <span class="nx">expr2</span><span class="o">:</span> <span class="nx">value2</span><span class="p">,</span>
+                <span class="nx">binder</span><span class="o">:</span> <span class="p">{</span><span class="nx">expr1</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){},</span><span class="nx">expr2</span><span class="o">:</span><span class="kd">function</span><span class="p">(){}}</span>
+            <span class="p">},</span>
+            <span class="nx">controller1</span><span class="o">:</span> <span class="p">{...}</span>
+        <span class="p">}</span>
+</code></pre></div>
+<p>通过executeBindings函数，将视图和模型关联起来。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">executeBindings</span><span class="p">(</span><span class="nx">bindings</span><span class="p">,</span> <span class="nx">vmodels</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">binding</span><span class="p">;</span> <span class="p">(</span><span class="nx">binding</span> <span class="o">=</span> <span class="nx">bindings</span><span class="p">[</span><span class="nx">i</span><span class="o">++</span><span class="p">]);)</span> <span class="p">{</span>
+        <span class="nx">binding</span><span class="p">.</span><span class="nx">vmodels</span> <span class="o">=</span> <span class="nx">vmodels</span><span class="p">;</span>
+        <span class="nx">directives</span><span class="p">[</span><span class="nx">binding</span><span class="p">.</span><span class="nx">type</span><span class="p">](</span><span class="nx">binding</span><span class="p">);</span>
+    <span class="p">};</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>每一种指令都有不同的初始化函数，比如针对<code>foio-model</code>指令，当DOM节点为input类型时，初始化函数做了三件事：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">监听input和DOMAutoComplete事件
+注册对模型的依赖
+提供更新该DOM节点的方法
+</code></pre></div>
+<p>详细代码如下：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">directives</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span>
+        <span class="k">switch</span> <span class="p">(</span><span class="nx">binding</span><span class="p">.</span><span class="nx">xtype</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="s2">&quot;input&quot;</span><span class="o">:</span>
+                <span class="c1">//绑定input事件</span>
+                <span class="nx">binding</span><span class="p">.</span><span class="nx">bound</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="nx">updateVModel</span><span class="p">);</span>
+                <span class="c1">//绑定DOMAutoComplete事件</span>
+                <span class="nx">binding</span><span class="p">.</span><span class="nx">bound</span><span class="p">(</span><span class="s1">&#39;DOMAutoComplete&#39;</span><span class="p">,</span> <span class="nx">updateVModel</span><span class="p">);</span>
+                <span class="c1">//注册对模型的依赖</span>
+                <span class="nx">elem</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">closetVmodel</span><span class="p">.</span><span class="nx">binder</span><span class="p">[</span><span class="nx">binding</span><span class="p">.</span><span class="nx">expr</span><span class="p">].</span><span class="nx">apply</span><span class="p">(</span><span class="nx">binding</span><span class="p">);</span>
+                <span class="c1">//更新该DOM节点的方法</span>
+                <span class="nx">binding</span><span class="p">.</span><span class="nx">updateView</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">newVal</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">elem</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">newVal</span><span class="p">;</span>
+                <span class="p">};</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>至此我们实现了一个基本的MVVM框架了，虽然只有三个指令，但是基本能够说明如何设计并实现一个MVVM框架了。</p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#javascript" title="Pages tagged javascript" class="tag">javascript</a><a href="/tags/#MVVM" title="Pages tagged MVVM" class="tag">MVVM</a></span>
+        <span><a href="/mvvm-overview/" rel="bookmark" title="如何实现一个MVVM框架">如何实现一个MVVM框架</a> was published on <span class="entry-date date published updated"><time datetime="2016-02-24T00:00:00+08:00">February 24, 2016</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2016-02-24">02/24/2016</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+
+    
+<div style="max-width:800px;background-color:#fff;padding: 20px;margin:0 auto;">
+<!--高速版-->
+    <div id="SOHUCS" style="max-width:800px;"></div>
+    <script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+    <script type="text/javascript">
+        window.changyan.api.config({
+            appid: 'cyrgTvN9G',
+            conf: 'prod_e42e502ec2a5653d7d595968a1a242c1'
+        });
+    </script>
+</div>
+
+	        
+
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/virtual-dom/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/virtual-dom/" title="全面理解虚拟DOM，实现虚拟DOM">全面理解虚拟DOM，实现虚拟DOM</a></h3>
+          <p>深入分析虚拟DOM的原理,并实现自己的虚拟DOM <a href="/virtual-dom/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/localstorage-webview/" title="使用localstorage和预加载做到webview秒开">使用localstorage和预加载做到webview秒开</a></h4>
+            <span>Published on January 10, 2016</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/navigation-timing/" title="使用navigation timing统计网页加载速度">使用navigation timing统计网页加载速度</a></h4>
+            <span>Published on December 17, 2015</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+	        
+</body>
+</html>

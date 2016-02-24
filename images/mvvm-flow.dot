@@ -1,0 +1,25 @@
+digraph G{
+	bindings[shape=box];
+	vmodels[shape=box]
+	scan;
+	scanTag;
+	scanText;
+	scanAttr;
+	scanChildNodes;
+	executeBindings;
+	controller;
+	modelFactory;
+	makeAccessor;
+	scan->scanTag;
+	scanTag->scanAttr[color=red];
+	scanAttr->scanChildNodes[color=red];
+	scanChildNodes->scanTag[color=red];
+	scanChildNodes->scanText;
+	scanAttr->executeBindings;
+	scanTag->executeBindings;
+	scanText->executeBindings;
+	executeBindings->bindings;
+	controller->modelFactory;
+	modelFactory->makeAccessor;
+	makeAccessor->vmodels;
+}
