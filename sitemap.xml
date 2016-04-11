@@ -133,7 +133,15 @@
         <loc>/page25/index.html</loc>
     </url>
     
+    <url>
+        <loc>/page26/index.html</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/html5-application-cache/</loc>
+    </url>
     
     <url>
         <loc>/mvvm-overview/</loc>

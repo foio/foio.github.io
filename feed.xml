@@ -4,13 +4,161 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2016-02-24T18:46:30+08:00</updated>
+<updated>2016-04-11T19:02:27+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
   <uri>/</uri>
   <email>syszhpe@gmail.com</email>
 </author>
+
+
+<entry>
+  <title type="html"><![CDATA[深入理解HTML5离线缓存机制]]></title>
+ <link rel="alternate" type="text/html" href="/html5-application-cache/" />
+  <id>/html5-application-cache</id>
+  <updated>2016-04-10T00:00:00-00:00</updated>
+  <published>2016-04-10T00:00:00+08:00</published>
+  
+  <author>
+    <name>foio</name>
+    <uri></uri>
+    <email>syszhpe@gmail.com</email>
+  </author>
+  <content type="html">&lt;style type=&quot;text/css&quot;&gt;
+td, table {
+   border: solid gray 1px;
+   padding: 10px;
+}
+&lt;/style&gt;
+
+&lt;p&gt;HTML5提供了一种离线应用缓存机制，使得网页应用可以离线使用，这种机制在移动端浏览器上支持度非常广，所有版本的android和ios浏览器都能很好的支持。我们可以放心的使用该特性来加速移动端页面的访问速度。&lt;/p&gt;
+
+&lt;p&gt;开启离线缓存的步骤也非常简单：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;(1) 准备缓存清单文件(menifest text/cache-manifest)，用于描述页面需要缓存的资源列表
+(2) 在需要离线使用的页面中添加menifest属性，用于指定缓存清单文件的路径
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;让我们首先理解浏览器实现离线缓存的详细步骤，然后探讨使用离线缓存加速移动端网页访问速度的方案。&lt;/p&gt;
+
+&lt;h2 id=&quot;1-下载-更新缓存的详细步骤&quot;&gt;1. 下载/更新缓存的详细步骤&lt;/h2&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;(1)当浏览器访问一个包含 manifest 特性的文档时，如果应用缓存不存在，浏览器会加载文档，然后获取所有在清单文件中列出的文件，生成应用缓存的第一个版本。&lt;/p&gt;
+
+&lt;p&gt;(2)对该文档的后续访问会使浏览器直接从应用缓存(而不是服务器)中加载文档与其他在清单文件中列出的资源。此外，浏览器还会向 window.applicationCache 对象发送一个 checking 事件，在遵循合适的 HTTP 缓存规则前提下，获取清单文件。&lt;/p&gt;
+
+&lt;p&gt;(3)如果当前缓存的清单副本是最新的，浏览器将向 applicationCache 对象发送一个 noupdate 事件，到此，更新过程结束。注意，如果你在服务器修改了任何缓存资源，同时也应该修改清单文件，这样浏览器才能知道它需要重新获取资源。&lt;/p&gt;
+
+&lt;p&gt;(4)如果清单文件已经改变，文件中列出的所有文件—也包括通过调用 applicationCache.add() 方法添加到缓存中的那些文件—会被获取并放到一个临时缓存中，遵循适当的 HTTP 缓存规则。对于每个加入到临时缓存中的文件，浏览器会向 applicationCache 对象发送一个 progress 事件。如果出现任何错误，浏览器会发送一个 error 事件，并暂停更新。&lt;/p&gt;
+
+&lt;p&gt;(5)一旦所有文件都获取成功，它们会自动移送到真正的离线缓存中，并向  applicationCache 对象发送一个 cached 事件。鉴于文档早已经被从缓存加载到浏览器中，所以更新后的文档不会重新渲染，直到页面重新加载(可以手动或通过程序).
+```
+以上只是一些详细步骤，具体也有一些值得注意的细节，比如menifest文件中列出的资源url必须和menifest本身使用同样的网络协议，如果menifest文件使用的是http协议，则列表中https协议的文件就会被忽略。总之，每当在使用Application Cache的过程中遇到奇怪的问题时，随时查阅W3C标准文档。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;2-离线缓存事件流&quot;&gt;2.离线缓存事件流&lt;/h2&gt;
+
+&lt;p&gt;浏览器在解析HTML文档的过程中，遇到HTML标记的menifest属性时，就立即在后台开启一个新的进程下载需要离线缓存的资源。在下载离线缓存的过程中，会在ApplicationCache上触发一系列事件。&lt;/p&gt;
+
+&lt;table&gt;&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;事件名称&lt;/th&gt;
+&lt;th style=&quot;text-align: left&quot;&gt;解释&lt;/th&gt;
+&lt;th style=&quot;text-align: left&quot;&gt;后续事件&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;checking&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;checking事件是整个事件序列中的第一个，表示浏览器在首次下载缓存，或者在检查缓存是否有更新&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;noupdate, downloading, obsolete, error&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;noupdate&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;noupdate事件是整个事件序列的最后一个，用来表示缓存没有更新&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;无&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;downloading&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;浏览器正在首次下载menifest中列出的离线资源，或者浏览器发现缓存有更新，并且正在下载该更新&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;progress, error, cached, updateready&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;progress&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;浏览器正在下载menifest中的离线资源，其中progressEvent对象中total表示需要下载的总资源的数量，loaded表示已经处理过的资源数量&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;progress, error, cached, updateready&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;cached&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;浏览器已经成功下载了menifest中的离线资源，应用已经被缓存&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;无&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;updateready&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;缓存有更新并且更新已经下载完成，这是可以使用ApplicationCache.swapCache()来将应用切换到最新缓存&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;无&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;obsolete&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;应用已经有离线缓存了，但menifest文件无法加载成功，则删除现有离线缓存&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;无&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;error&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;发生错误的情况比较多：可能是首次视图缓存离线文件时，发现menifest文件返回404；也可能是下载缓存过程中发生了fatal错误，比如超出了最大可用存储空间的限制，发现了header为Cache-Control: no-store的资源；还有可能是缓存在更新过程中发现menifest文件发生了变化&lt;/td&gt;
+&lt;td style=&quot;text-align: left&quot;&gt;无&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;p&gt;关于离线缓存中要触发的事件，有一个很有趣的特性。从离线缓存W3C标准中，我们经常看到如下描述：&amp;#39;queue a post-load task to fire a simple event named (checking|noupdate|downloading)&amp;#39;，每一个HTML文档都有一个离线缓存事件队列(queue)，离线缓存下载过程中的事件都存放在这个队列里，用于在文档的onload事件触发后执行。也就是说，所有的ApplicationCache事件都在html的onload事件触发后才触发。&lt;/p&gt;
+
+&lt;h2 id=&quot;3-使用离线缓存加速移动端网页开发&quot;&gt;3.使用离线缓存加速移动端网页开发&lt;/h2&gt;
+
+&lt;p&gt;上文提到过，Application Cache在移动端支持的很好，几乎所有的android浏览器和ios浏览器都能很好的支持。事实上使用Application Cache加速移动端网页访问速度是行业类普遍采用的优化方案，在包括新浪微博和QQ浏览器等大型产品中都有非常广泛的使用。但是在使用离线缓存时，我们需要留意一些问题。&lt;/p&gt;
+
+&lt;h3 id=&quot;1-二次更新的问题&quot;&gt;(1).二次更新的问题&lt;/h3&gt;
+
+&lt;p&gt;我们知道每次使用离线应用时，在有网络连接的情况下，浏览器都会逐字节的检查menifest文件是否有更新，而当menifest文件有更新时，就会重新下载menifest文件中列出的所有资源，资源下载成功后会触发updateready事件。这时离线应用本身并不会立即更新，而会在下次访问时才更新，这就是我们所说的二次更新。我们在开发web程序时，一般都是前端页面和后端接口同步更新，但是二次更新问题会导致页面更新不受控制，无法和后端接口同步更新，因此要做好后端接口的向前兼容，这迫使我们抛弃传统的web开发思路而采取native开发思路来管理离线应用。我们可以通过检测updateready事件，在新的缓存可用时通知用户更新。&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;addEventListener&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;load&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  
+    &lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;applicationCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;addEventListener&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;updateready&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
+        &lt;span class=&quot;c1&quot;&gt;//缓存更新完毕 &lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;applicationCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;status&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;applicationCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;UPDATEREADY&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  
+            &lt;span class=&quot;c1&quot;&gt;//切换为最新缓存&lt;/span&gt;
+            &lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;applicationCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;swapCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;  
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;confirm&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;新版本已经更新完成，是否重新加载?&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;  
+                &lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;location&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;reload&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;  
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;  
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;  
+    &lt;span class=&quot;p&quot;&gt;},&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;  
+&lt;span class=&quot;p&quot;&gt;},&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;  
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&quot;2-超出大小限制的问题&quot;&gt;(2).超出大小限制的问题&lt;/h3&gt;
+
+&lt;p&gt;Application Cache的W3C标准中并没有对大小限制做出详细的描述。因此浏览器实现起来也是参差不齐，为了最大化的使用离线缓存，我们应该清楚自己业务的目标浏览器的离线缓存大小限制，使用chrome://appcache-internals/可以轻易的管理chrome浏览器的离线缓存。我们可以写一个DEMO采用二分搜索法，不断的测试浏览器的Application Cache大小限制，直到触发相应的error事件。可以通过监听Application的error事件来处理超出离线缓存大小限制的情况：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;applicationCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;addEventListener&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;error&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;reason&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;quota&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;//超出离线缓存大小限制&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;实现这个链接可以&lt;a href=&quot;http://www.der-schepp.de/appcache-default-size/&quot;&gt;测试Application Cache的大小限制&lt;/a&gt;。离线缓存的是一套网页加速方案，超出Application Cache的大小限制后，会对我们的应用有不同的影响，具体表现就是：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;首次下载缓存时超出大小，所有资源都不会缓存，而是请求网络，应用功能正常。
+更新资源后超出大小，缓存不会更新，应用无法更新。
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h3 id=&quot;3-webview中的问题&quot;&gt;(3).webview中的问题&lt;/h3&gt;
+
+&lt;p&gt;在标准的html5浏览器中，我们可以放心的使用Application Cache，并且不需要任何设置。但是在webview中，则可能需要显示的设置，比如android系统的webview默认是不支持Application Cache的，因此需要显示设置：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;webView.getSettings().setAppCacheEnabled(true);        //默认是关闭的
+webView.getSettings().setAppCacheMaxSize(1024*1024*5); //缓存大小
+webView.getSettings().setAppCachePath(&amp;quot;路径&amp;quot;);          //缓存路径
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;hr&gt;
+
+&lt;p&gt;参考资料
+&lt;a href=&quot;https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache&quot;&gt;https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache&lt;/a&gt;
+&lt;a href=&quot;https://www.w3.org/TR/html5/&quot;&gt;https://www.w3.org/TR/html5/&lt;/a&gt;&lt;/p&gt;
+
+  &lt;p&gt;&lt;a href=&quot;/html5-application-cache/&quot;&gt;深入理解HTML5离线缓存机制&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on April 10, 2016.&lt;/p&gt;</content>
+</entry>
 
 
 <entry>
@@ -3171,46 +3319,6 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
 &lt;/blockquote&gt;
 
   &lt;p&gt;&lt;a href=&quot;/php-hash/&quot;&gt;理解PHP的Hash冲突漏洞&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on October 19, 2014.&lt;/p&gt;</content>
-</entry>
-
-
-<entry>
-  <title type="html"><![CDATA[solr4.7配置中文分词器IKAnalyzer踩到的坑]]></title>
- <link rel="alternate" type="text/html" href="/solr-ik/" />
-  <id>/solr-ik</id>
-  <updated>2014-10-07T00:00:00-00:00</updated>
-  <published>2014-10-07T00:00:00+08:00</published>
-  
-  <author>
-    <name>foio</name>
-    <uri></uri>
-    <email>syszhpe@gmail.com</email>
-  </author>
-  <content type="html">&lt;p&gt;在为solr4.10配置ik-analyzer中文分词器时我参考&lt;a href=&quot;http://www.solrcn.com/?tag=ik%E5%88%86%E8%AF%8D%E5%99%A8&quot;&gt;这篇文章&lt;/a&gt;，
-schema.xml中配置如下：&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;&amp;lt;fieldType name=&amp;quot;text_ik&amp;quot; class=&amp;quot;solr.TextField&amp;quot;
-sortMissingLast=&amp;quot;true&amp;quot; omitNorms=&amp;quot;true&amp;quot;&amp;gt;
-    &amp;lt;analyzer type=&amp;quot;index&amp;quot; isMaxWordLength=&amp;quot;false&amp;quot; class=&amp;quot;org.wltea.analyzer.lucene.IKAnalyzer&amp;quot;/&amp;gt;
-    &amp;lt;analyzer type=&amp;quot;query&amp;quot; isMaxWordLength=&amp;quot;true&amp;quot; class=&amp;quot;org.wltea.analyzer.lucene.IKAnalyzer&amp;quot;/&amp;gt;
-&amp;lt;/fieldType&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;但是同样的配置在solr4.7上却无法出现了奇怪的现象。首先在solr4.7的Analyse面板中，中文是可以正确分词的。如下图：
-&lt;figure style=&quot;margin:0 auto;width:620px&quot;&gt;
-    &lt;img src=&quot;/images/solr_ik.jpg&quot;/&gt;
-&lt;/figure&gt;&lt;/p&gt;
-
-&lt;p&gt;但是使用solr4.7搜索时，却只能搜索出完全匹配的结构。查了网络上的很多资料，才发现问题出在fieldType的autogeneratephrasequeries属性上。&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;autoGeneratePhraseQueries=true|false (in schema version 1.4 and later this now defaults to false)
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;这个属性只能用于文本域。如果在查询文本分析时产生了多个词元，比如 Wi-Fi 分词为 Wi 和 Fi ，当 autoGeneratePhraseQueries 被设置为true时，这两个词元就构造了一个词组查询，即“ WiFi ”，所以索引中“ WiFi ”必须相邻才能被查询到；而autoGeneratePhraseQueries被设置成false时，他们只是两个不同的搜索词，它们没有位置上的关系。schema的版本小于1.4时，autoGeneratePhraseQueries默认为true，所以我们需要将autoGeneratePhraseQueries设置为false。&lt;/p&gt;
-
-&lt;p&gt;所以solr4.7下正确的配置应该是&lt;/p&gt;
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;&amp;lt;fieldType name=&amp;quot;text_ik&amp;quot; class=&amp;quot;solr.TextField&amp;quot; sortMissingLast=&amp;quot;true&amp;quot;  omitNorms=&amp;quot;true&amp;quot; autoGeneratePhraseQueries=&amp;quot;false&amp;quot;&amp;gt;
-    &amp;lt;analyzer type=&amp;quot;index&amp;quot; isMaxWordLength=&amp;quot;false&amp;quot; class=&amp;quot;org.wltea.analyzer.lucene.IKAnalyzer&amp;quot;/&amp;gt;
-    &amp;lt;analyzer type=&amp;quot;query&amp;quot; isMaxWordLength=&amp;quot;true&amp;quot; class=&amp;quot;org.wltea.analyzer.lucene.IKAnalyzer&amp;quot;/&amp;gt;
-&amp;lt;/fieldType&amp;gt;
-&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-  &lt;p&gt;&lt;a href=&quot;/solr-ik/&quot;&gt;solr4.7配置中文分词器IKAnalyzer踩到的坑&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on October 07, 2014.&lt;/p&gt;</content>
 </entry>
 
 </feed>

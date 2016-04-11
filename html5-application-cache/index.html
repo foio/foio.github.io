@@ -1,0 +1,322 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>深入理解HTML5离线缓存机制 &#8211; 积木村の研究所</title>
+<meta name="description" content="深入理解HTML5离线缓存机制,Application Cache,html5 menifest">
+<meta name="keywords" content="HTML5, 离线缓存">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="深入理解HTML5离线缓存机制">
+<meta property="og:description" content="深入理解HTML5离线缓存机制,Application Cache,html5 menifest">
+<meta property="og:url" content="/html5-application-cache/">
+<meta property="og:site_name" content="积木村の研究所">
+
+
+
+
+
+<link rel="canonical" href="/html5-application-cache/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/html5-application-cache/" rel="bookmark" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h1>
+        
+        <h2>April 10, 2016</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <style type="text/css">
+td, table {
+   border: solid gray 1px;
+   padding: 10px;
+}
+</style>
+
+<p>HTML5提供了一种离线应用缓存机制，使得网页应用可以离线使用，这种机制在移动端浏览器上支持度非常广，所有版本的android和ios浏览器都能很好的支持。我们可以放心的使用该特性来加速移动端页面的访问速度。</p>
+
+<p>开启离线缓存的步骤也非常简单：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">(1) 准备缓存清单文件(menifest text/cache-manifest)，用于描述页面需要缓存的资源列表
+(2) 在需要离线使用的页面中添加menifest属性，用于指定缓存清单文件的路径
+</code></pre></div>
+<p>让我们首先理解浏览器实现离线缓存的详细步骤，然后探讨使用离线缓存加速移动端网页访问速度的方案。</p>
+
+<h2 id="1-下载-更新缓存的详细步骤">1. 下载/更新缓存的详细步骤</h2>
+
+<blockquote>
+<p>(1)当浏览器访问一个包含 manifest 特性的文档时，如果应用缓存不存在，浏览器会加载文档，然后获取所有在清单文件中列出的文件，生成应用缓存的第一个版本。</p>
+
+<p>(2)对该文档的后续访问会使浏览器直接从应用缓存(而不是服务器)中加载文档与其他在清单文件中列出的资源。此外，浏览器还会向 window.applicationCache 对象发送一个 checking 事件，在遵循合适的 HTTP 缓存规则前提下，获取清单文件。</p>
+
+<p>(3)如果当前缓存的清单副本是最新的，浏览器将向 applicationCache 对象发送一个 noupdate 事件，到此，更新过程结束。注意，如果你在服务器修改了任何缓存资源，同时也应该修改清单文件，这样浏览器才能知道它需要重新获取资源。</p>
+
+<p>(4)如果清单文件已经改变，文件中列出的所有文件—也包括通过调用 applicationCache.add() 方法添加到缓存中的那些文件—会被获取并放到一个临时缓存中，遵循适当的 HTTP 缓存规则。对于每个加入到临时缓存中的文件，浏览器会向 applicationCache 对象发送一个 progress 事件。如果出现任何错误，浏览器会发送一个 error 事件，并暂停更新。</p>
+
+<p>(5)一旦所有文件都获取成功，它们会自动移送到真正的离线缓存中，并向  applicationCache 对象发送一个 cached 事件。鉴于文档早已经被从缓存加载到浏览器中，所以更新后的文档不会重新渲染，直到页面重新加载(可以手动或通过程序).
+```
+以上只是一些详细步骤，具体也有一些值得注意的细节，比如menifest文件中列出的资源url必须和menifest本身使用同样的网络协议，如果menifest文件使用的是http协议，则列表中https协议的文件就会被忽略。总之，每当在使用Application Cache的过程中遇到奇怪的问题时，随时查阅W3C标准文档。</p>
+</blockquote>
+
+<h2 id="2-离线缓存事件流">2.离线缓存事件流</h2>
+
+<p>浏览器在解析HTML文档的过程中，遇到HTML标记的menifest属性时，就立即在后台开启一个新的进程下载需要离线缓存的资源。在下载离线缓存的过程中，会在ApplicationCache上触发一系列事件。</p>
+
+<table><thead>
+<tr>
+<th>事件名称</th>
+<th style="text-align: left">解释</th>
+<th style="text-align: left">后续事件</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>checking</td>
+<td style="text-align: left">checking事件是整个事件序列中的第一个，表示浏览器在首次下载缓存，或者在检查缓存是否有更新</td>
+<td style="text-align: left">noupdate, downloading, obsolete, error</td>
+</tr>
+<tr>
+<td>noupdate</td>
+<td style="text-align: left">noupdate事件是整个事件序列的最后一个，用来表示缓存没有更新</td>
+<td style="text-align: left">无</td>
+</tr>
+<tr>
+<td>downloading</td>
+<td style="text-align: left">浏览器正在首次下载menifest中列出的离线资源，或者浏览器发现缓存有更新，并且正在下载该更新</td>
+<td style="text-align: left">progress, error, cached, updateready</td>
+</tr>
+<tr>
+<td>progress</td>
+<td style="text-align: left">浏览器正在下载menifest中的离线资源，其中progressEvent对象中total表示需要下载的总资源的数量，loaded表示已经处理过的资源数量</td>
+<td style="text-align: left">progress, error, cached, updateready</td>
+</tr>
+<tr>
+<td>cached</td>
+<td style="text-align: left">浏览器已经成功下载了menifest中的离线资源，应用已经被缓存</td>
+<td style="text-align: left">无</td>
+</tr>
+<tr>
+<td>updateready</td>
+<td style="text-align: left">缓存有更新并且更新已经下载完成，这是可以使用ApplicationCache.swapCache()来将应用切换到最新缓存</td>
+<td style="text-align: left">无</td>
+</tr>
+<tr>
+<td>obsolete</td>
+<td style="text-align: left">应用已经有离线缓存了，但menifest文件无法加载成功，则删除现有离线缓存</td>
+<td style="text-align: left">无</td>
+</tr>
+<tr>
+<td>error</td>
+<td style="text-align: left">发生错误的情况比较多：可能是首次视图缓存离线文件时，发现menifest文件返回404；也可能是下载缓存过程中发生了fatal错误，比如超出了最大可用存储空间的限制，发现了header为Cache-Control: no-store的资源；还有可能是缓存在更新过程中发现menifest文件发生了变化</td>
+<td style="text-align: left">无</td>
+</tr>
+</tbody></table>
+
+<p>关于离线缓存中要触发的事件，有一个很有趣的特性。从离线缓存W3C标准中，我们经常看到如下描述：&#39;queue a post-load task to fire a simple event named (checking|noupdate|downloading)&#39;，每一个HTML文档都有一个离线缓存事件队列(queue)，离线缓存下载过程中的事件都存放在这个队列里，用于在文档的onload事件触发后执行。也就是说，所有的ApplicationCache事件都在html的onload事件触发后才触发。</p>
+
+<h2 id="3-使用离线缓存加速移动端网页开发">3.使用离线缓存加速移动端网页开发</h2>
+
+<p>上文提到过，Application Cache在移动端支持的很好，几乎所有的android浏览器和ios浏览器都能很好的支持。事实上使用Application Cache加速移动端网页访问速度是行业类普遍采用的优化方案，在包括新浪微博和QQ浏览器等大型产品中都有非常广泛的使用。但是在使用离线缓存时，我们需要留意一些问题。</p>
+
+<h3 id="1-二次更新的问题">(1).二次更新的问题</h3>
+
+<p>我们知道每次使用离线应用时，在有网络连接的情况下，浏览器都会逐字节的检查menifest文件是否有更新，而当menifest文件有更新时，就会重新下载menifest文件中列出的所有资源，资源下载成功后会触发updateready事件。这时离线应用本身并不会立即更新，而会在下次访问时才更新，这就是我们所说的二次更新。我们在开发web程序时，一般都是前端页面和后端接口同步更新，但是二次更新问题会导致页面更新不受控制，无法和后端接口同步更新，因此要做好后端接口的向前兼容，这迫使我们抛弃传统的web开发思路而采取native开发思路来管理离线应用。我们可以通过检测updateready事件，在新的缓存可用时通知用户更新。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">window</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;load&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>  
+    <span class="nb">window</span><span class="p">.</span><span class="nx">applicationCache</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;updateready&#39;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span> 
+        <span class="c1">//缓存更新完毕 </span>
+        <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">applicationCache</span><span class="p">.</span><span class="nx">status</span> <span class="o">==</span> <span class="nb">window</span><span class="p">.</span><span class="nx">applicationCache</span><span class="p">.</span><span class="nx">UPDATEREADY</span><span class="p">)</span> <span class="p">{</span>  
+            <span class="c1">//切换为最新缓存</span>
+            <span class="nb">window</span><span class="p">.</span><span class="nx">applicationCache</span><span class="p">.</span><span class="nx">swapCache</span><span class="p">();</span>  
+            <span class="k">if</span> <span class="p">(</span><span class="nx">confirm</span><span class="p">(</span><span class="s1">&#39;新版本已经更新完成，是否重新加载?&#39;</span><span class="p">))</span> <span class="p">{</span>  
+                <span class="nb">window</span><span class="p">.</span><span class="nx">location</span><span class="p">.</span><span class="nx">reload</span><span class="p">();</span>  
+            <span class="p">}</span>  
+        <span class="p">}</span>  
+    <span class="p">},</span> <span class="kc">false</span><span class="p">);</span>  
+<span class="p">},</span> <span class="kc">false</span><span class="p">);</span>  
+</code></pre></div>
+<h3 id="2-超出大小限制的问题">(2).超出大小限制的问题</h3>
+
+<p>Application Cache的W3C标准中并没有对大小限制做出详细的描述。因此浏览器实现起来也是参差不齐，为了最大化的使用离线缓存，我们应该清楚自己业务的目标浏览器的离线缓存大小限制，使用chrome://appcache-internals/可以轻易的管理chrome浏览器的离线缓存。我们可以写一个DEMO采用二分搜索法，不断的测试浏览器的Application Cache大小限制，直到触发相应的error事件。可以通过监听Application的error事件来处理超出离线缓存大小限制的情况：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">window</span><span class="p">.</span><span class="nx">applicationCache</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">reason</span> <span class="o">==</span> <span class="s1">&#39;quota&#39;</span><span class="p">){</span>
+        <span class="c1">//超出离线缓存大小限制</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>实现这个链接可以<a href="http://www.der-schepp.de/appcache-default-size/">测试Application Cache的大小限制</a>。离线缓存的是一套网页加速方案，超出Application Cache的大小限制后，会对我们的应用有不同的影响，具体表现就是：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">首次下载缓存时超出大小，所有资源都不会缓存，而是请求网络，应用功能正常。
+更新资源后超出大小，缓存不会更新，应用无法更新。
+</code></pre></div>
+<h3 id="3-webview中的问题">(3).webview中的问题</h3>
+
+<p>在标准的html5浏览器中，我们可以放心的使用Application Cache，并且不需要任何设置。但是在webview中，则可能需要显示的设置，比如android系统的webview默认是不支持Application Cache的，因此需要显示设置：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">webView.getSettings().setAppCacheEnabled(true);        //默认是关闭的
+webView.getSettings().setAppCacheMaxSize(1024*1024*5); //缓存大小
+webView.getSettings().setAppCachePath(&quot;路径&quot;);          //缓存路径
+</code></pre></div>
+<hr>
+
+<p>参考资料
+<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache">https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache</a>
+<a href="https://www.w3.org/TR/html5/">https://www.w3.org/TR/html5/</a></p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#HTML5" title="Pages tagged HTML5" class="tag">HTML5</a><a href="/tags/#离线缓存" title="Pages tagged 离线缓存" class="tag">离线缓存</a></span>
+        <span><a href="/html5-application-cache/" rel="bookmark" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a> was published on <span class="entry-date date published updated"><time datetime="2016-04-10T00:00:00+08:00">April 10, 2016</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2016-04-10">04/10/2016</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+
+    
+<div style="max-width:800px;background-color:#fff;padding: 20px;margin:0 auto;">
+<!--高速版-->
+    <div id="SOHUCS" style="max-width:800px;"></div>
+    <script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+    <script type="text/javascript">
+        window.changyan.api.config({
+            appid: 'cyrgTvN9G',
+            conf: 'prod_e42e502ec2a5653d7d595968a1a242c1'
+        });
+    </script>
+</div>
+
+	        
+
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/mvvm-overview/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/mvvm-overview/" title="如何实现一个MVVM框架">如何实现一个MVVM框架</a></h3>
+          <p>实现MVVM框架, Model View ViewModel <a href="/mvvm-overview/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/virtual-dom/" title="全面理解虚拟DOM，实现虚拟DOM">全面理解虚拟DOM，实现虚拟DOM</a></h4>
+            <span>Published on February 16, 2016</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/localstorage-webview/" title="使用localstorage和预加载做到webview秒开">使用localstorage和预加载做到webview秒开</a></h4>
+            <span>Published on January 10, 2016</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+	        
+</body>
+</html>
