@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2016-04-11T19:02:27+08:00</updated>
+<updated>2016-04-12T09:47:21+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -133,14 +133,14 @@ td, table {
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;h3 id=&quot;2-超出大小限制的问题&quot;&gt;(2).超出大小限制的问题&lt;/h3&gt;
 
-&lt;p&gt;Application Cache的W3C标准中并没有对大小限制做出详细的描述。因此浏览器实现起来也是参差不齐，为了最大化的使用离线缓存，我们应该清楚自己业务的目标浏览器的离线缓存大小限制，使用chrome://appcache-internals/可以轻易的管理chrome浏览器的离线缓存。我们可以写一个DEMO采用二分搜索法，不断的测试浏览器的Application Cache大小限制，直到触发相应的error事件。可以通过监听Application的error事件来处理超出离线缓存大小限制的情况：&lt;/p&gt;
+&lt;p&gt;Application Cache的W3C标准中并没有对大小限制做出详细的描述。因此浏览器实现起来也是参差不齐，为了最大化的使用离线缓存，我们应该清楚自己业务的目标浏览器的离线缓存大小限制，使用chrome://appcache-internals/可以轻易的管理chrome浏览器的离线缓存。我们可以写一个DEMO,采用二分搜索法，不断的测试浏览器的Application Cache大小限制，直到触发相应的error事件。这个链接可以&lt;a href=&quot;http://www.der-schepp.de/appcache-default-size/&quot;&gt;测试Application Cache的大小限制&lt;/a&gt;。通过监听Application的error事件来能够处理超出离线缓存大小限制的情况：&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;applicationCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;addEventListener&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&amp;#39;error&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
     &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;reason&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&amp;#39;quota&amp;#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
         &lt;span class=&quot;c1&quot;&gt;//超出离线缓存大小限制&lt;/span&gt;
     &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
 &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;实现这个链接可以&lt;a href=&quot;http://www.der-schepp.de/appcache-default-size/&quot;&gt;测试Application Cache的大小限制&lt;/a&gt;。离线缓存的是一套网页加速方案，超出Application Cache的大小限制后，会对我们的应用有不同的影响，具体表现就是：&lt;/p&gt;
+&lt;p&gt;离线缓存的是一套网页加速方案，超出Application Cache的大小限制后，会对我们的应用有不同的影响，具体表现就是：&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;首次下载缓存时超出大小，所有资源都不会缓存，而是请求网络，应用功能正常。
 更新资源后超出大小，缓存不会更新，应用无法更新。
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;

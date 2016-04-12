@@ -235,14 +235,14 @@ td, table {
 </code></pre></div>
 <h3 id="2-超出大小限制的问题">(2).超出大小限制的问题</h3>
 
-<p>Application Cache的W3C标准中并没有对大小限制做出详细的描述。因此浏览器实现起来也是参差不齐，为了最大化的使用离线缓存，我们应该清楚自己业务的目标浏览器的离线缓存大小限制，使用chrome://appcache-internals/可以轻易的管理chrome浏览器的离线缓存。我们可以写一个DEMO采用二分搜索法，不断的测试浏览器的Application Cache大小限制，直到触发相应的error事件。可以通过监听Application的error事件来处理超出离线缓存大小限制的情况：</p>
+<p>Application Cache的W3C标准中并没有对大小限制做出详细的描述。因此浏览器实现起来也是参差不齐，为了最大化的使用离线缓存，我们应该清楚自己业务的目标浏览器的离线缓存大小限制，使用chrome://appcache-internals/可以轻易的管理chrome浏览器的离线缓存。我们可以写一个DEMO,采用二分搜索法，不断的测试浏览器的Application Cache大小限制，直到触发相应的error事件。这个链接可以<a href="http://www.der-schepp.de/appcache-default-size/">测试Application Cache的大小限制</a>。通过监听Application的error事件来能够处理超出离线缓存大小限制的情况：</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">window</span><span class="p">.</span><span class="nx">applicationCache</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;error&#39;</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">e</span><span class="p">){</span>
     <span class="k">if</span><span class="p">(</span><span class="nx">e</span><span class="p">.</span><span class="nx">reason</span> <span class="o">==</span> <span class="s1">&#39;quota&#39;</span><span class="p">){</span>
         <span class="c1">//超出离线缓存大小限制</span>
     <span class="p">}</span>
 <span class="p">});</span>
 </code></pre></div>
-<p>实现这个链接可以<a href="http://www.der-schepp.de/appcache-default-size/">测试Application Cache的大小限制</a>。离线缓存的是一套网页加速方案，超出Application Cache的大小限制后，会对我们的应用有不同的影响，具体表现就是：</p>
+<p>离线缓存的是一套网页加速方案，超出Application Cache的大小限制后，会对我们的应用有不同的影响，具体表现就是：</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">首次下载缓存时超出大小，所有资源都不会缓存，而是请求网络，应用功能正常。
 更新资源后超出大小，缓存不会更新，应用无法更新。
 </code></pre></div>
