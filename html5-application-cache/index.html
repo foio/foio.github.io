@@ -147,10 +147,10 @@ td, table {
 
 <p>(4)如果清单文件已经改变，文件中列出的所有文件—也包括通过调用 applicationCache.add() 方法添加到缓存中的那些文件—会被获取并放到一个临时缓存中，遵循适当的 HTTP 缓存规则。对于每个加入到临时缓存中的文件，浏览器会向 applicationCache 对象发送一个 progress 事件。如果出现任何错误，浏览器会发送一个 error 事件，并暂停更新。</p>
 
-<p>(5)一旦所有文件都获取成功，它们会自动移送到真正的离线缓存中，并向  applicationCache 对象发送一个 cached 事件。鉴于文档早已经被从缓存加载到浏览器中，所以更新后的文档不会重新渲染，直到页面重新加载(可以手动或通过程序).
-```
-以上只是一些详细步骤，具体也有一些值得注意的细节，比如menifest文件中列出的资源url必须和menifest本身使用同样的网络协议，如果menifest文件使用的是http协议，则列表中https协议的文件就会被忽略。总之，每当在使用Application Cache的过程中遇到奇怪的问题时，随时查阅W3C标准文档。</p>
+<p>(5)一旦所有文件都获取成功，它们会自动移送到真正的离线缓存中，并向  applicationCache 对象发送一个 cached 事件。鉴于文档早已经被从缓存加载到浏览器中，所以更新后的文档不会重新渲染，直到页面重新加载(可以手动或通过程序).</p>
 </blockquote>
+
+<p>以上只是一些详细步骤，具体也有一些值得注意的细节，比如menifest文件中列出的资源url必须和menifest本身使用同样的网络协议，如果menifest文件使用的是http协议，则列表中https协议的文件就会被忽略。总之，每当在使用Application Cache的过程中遇到奇怪的问题时，随时查阅W3C标准文档。</p>
 
 <h2 id="2-离线缓存事件流">2.离线缓存事件流</h2>
 
@@ -249,9 +249,11 @@ webView.getSettings().setAppCachePath(&quot;路径&quot;);          //缓存路�
 </code></pre></div>
 <hr>
 
-<p>参考资料
-<a href="https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache">https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache</a>
-<a href="https://www.w3.org/TR/html5/">https://www.w3.org/TR/html5/</a></p>
+<p>参考资料</p>
+
+<p><a href="https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache">https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache</a></p>
+
+<p><a href="https://www.w3.org/TR/html5/">https://www.w3.org/TR/html5/</a></p>
 
       <footer class="entry-meta">
         <span class="entry-tags"><a href="/tags/#HTML5" title="Pages tagged HTML5" class="tag">HTML5</a><a href="/tags/#离线缓存" title="Pages tagged 离线缓存" class="tag">离线缓存</a></span>
@@ -285,20 +287,20 @@ webView.getSettings().setAppCachePath(&quot;路径&quot;);          //缓存路�
           <a href="/mvvm-overview/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mvvm-overview/" title="如何实现一个MVVM框架">如何实现一个MVVM框架</a></h3>
-          <p>实现MVVM框架, Model View ViewModel <a href="/mvvm-overview/">Continue reading</a></p>
+          <h3><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h3>
+          <p>使用UI预览提升页面感知速度,异步UI <a href="/ui-preview/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/virtual-dom/" title="全面理解虚拟DOM，实现虚拟DOM">全面理解虚拟DOM，实现虚拟DOM</a></h4>
-            <span>Published on February 16, 2016</span>
+            <h4><a href="/mvvm-overview/" title="如何实现一个MVVM框架">如何实现一个MVVM框架</a></h4>
+            <span>Published on February 24, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/localstorage-webview/" title="使用localstorage和预加载做到webview秒开">使用localstorage和预加载做到webview秒开</a></h4>
-            <span>Published on January 10, 2016</span>
+            <h4><a href="/virtual-dom/" title="全面理解虚拟DOM，实现虚拟DOM">全面理解虚拟DOM，实现虚拟DOM</a></h4>
+            <span>Published on February 16, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

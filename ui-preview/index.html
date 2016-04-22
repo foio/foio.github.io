@@ -1,0 +1,241 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>使用UI预览提升页面感知速度 &#8211; 积木村の研究所</title>
+<meta name="description" content="使用UI预览提升页面感知速度,异步UI">
+<meta name="keywords" content="UI preview, no-blocking UI">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用UI预览提升页面感知速度">
+<meta property="og:description" content="使用UI预览提升页面感知速度,异步UI">
+<meta property="og:url" content="/ui-preview/">
+<meta property="og:site_name" content="积木村の研究所">
+
+
+
+
+
+<link rel="canonical" href="/ui-preview/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/ui-preview/" rel="bookmark" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h1>
+        
+        <h2>April 20, 2016</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>作为一个前端工程师，我们都知道页面的速度对产品业务的发展至关重要，在日常工作中我们除了完成业务逻辑之外，也在持续的优化前端页面的速度。但我们往往从加载速度和渲染速度这两个方面着手，而忽略了感知速度的提升，本文我们就来探讨一下如何从感知速度着手提升前端页面的感知速度。</p>
+
+<h2 id="1-ui预览">1.UI预览</h2>
+
+<p>对于常见的前后端分离项目，一般的工作流程是：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">1. 页面JS请求后端接口
+2. 后端接口返回JSON数据
+3. 前端模板引擎根据JSON数据和预设模板输出最终的HTML片段
+4. 前端模板引擎将HTML片段插入DOM中，浏览器重新局部渲染，显示最终结果
+</code></pre></div>
+<p>而从第1步到第4步之间，我们往往使用一个加载条，来提示用户继续等待。本质上，在这期间UI对用户不可见(UI是阻塞的)，给用户的感觉就是页面较慢，而UI预览就可以从这里介入从而提升用户感知速度。</p>
+
+<p>在使用一些知名网站时，我们经常会看到UI预览，比如新浪微博的文章，在文章主体加载完成之前提前给出页面的基本布局：
+<figure style="width:400px;margin: 0 auto;">
+    <img src="/images/weibo-ui-preview.jpg" alt="weibo-ui-preview">
+</figure>
+facebook在信息流加载完成之前，也会给出UI预览：
+<figure>
+    <img src="/images/facebook-interface-preview.png" alt="facebook-interface-preview">
+</figure></p>
+
+<h2 id="2-ui预览的实现方式">2.UI预览的实现方式</h2>
+
+<p>UI预览的实现方式主要有两种，一种就是伪UI预览，另一种是真实UI预览。</p>
+
+<h3 id="1-伪ui预览">(1).伪UI预览</h3>
+
+<p>伪UI预览的应用场景较为有限，需要提前人工写好需要预览的UI的布局和样式，因此其只能适用于UI较为简单的场景。facbook的每一条feed的布局都非常相似，它使用的就是伪UI预览，在真实feed加载完成之前，先显示UI预览，当真实feed加载完成后，隐藏UI预览，显示真实feed内容。比如下图是一条feed的UI预览：</p>
+
+<figure style="width:500px;margin: 0 auto;">
+    <img src="/images/facebook-feed-preview.jpg" alt="facebook-feed-preview">
+</figure>
+
+<h3 id="2-真实ui预览">(2).真实UI预览</h3>
+
+<p>真实UI预览实现起来较为复杂，但是其适用场景较为也更为广泛。一种实现真实UI预览的方案是，通过真实测试数据生成真实UI预览，当然这里对测试数据有一定的要求：</p>
+<div class="highlight"><pre><code class="language-text" data-lang="text">(1)文本用空格代替
+(2)图像用默认图像代替
+</code></pre></div>
+<p>真实UI预览的生成可以通过构建工具完成，比如grunt、gulp、fis等。当真实数据获取成功时，即可隐藏UI预览，显示真实用户页面。</p>
+
+<p>UI预览可以极大的提升用户的感知速度，使网站留住更多用户。虽然在网速较好的情况下，其作用有限，但却不失为锦上添花之举。</p>
+
+<hr>
+
+<p>参考资料</p>
+
+<p><a href="https://dribbble.com/shots/2138907-Non-Blocking-Settings-Page-UI">https://dribbble.com/shots/2138907-Non-Blocking-Settings-Page-UI</a></p>
+
+<p><a href="http://www.callumhart.com/blog/non-blocking-uis-with-interface-previews">http://www.callumhart.com/blog/non-blocking-uis-with-interface-previews</a></p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#UI preview" title="Pages tagged UI preview" class="tag">UI preview</a><a href="/tags/#no-blocking UI" title="Pages tagged no-blocking UI" class="tag">no-blocking UI</a></span>
+        <span><a href="/ui-preview/" rel="bookmark" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a> was published on <span class="entry-date date published updated"><time datetime="2016-04-20T00:00:00+08:00">April 20, 2016</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2016-04-20">04/20/2016</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+
+    
+<div style="max-width:800px;background-color:#fff;padding: 20px;margin:0 auto;">
+<!--高速版-->
+    <div id="SOHUCS" style="max-width:800px;"></div>
+    <script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+    <script type="text/javascript">
+        window.changyan.api.config({
+            appid: 'cyrgTvN9G',
+            conf: 'prod_e42e502ec2a5653d7d595968a1a242c1'
+        });
+    </script>
+</div>
+
+	        
+
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/html5-application-cache/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h3>
+          <p>深入理解HTML5离线缓存机制,Application Cache,html5 menifest <a href="/html5-application-cache/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/mvvm-overview/" title="如何实现一个MVVM框架">如何实现一个MVVM框架</a></h4>
+            <span>Published on February 24, 2016</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/virtual-dom/" title="全面理解虚拟DOM，实现虚拟DOM">全面理解虚拟DOM，实现虚拟DOM</a></h4>
+            <span>Published on February 16, 2016</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+	        
+</body>
+</html>

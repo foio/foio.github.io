@@ -140,6 +140,10 @@
 
     
     <url>
+        <loc>/ui-preview/</loc>
+    </url>
+    
+    <url>
         <loc>/html5-application-cache/</loc>
     </url>
     

@@ -4,13 +4,80 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2016-04-12T10:12:53+08:00</updated>
+<updated>2016-04-22T14:27:06+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
   <uri>/</uri>
   <email>syszhpe@gmail.com</email>
 </author>
+
+
+<entry>
+  <title type="html"><![CDATA[使用UI预览提升页面感知速度]]></title>
+ <link rel="alternate" type="text/html" href="/ui-preview/" />
+  <id>/ui-preview</id>
+  <updated>2016-04-20T00:00:00-00:00</updated>
+  <published>2016-04-20T00:00:00+08:00</published>
+  
+  <author>
+    <name>foio</name>
+    <uri></uri>
+    <email>syszhpe@gmail.com</email>
+  </author>
+  <content type="html">&lt;p&gt;作为一个前端工程师，我们都知道页面的速度对产品业务的发展至关重要，在日常工作中我们除了完成业务逻辑之外，也在持续的优化前端页面的速度。但我们往往从加载速度和渲染速度这两个方面着手，而忽略了感知速度的提升，本文我们就来探讨一下如何从感知速度着手提升前端页面的感知速度。&lt;/p&gt;
+
+&lt;h2 id=&quot;1-ui预览&quot;&gt;1.UI预览&lt;/h2&gt;
+
+&lt;p&gt;对于常见的前后端分离项目，一般的工作流程是：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;1. 页面JS请求后端接口
+2. 后端接口返回JSON数据
+3. 前端模板引擎根据JSON数据和预设模板输出最终的HTML片段
+4. 前端模板引擎将HTML片段插入DOM中，浏览器重新局部渲染，显示最终结果
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;而从第1步到第4步之间，我们往往使用一个加载条，来提示用户继续等待。本质上，在这期间UI对用户不可见(UI是阻塞的)，给用户的感觉就是页面较慢，而UI预览就可以从这里介入从而提升用户感知速度。&lt;/p&gt;
+
+&lt;p&gt;在使用一些知名网站时，我们经常会看到UI预览，比如新浪微博的文章，在文章主体加载完成之前提前给出页面的基本布局：
+&lt;figure style=&quot;width:400px;margin: 0 auto;&quot;&gt;
+    &lt;img src=&quot;/images/weibo-ui-preview.jpg&quot; alt=&quot;weibo-ui-preview&quot;&gt;
+&lt;/figure&gt;
+facebook在信息流加载完成之前，也会给出UI预览：
+&lt;figure&gt;
+    &lt;img src=&quot;/images/facebook-interface-preview.png&quot; alt=&quot;facebook-interface-preview&quot;&gt;
+&lt;/figure&gt;&lt;/p&gt;
+
+&lt;h2 id=&quot;2-ui预览的实现方式&quot;&gt;2.UI预览的实现方式&lt;/h2&gt;
+
+&lt;p&gt;UI预览的实现方式主要有两种，一种就是伪UI预览，另一种是真实UI预览。&lt;/p&gt;
+
+&lt;h3 id=&quot;1-伪ui预览&quot;&gt;(1).伪UI预览&lt;/h3&gt;
+
+&lt;p&gt;伪UI预览的应用场景较为有限，需要提前人工写好需要预览的UI的布局和样式，因此其只能适用于UI较为简单的场景。facbook的每一条feed的布局都非常相似，它使用的就是伪UI预览，在真实feed加载完成之前，先显示UI预览，当真实feed加载完成后，隐藏UI预览，显示真实feed内容。比如下图是一条feed的UI预览：&lt;/p&gt;
+
+&lt;figure style=&quot;width:500px;margin: 0 auto;&quot;&gt;
+    &lt;img src=&quot;/images/facebook-feed-preview.jpg&quot; alt=&quot;facebook-feed-preview&quot;&gt;
+&lt;/figure&gt;
+
+&lt;h3 id=&quot;2-真实ui预览&quot;&gt;(2).真实UI预览&lt;/h3&gt;
+
+&lt;p&gt;真实UI预览实现起来较为复杂，但是其适用场景较为也更为广泛。一种实现真实UI预览的方案是，通过真实测试数据生成真实UI预览，当然这里对测试数据有一定的要求：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-text&quot; data-lang=&quot;text&quot;&gt;(1)文本用空格代替
+(2)图像用默认图像代替
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;真实UI预览的生成可以通过构建工具完成，比如grunt、gulp、fis等。当真实数据获取成功时，即可隐藏UI预览，显示真实用户页面。&lt;/p&gt;
+
+&lt;p&gt;UI预览可以极大的提升用户的感知速度，使网站留住更多用户。虽然在网速较好的情况下，其作用有限，但却不失为锦上添花之举。&lt;/p&gt;
+
+&lt;hr&gt;
+
+&lt;p&gt;参考资料&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://dribbble.com/shots/2138907-Non-Blocking-Settings-Page-UI&quot;&gt;https://dribbble.com/shots/2138907-Non-Blocking-Settings-Page-UI&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://www.callumhart.com/blog/non-blocking-uis-with-interface-previews&quot;&gt;http://www.callumhart.com/blog/non-blocking-uis-with-interface-previews&lt;/a&gt;&lt;/p&gt;
+
+  &lt;p&gt;&lt;a href=&quot;/ui-preview/&quot;&gt;使用UI预览提升页面感知速度&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on April 20, 2016.&lt;/p&gt;</content>
+</entry>
 
 
 <entry>
@@ -51,10 +118,10 @@ td, table {
 
 &lt;p&gt;(4)如果清单文件已经改变，文件中列出的所有文件—也包括通过调用 applicationCache.add() 方法添加到缓存中的那些文件—会被获取并放到一个临时缓存中，遵循适当的 HTTP 缓存规则。对于每个加入到临时缓存中的文件，浏览器会向 applicationCache 对象发送一个 progress 事件。如果出现任何错误，浏览器会发送一个 error 事件，并暂停更新。&lt;/p&gt;
 
-&lt;p&gt;(5)一旦所有文件都获取成功，它们会自动移送到真正的离线缓存中，并向  applicationCache 对象发送一个 cached 事件。鉴于文档早已经被从缓存加载到浏览器中，所以更新后的文档不会重新渲染，直到页面重新加载(可以手动或通过程序).
-```
-以上只是一些详细步骤，具体也有一些值得注意的细节，比如menifest文件中列出的资源url必须和menifest本身使用同样的网络协议，如果menifest文件使用的是http协议，则列表中https协议的文件就会被忽略。总之，每当在使用Application Cache的过程中遇到奇怪的问题时，随时查阅W3C标准文档。&lt;/p&gt;
+&lt;p&gt;(5)一旦所有文件都获取成功，它们会自动移送到真正的离线缓存中，并向  applicationCache 对象发送一个 cached 事件。鉴于文档早已经被从缓存加载到浏览器中，所以更新后的文档不会重新渲染，直到页面重新加载(可以手动或通过程序).&lt;/p&gt;
 &lt;/blockquote&gt;
+
+&lt;p&gt;以上只是一些详细步骤，具体也有一些值得注意的细节，比如menifest文件中列出的资源url必须和menifest本身使用同样的网络协议，如果menifest文件使用的是http协议，则列表中https协议的文件就会被忽略。总之，每当在使用Application Cache的过程中遇到奇怪的问题时，随时查阅W3C标准文档。&lt;/p&gt;
 
 &lt;h2 id=&quot;2-离线缓存事件流&quot;&gt;2.离线缓存事件流&lt;/h2&gt;
 
@@ -153,9 +220,11 @@ webView.getSettings().setAppCachePath(&amp;quot;路径&amp;quot;);          //�
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;hr&gt;
 
-&lt;p&gt;参考资料
-&lt;a href=&quot;https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache&quot;&gt;https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache&lt;/a&gt;
-&lt;a href=&quot;https://www.w3.org/TR/html5/&quot;&gt;https://www.w3.org/TR/html5/&lt;/a&gt;&lt;/p&gt;
+&lt;p&gt;参考资料&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache&quot;&gt;https://developer.mozilla.org/zh-CN/docs/Web/HTML/Using_the_application_cache&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://www.w3.org/TR/html5/&quot;&gt;https://www.w3.org/TR/html5/&lt;/a&gt;&lt;/p&gt;
 
   &lt;p&gt;&lt;a href=&quot;/html5-application-cache/&quot;&gt;深入理解HTML5离线缓存机制&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on April 10, 2016.&lt;/p&gt;</content>
 </entry>
@@ -3219,106 +3288,6 @@ stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表�
  &lt;a href=&quot;http://www.walu.cc/phpbook/index.md&quot;&gt;php扩展入门博客&lt;/a&gt;&lt;/p&gt;
 
   &lt;p&gt;&lt;a href=&quot;/php-extension-autoload/&quot;&gt;php扩展中autoload的实现&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on October 23, 2014.&lt;/p&gt;</content>
-</entry>
-
-
-<entry>
-  <title type="html"><![CDATA[理解PHP的Hash冲突漏洞]]></title>
- <link rel="alternate" type="text/html" href="/php-hash/" />
-  <id>/php-hash</id>
-  <updated>2014-10-19T00:00:00-00:00</updated>
-  <published>2014-10-19T00:00:00+08:00</published>
-  
-  <author>
-    <name>foio</name>
-    <uri></uri>
-    <email>syszhpe@gmail.com</email>
-  </author>
-  <content type="html">&lt;p&gt;Hash表对PHP的重要性是每个phper都非常清楚地。但是PHP却有一个与Hash表相关的致命漏洞，我们完全可以通过PHP的Hash冲突漏洞进行DDoS攻击，可以轻易的搞挂一台服务器。那么是什么导致PHP的Hash冲突呢？如何构造Hash冲突？&lt;/p&gt;
-
-&lt;h3 id=&quot;1-php的hashtab实现方式&quot;&gt;1. PHP的Hashtab实现方式&lt;/h3&gt;
-
-&lt;p&gt;PHP中的哈希表实现在源代码的Zend/zend_hash.c中，Zend/zend_hash.h中描述了Hashtab的结构体，从中我们可以大概了解Hashtab的实现机制。&lt;/p&gt;
-
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;k&quot;&gt;typedef&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;struct&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;_hashtable&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
-    &lt;span class=&quot;n&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nTableSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;        &lt;span class=&quot;c1&quot;&gt;// hash Bucket的大小，最小为8，以2x增长。&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nTableMask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;        &lt;span class=&quot;c1&quot;&gt;// nTableSize-1 ， 索引取值的优化&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nNumOfElements&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;// hash Bucket中当前存在的元素个数，count()函数会直接返回此值 &lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;ulong&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nNextFreeElement&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 下一个数字索引的位置&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;Bucket&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pInternalPointer&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;   &lt;span class=&quot;c1&quot;&gt;// 当前遍历的指针（foreach比for快的原因之一）&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;Bucket&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pListHead&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;          &lt;span class=&quot;c1&quot;&gt;// 存储数组头元素指针&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;Bucket&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pListTail&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;          &lt;span class=&quot;c1&quot;&gt;// 存储数组尾元素指针&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;Bucket&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arBuckets&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;         &lt;span class=&quot;c1&quot;&gt;// 存储hash数组&lt;/span&gt;
-    &lt;span class=&quot;kt&quot;&gt;dtor_func_t&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;pDestructor&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;    &lt;span class=&quot;c1&quot;&gt;// 在删除元素时执行的回调函数，用于资源的释放&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;zend_bool&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;persistent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;       &lt;span class=&quot;c1&quot;&gt;//指出了Bucket内存分配的方式。如果persisient为TRUE，则使用操作系统本身的内存分配函数为Bucket分配内存，否则使用PHP的内存分配函数。&lt;/span&gt;
-    &lt;span class=&quot;kt&quot;&gt;unsigned&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nApplyCount&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;// 标记当前hash Bucket被递归访问的次数（防止多次递归）&lt;/span&gt;
-    &lt;span class=&quot;n&quot;&gt;zend_bool&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;bApplyProtection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;// 标记当前hash桶允许不允许多次访问，不允许时，最多只能递归3次&lt;/span&gt;
-&lt;span class=&quot;cp&quot;&gt;#if ZEND_DEBUG&lt;/span&gt;
-    &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;inconsistent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;cp&quot;&gt;#endif&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;HashTable&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;从结构体_hashtable中我们可以看出，PHP内核是使用常用的拉链法实现Hash表的，其中Bucket **arBuckets存储了实际的数据。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://www.php-internals.com/images/book/chapt03/03-01-02-zend_hashtable.png&quot; alt=&quot;php内核hash表数据结构&quot;&gt;&lt;/p&gt;
-
-&lt;p&gt;其实PHP的Hash冲突漏洞就是利用在极端情况下，拉链法的Hashtab会退化为单链表的漏洞。由于Hash函数是公开的，因此经过精心的构造，是可以构造出导致Hash退化为链表的数据的。&lt;/p&gt;
-
-&lt;p&gt;&lt;img src=&quot;http://cms.csdnimg.cn/article/201410/16/543fda7865385.jpg&quot; alt=&quot;php hash表退化为单链表&quot;&gt;&lt;/p&gt;
-
-&lt;h3 id=&quot;2-本地实现php的hash漏洞攻击&quot;&gt;2. 本地实现PHP的Hash漏洞攻击&lt;/h3&gt;
-
-&lt;p&gt;在我们使用数组时，PHP内核都是通过把数组内容插入到一个Hash表实现的，但对于关联数组(字符串下标)和索引数组(整数下标)的处理方法是不同的。关联数组使用如下函数将数据添加的Hash表:&lt;/p&gt;
-
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;n&quot;&gt;ZEND_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;_zend_hash_add_or_update&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HashTable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ht&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;char&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arKey&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nKeyLength&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nDataSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pDest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ZEND_FILE_LINE_DC&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
- &lt;span class=&quot;n&quot;&gt;h&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;zend_inline_hash_func&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;arKey&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nKeyLength&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;//根据字符串计算Hash值&lt;/span&gt;
- &lt;span class=&quot;n&quot;&gt;nIndex&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;h&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ht&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nTableMask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;从上述代码中我们可以看出，关联数组需要使用Hash函数根据字符串计算Hash值。而索引数组却直接使用整数下标作为Hash值：&lt;/p&gt;
-
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;n&quot;&gt;ZEND_API&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;nf&quot;&gt;_zend_hash_index_update_or_next_insert&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;HashTable&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;ht&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ulong&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;h&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pData&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;uint&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;nDataSize&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;void&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;**&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;pDest&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kt&quot;&gt;int&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;flag&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;ZEND_FILE_LINE_DC&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
-&lt;span class=&quot;n&quot;&gt;nIndex&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;h&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&lt;/span&gt; &lt;span class=&quot;n&quot;&gt;ht&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&amp;gt;&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;nTableMask&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;c1&quot;&gt;//直接使用下标作为hash值&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;...&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;由于实现较为简单，大部分攻击是通过构造索引数组来实现的，只要使 公式&lt;code&gt;h &amp;amp; ht-&amp;gt;nTableMask&lt;/code&gt;得到同样的值即可，其中&lt;code&gt;ht-&amp;gt;nTableMask&lt;/code&gt;在&lt;code&gt;zend_hash_init&lt;/code&gt;函数中赋值：&lt;code&gt;ht-&amp;gt;nTableMask = ht-&amp;gt;nTableSize - 1&lt;/code&gt;。&lt;/p&gt;
-
-&lt;p&gt;有了以上基础知识，我们就可以构利用Hash冲突漏洞了。先直接上代码：&lt;/p&gt;
-
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-php&quot; data-lang=&quot;php&quot;&gt;&lt;span class=&quot;cp&quot;&gt;&amp;lt;?php&lt;/span&gt;
- &lt;span class=&quot;nv&quot;&gt;$size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;pow&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
- &lt;span class=&quot;nv&quot;&gt;$startTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;microtime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
- &lt;span class=&quot;nv&quot;&gt;$array&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
- &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$maxKey&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$size&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;*&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;lt;=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$maxKey&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$size&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-         &lt;span class=&quot;nv&quot;&gt;$array&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nv&quot;&gt;$key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
- &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
- &lt;span class=&quot;nv&quot;&gt;$endTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;microtime&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
- &lt;span class=&quot;k&quot;&gt;echo&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$endTime&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;-&lt;/span&gt; &lt;span class=&quot;nv&quot;&gt;$startTime&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;PHP_EOL&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;这段代码创建了一个包含216 个元素的索引数组，下标依次为:&lt;/p&gt;
-
-&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-c&quot; data-lang=&quot;c&quot;&gt;&lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,......,&lt;/span&gt;&lt;span class=&quot;n&quot;&gt;n&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,......,(&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;-&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;*&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;2&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;^&lt;/span&gt;&lt;span class=&quot;mi&quot;&gt;16&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-
-&lt;p&gt;这时&lt;code&gt;ht-&amp;gt;nTableMask=2^16-1&lt;/code&gt;，转换为二进制就是&lt;code&gt;1111 1111 1111 1111&lt;/code&gt;。而以上数组中的任意一个下标h和&lt;code&gt;ht-&amp;gt;nTableMask&lt;/code&gt;进行与运算都得0，&lt;code&gt;nIndex = h &amp;amp; ht-&amp;gt;nTableMask = 0&lt;/code&gt;。即所有的下标都得到同样的Hash值，这时Hash表就退化为链表了。事实上，这段代码在我的电脑里运行耗时40多秒。多恐怖啊。&lt;/p&gt;
-
-&lt;h3 id=&quot;3-常见的hash冲突攻击形式&quot;&gt;3.常见的Hash冲突攻击形式&lt;/h3&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;POST攻击： PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造一个无限大的哈希冲突的值，则可以拖垮服务器。&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;PHP5.3.9以后的版本可以通过php.ini设置GET/POST/COOKIE 的最大输入变量数。默认为1000。但这种方法是无法完全避免攻击的，我们也可以在POST的变量值上做手脚，即反序列化攻击。&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;反序列化攻击： 如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。 到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据&lt;/p&gt;
-&lt;/blockquote&gt;
-
-  &lt;p&gt;&lt;a href=&quot;/php-hash/&quot;&gt;理解PHP的Hash冲突漏洞&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on October 19, 2014.&lt;/p&gt;</content>
 </entry>
 
 </feed>
