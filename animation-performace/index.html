@@ -5,25 +5,25 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>积木村の研究所</title>
-<meta name="description" content="this is a tech blog by foio">
-<meta name="keywords" content="tech, blog, modern">
+<title>前端高性能动画最佳实践 &#8211; 积木村の研究所</title>
+<meta name="description" content="高性能动画,animation,最佳实践,will-change,">
+<meta name="keywords" content="javascript, 高性能动画">
 
 
 
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="积木村の研究所">
-<meta property="og:description" content="this is a tech blog by foio">
-<meta property="og:url" content="/index.html">
+<meta property="og:title" content="前端高性能动画最佳实践">
+<meta property="og:description" content="高性能动画,animation,最佳实践,will-change,">
+<meta property="og:url" content="/animation-performace/">
 <meta property="og:site_name" content="积木村の研究所">
 
 
 
 
 
-<link rel="canonical" href="/">
+<link rel="canonical" href="/animation-performace/">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
 
 
@@ -59,9 +59,13 @@ rel="stylesheet" type="text/css" -->
 
 
 
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
 </head>
 
-<body id="post-index" >
+<body id="post" >
 
 <!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
 <nav id="dl-menu" class="dl-menuwrapper" role="navigation">
@@ -103,31 +107,21 @@ rel="stylesheet" type="text/css" -->
 </nav><!-- /.dl-menuwrapper -->
 
 
-<div class="entry-header">
-  
-  
-  <div class="header-title">
-    <div class="header-title-wrap">
-      <h1>积木村の研究所</h1>
-      <h2></h2>
-    </div><!-- /.header-title-wrap -->
-  </div><!-- /.header-title -->
-</div><!-- /.entry-header -->
+
 
 <div id="main" role="main">
-  
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-04-30T00:00:00+08:00"><a href="/animation-performace/">April 30, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/animation-performace/" rel="bookmark" title="前端高性能动画最佳实践" itemprop="url">前端高性能动画最佳实践</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>何为高性能动画？让人感觉流程顺滑即可。24fps的电影就能让人感觉到流畅，但是游戏却要60fps以上才能让人感觉到流畅。分析原因，我们得出如下结论：</p>
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/animation-performace/" rel="bookmark" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h1>
+        
+        <h2>April 30, 2016</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>何为高性能动画？让人感觉流程顺滑即可。24fps的电影就能让人感觉到流畅，但是游戏却要60fps以上才能让人感觉到流畅。分析原因，我们得出如下结论：</p>
 <div class="highlight"><pre><code class="language-text" data-lang="text">(1)视频的每一帧记录的是一段时间段(1/24s)的信息，而游戏的每一帧都由显卡绘制，它只能生成一个时间点的信息;
 (2)视频的帧率是稳定的，而在系统负载不平稳时，显卡很难保证游戏帧率的稳定性；
 </code></pre></div>
@@ -339,249 +333,60 @@ RequestAnimationFrame(step);
 
 <p><a href="https://github.com/mrdoob/stats.js">https://github.com/mrdoob/stats.js</a></p>
 
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#javascript" title="Pages tagged javascript" class="tag">javascript</a><a href="/tags/#高性能动画" title="Pages tagged 高性能动画" class="tag">高性能动画</a></span>
+        <span><a href="/animation-performace/" rel="bookmark" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a> was published on <span class="entry-date date published updated"><time datetime="2016-04-30T00:00:00+08:00">April 30, 2016</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2016-04-30">04/30/2016</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-04-20T00:00:00+08:00"><a href="/ui-preview/">April 20, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+    
+<div style="max-width:800px;background-color:#fff;padding: 20px;margin:0 auto;">
+<!--高速版-->
+    <div id="SOHUCS" style="max-width:800px;"></div>
+    <script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+    <script type="text/javascript">
+        window.changyan.api.config({
+            appid: 'cyrgTvN9G',
+            conf: 'prod_e42e502ec2a5653d7d595968a1a242c1'
+        });
+    </script>
+</div>
+
+	        
+
+    
+    
+    <div class="read-more">
       
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/ui-preview/" rel="bookmark" title="使用UI预览提升页面感知速度" itemprop="url">使用UI预览提升页面感知速度</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>作为一个前端工程师，我们都知道页面的速度对产品业务的发展至关重要，在日常工作中我们除了完成业务逻辑之外，也在持续的优化前端页面的速度。但我们往往从加载速度和渲染速度这两个方面着手，而忽略了感知速度的提升，本文我们就来探讨一下如何从感知速度着手提升前端页面的感知速度。</p>
-
-<h2 id="1-ui预览">1.UI预览</h2>
-
-<p>对于常见的前后端分离项目，一般的工作流程是：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">1. 页面JS请求后端接口
-2. 后端接口返回JSON数据
-3. 前端模板引擎根据JSON数据和预设模板输出最终的HTML片段
-4. 前端模板引擎将HTML片段插入DOM中，浏览器重新局部渲染，显示最终结果
-</code></pre></div>
-<p>而从第1步到第4步之间，我们往往使用一个加载条，来提示用户继续等待。本质上，在这期间UI对用户不可见(UI是阻塞的)，给用户的感觉就是页面较慢，而UI预览就可以从这里介入从而提升用户感知速度。</p>
-
-<p>在使用一些知名网站时，我们经常会看到UI预览，比如新浪微博的文章，在文章主体加载完成之前提前给出页面的基本布局：
-<figure style="width:400px;margin: 0 auto;">
-    <img src="/images/weibo-ui-preview.jpg" alt="weibo-ui-preview">
-</figure>
-facebook在信息流加载完成之前，也会给出UI预览：
-<figure>
-    <img src="/images/facebook-interface-preview.png" alt="facebook-interface-preview">
-</figure></p>
-
-<h2 id="2-ui预览的实现方式">2.UI预览的实现方式</h2>
-
-<p>UI预览的实现方式主要有两种，一种就是伪UI预览，另一种是真实UI预览。</p>
-
-<h3 id="1-伪ui预览">(1).伪UI预览</h3>
-
-<p>伪UI预览的应用场景较为有限，需要提前人工写好需要预览的UI的布局和样式，因此其只能适用于UI较为简单的场景。facbook的每一条feed的布局都非常相似，它使用的就是伪UI预览，在真实feed加载完成之前，先显示UI预览，当真实feed加载完成后，隐藏UI预览，显示真实feed内容。比如下图是一条feed的UI预览：</p>
-
-<figure style="width:500px;margin: 0 auto;">
-    <img src="/images/facebook-feed-preview.jpg" alt="facebook-feed-preview">
-</figure>
-
-<h3 id="2-真实ui预览">(2).真实UI预览</h3>
-
-<p>真实UI预览实现起来较为复杂，但是其适用场景较为也更为广泛。一种实现真实UI预览的方案是，通过真实测试数据生成真实UI预览，当然这里对测试数据有一定的要求：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">(1)文本用空格代替
-(2)图像用默认图像代替
-</code></pre></div>
-<p>真实UI预览的生成可以通过构建工具完成，比如grunt、gulp、fis等。当真实数据获取成功时，即可隐藏UI预览，显示真实用户页面。</p>
-
-<p>UI预览可以极大的提升用户的感知速度，使网站留住更多用户。虽然在网速较好的情况下，其作用有限，但却不失为锦上添花之举。</p>
-
-<hr>
-
-<p>参考资料</p>
-
-<p><a href="https://dribbble.com/shots/2138907-Non-Blocking-Settings-Page-UI">https://dribbble.com/shots/2138907-Non-Blocking-Settings-Page-UI</a></p>
-
-<p><a href="http://www.callumhart.com/blog/non-blocking-uis-with-interface-previews">http://www.callumhart.com/blog/non-blocking-uis-with-interface-previews</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-
-<div class="pagination">
-  
-    Previous
-  
-  <ul class="inline-list">
-    <li>
+        <div class="read-more-header">
+          <a href="/ui-preview/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h3>
+          <p>使用UI预览提升页面感知速度,异步UI <a href="/ui-preview/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
       
-        <span class="current-page">1</span>
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
+            <span>Published on April 10, 2016</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/mvvm-overview/" title="如何实现一个MVVM框架">如何实现一个MVVM框架</a></h4>
+            <span>Published on February 24, 2016</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
       
-    </li>
-    
-      <li>
-        
-          <a href="/page2">2</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page3">3</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page4">4</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page5">5</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page6">6</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page7">7</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page8">8</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page9">9</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page10">10</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page11">11</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page12">12</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page13">13</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page14">14</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page15">15</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page16">16</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page17">17</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page18">18</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page19">19</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page20">20</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page21">21</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page22">22</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page23">23</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page24">24</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page25">25</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page26">26</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page27">27</a>
-        
-      </li>
-    
-  </ul>
-  
-    <a href="/page2" class="btn">Next</a>
-  
-</div><!-- /.pagination -->
-
+    </div><!-- /.read-more -->
+  </article>
 </div><!-- /#main -->
+
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
@@ -592,7 +397,6 @@ facebook在信息流加载完成之前，也会给出UI预览：
 
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-          
-
+	        
 </body>
 </html>
