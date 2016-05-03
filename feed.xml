@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2016-05-03T10:20:23+08:00</updated>
+<updated>2016-05-03T10:50:04+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -70,6 +70,8 @@
 &lt;/figure&gt;
 
 &lt;h2 id=&quot;2-监控动画性能&quot;&gt;2.监控动画性能&lt;/h2&gt;
+
+&lt;h3 id=&quot;1-使用chrome开发者工具&quot;&gt;(1) 使用chrome开发者工具&lt;/h3&gt;
 
 &lt;p&gt;我们必须首先学会如何对动画的性能指标(帧率数、帧率稳定性)进行监控，才能有针对性的提高动画的性能。chrome开发者工具中的timeline是绝佳的工具，我们可以查看每一帧都经过渲染流水线的哪些步骤：&lt;/p&gt;
 
