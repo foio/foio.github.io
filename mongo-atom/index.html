@@ -125,21 +125,21 @@ rel="stylesheet" type="text/css" -->
 <p>众所周知，Redis采用的是异步I/O非阻塞的单进程模型，每一条Redis命令都是原子性的。那么mongoDB呢？ mongo有哪些原子操作呢？有哪些实现事务性操作的技巧呢？</p>
 </blockquote>
 
-<h3 id="1-对单个文档的原子性修改">1.对单个文档的原子性修改</h3>
+<h3 id="1">1.对单个文档的原子性修改</h3>
 
 <p>mongoDB保证了对单个document的多个filed的原子性修改。如果需要对单个文档进行原子性的CAS操作(check and set)，可以使用findAndModify操作。</p>
 
 <p>比如下面就是一条原子性的CAS操作，首先选择_id为123的文档（注意这里只选择了一个文档），然后对计数器count加1，将status字段变为true，并返回修改后的结果。</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">db</span><span class="p">.</span><span class="nx">colleciton</span><span class="p">.</span><span class="nx">findAndModify</span><span class="p">({</span><span class="nx">query</span><span class="o">:</span><span class="p">{</span><span class="nx">_id</span><span class="o">:</span><span class="s1">&#39;123&#39;</span><span class="p">},</span><span class="nx">$inc</span><span class="o">:</span><span class="p">{</span><span class="nx">count</span><span class="o">:</span><span class="mi">1</span><span class="p">},</span><span class="nx">$update</span><span class="o">:</span><span class="p">{</span><span class="nx">status</span><span class="o">:</span><span class="kc">true</span><span class="p">}},</span><span class="k">new</span><span class="o">:</span><span class="kc">true</span><span class="p">);</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">db</span><span class="p">.</span><span class="nx">colleciton</span><span class="p">.</span><span class="nx">findAndModify</span><span class="p">({</span><span class="na">query</span><span class="p">:{</span><span class="na">_id</span><span class="p">:</span><span class="s1">'123'</span><span class="p">},</span><span class="na">$inc</span><span class="p">:{</span><span class="na">count</span><span class="p">:</span><span class="mi">1</span><span class="p">},</span><span class="na">$update</span><span class="p">:{</span><span class="na">status</span><span class="p">:</span><span class="kc">true</span><span class="p">}},</span><span class="na">new</span><span class="p">:</span><span class="kc">true</span><span class="p">);</span></code></pre></figure>
 
-<h3 id="2-对多个文档使用-isolate操作符">2.对多个文档使用$isolate操作符</h3>
+<h3 id="2-isolate">2.对多个文档使用$isolate操作符</h3>
 
 <p><code>$isolate</code>操作符可以对多个文档的修改提供隔离性。针对其他线程的并发写操作，<code>$isolate</code>保证了提交前其他线程无法修改对应的文档。针对其他线程的读操作，<code>$isolate</code>保证了其他线程读取不到未提交的数据。</p>
 
 <p>但是<code>$isolate</code>有验证的性能问题，因为这种情况下线程持有锁的时间较长，严重的影响mongo的并发性。另外，<code>$isolate</code>也无法保证多个文档修改的一致性(all-or-nothing)，$isolate失败是可能只修改了部分文档。</p>
 
-<h3 id="3-从语意层面实现事务性操作">3.从语意层面实现事务性操作</h3>
+<h3 id="3">3.从语意层面实现事务性操作</h3>
 
 <p>mongoDB官方提供了一种做法，即两阶段提交(two-phase commit)，基本的原理就是利用了写操作的幂等性。具体实现可以看官网的详细讲解。但是利用幂等性来实现事务性有一个重要的前置条件：业务不在乎中间态的不一致。幂等性可以保证最终的一致性，但是会出现中间的不一致状态。</p>
 
@@ -179,20 +179,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/hive-function/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

@@ -130,7 +130,7 @@ rel="stylesheet" type="text/css" -->
 <p>lex是一种词法分析器，可以识别文本中的词汇模式，模式可以用正则表达式表示。通过lex编译l文件(词法文件)就可以生产对应的c代码，然后编译连接c代码就可以生成词法分析器了。</p>
 
 <p>一个l文件分为三个部分，每部分通过双百分号(%%)分割。如下所示：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">... definitions ...
+<div class="highlight"><pre><code class="language-" data-lang="">... definitions ...
 %%
 ... rules ...
 %%
@@ -142,34 +142,36 @@ subroutines 部分用于定义c函数等。</p>
 
 <p>一个简单的l文件例子，test.l。</p>
 
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
     <span class="kt">int</span> <span class="n">yylineno</span><span class="p">;</span>
 <span class="o">%</span><span class="p">}</span>
 <span class="o">%%</span>
-<span class="o">^</span><span class="p">(.</span><span class="o">*</span><span class="p">)</span><span class="err">\</span><span class="n">n</span>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;%4d</span><span class="se">\t</span><span class="s">%s&quot;</span><span class="p">,</span> <span class="o">++</span><span class="n">yylineno</span><span class="p">,</span> <span class="n">yytext</span><span class="p">);</span>
+<span class="o">^</span><span class="p">(.</span><span class="o">*</span><span class="p">)</span><span class="err">\</span><span class="n">n</span>    <span class="n">printf</span><span class="p">(</span><span class="s">"%4d</span><span class="se">\t</span><span class="s">%s"</span><span class="p">,</span> <span class="o">++</span><span class="n">yylineno</span><span class="p">,</span> <span class="n">yytext</span><span class="p">);</span>
 <span class="o">%%</span>
 <span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-    <span class="n">yyin</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&quot;r&quot;</span><span class="p">);</span>
+    <span class="n">yyin</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">"r"</span><span class="p">);</span>
     <span class="n">yylex</span><span class="p">();</span>
     <span class="n">fclose</span><span class="p">(</span><span class="n">yyin</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="kt">int</span> <span class="n">yywrap</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<span class="p">}</span></code></pre></figure>
 
-<p>首先这个l文件在definitions 部分定义了一个int型变量yylineno用于记录行号。然后，在rules定义了一个模式动作：当遇到一行的结尾时，输出当前行号，并输出当前行内容。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。</p>
 
-<hr>
+首先这个l文件在definitions 部分定义了一个int型变量yylineno用于记录行号。然后，在rules定义了一个模式动作：当遇到一行的结尾时，输出当前行号，并输出当前行内容。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。
 
-<h3 id="2-yacc">2.yacc</h3>
+----
 
-<p>Yacc( Yet Another Compiler Compiler)。 Yacc 的 GNU 版叫做 Bison。它是一种工具，将一种编程语言的语法翻译成针对此种语言的 Yacc 语法解析器。从上文中我们可以知道lex可以参数一系列标记，如果我们想当某个标记序列出现时执行某一动作，该怎么实现呢？Yacc该出场了。通过yacc编译y文件(语法文件)就可以产生对应的c程序了；生成的c代码通过编译链接就可以生产语法分析器了。但是，语法分析的前提是词法分析，因此我们需要lex出现输入文件并生成标记。在讲解y文件(语法文件)之前我们假设以及存在如下l文件(词法文件)：</p>
+###2.yacc
 
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
-<span class="cp">#include &lt;stdio.h&gt;</span>
-<span class="cp">#include &quot;y.tab.h&quot;</span>
-<span class="o">%</span><span class="p">}</span>
+Yacc( Yet Another Compiler Compiler)。 Yacc 的 GNU 版叫做 Bison。它是一种工具，将一种编程语言的语法翻译成针对此种语言的 Yacc 语法解析器。从上文中我们可以知道lex可以参数一系列标记，如果我们想当某个标记序列出现时执行某一动作，该怎么实现呢？Yacc该出场了。通过yacc编译y文件(语法文件)就可以产生对应的c程序了；生成的c代码通过编译链接就可以生产语法分析器了。但是，语法分析的前提是词法分析，因此我们需要lex出现输入文件并生成标记。在讲解y文件(语法文件)之前我们假设以及存在如下l文件(词法文件)：
+
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
+<span class="cp">#include &lt;stdio.h&gt;
+#include "y.tab.h"
+</span><span class="o">%</span><span class="p">}</span>
 <span class="o">%%</span>
 <span class="p">[</span><span class="mi">0</span><span class="o">-</span><span class="mi">9</span><span class="p">]</span><span class="o">+</span>                  <span class="k">return</span> <span class="n">NUMBER</span><span class="p">;</span>
 <span class="n">heat</span>                    <span class="k">return</span> <span class="n">TOKHEAT</span><span class="p">;</span>
@@ -178,48 +180,50 @@ subroutines 部分用于定义c函数等。</p>
 <span class="n">temperature</span>             <span class="k">return</span> <span class="n">TOKTEMPERATURE</span><span class="p">;</span>
 <span class="err">\</span><span class="n">n</span>                      <span class="cm">/* ignore end of line */</span><span class="p">;</span>
 <span class="p">[</span> <span class="err">\</span><span class="n">t</span><span class="p">]</span><span class="o">+</span>                  <span class="cm">/* ignore whitespace */</span><span class="p">;</span>
-<span class="o">%%</span></code></pre></div>
+<span class="o">%%</span></code></pre></figure>
 
-<p>这个l文件主要是参数y文件定义的各种token，大家可以看到它的subroutines部分为空，因为该词法分析器的结果直接输出到语法分析器，因此不需要额外的函数。<strong>下面的y文件都依赖于该l文件</strong>。</p>
 
-<p>一个y文件(语法文件)同样包含definitions、rules、subroutines三个部分，每部分同样通过双百分号(%%)分割。各个部分的作用l文件的对应部分也基本一致。</p>
+这个l文件主要是参数y文件定义的各种token，大家可以看到它的subroutines部分为空，因为该词法分析器的结果直接输出到语法分析器，因此不需要额外的函数。**下面的y文件都依赖于该l文件**。
 
-<p>一个简单的y文件例子，test.y。</p>
+一个y文件(语法文件)同样包含definitions、rules、subroutines三个部分，每部分同样通过双百分号(%%)分割。各个部分的作用l文件的对应部分也基本一致。
 
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
-<span class="cp">#include &lt;stdio.h&gt;</span>
-<span class="cp">#include &lt;string.h&gt;</span>
-<span class="kt">void</span> <span class="n">yyerror</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">);</span>
+一个简单的y文件例子，test.y。
+
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
+<span class="cp">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+</span><span class="kt">void</span> <span class="n">yyerror</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">);</span>
 <span class="o">%</span><span class="p">}</span>
 <span class="o">%</span><span class="n">token</span> <span class="n">NUMBER</span> <span class="n">TOKHEAT</span> <span class="n">STATE</span> <span class="n">TOKTARGET</span> <span class="n">TOKTEMPERATURE</span>
 <span class="o">%%</span> 
-<span class="nl">commands</span><span class="p">:</span> <span class="cm">/* empty */</span>
+<span class="n">commands</span><span class="o">:</span> <span class="cm">/* empty */</span>
         <span class="o">|</span> <span class="n">commands</span> <span class="n">command</span>
         <span class="p">;</span>
 
-<span class="nl">command</span><span class="p">:</span>
+<span class="n">command</span><span class="o">:</span>
         <span class="n">heat_switch</span>
         <span class="o">|</span>
         <span class="n">target_set</span>
         <span class="p">;</span>
 
-<span class="nl">heat_switch</span><span class="p">:</span>
+<span class="n">heat_switch</span><span class="o">:</span>
         <span class="n">TOKHEAT</span> <span class="n">STATE</span>
         <span class="p">{</span>
-                <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">Heat turned on or off</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\t</span><span class="s">Heat turned on or off</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
         <span class="p">}</span>
         <span class="p">;</span>
 
-<span class="nl">target_set</span><span class="p">:</span>
+<span class="n">target_set</span><span class="o">:</span>
         <span class="n">TOKTARGET</span> <span class="n">TOKTEMPERATURE</span> <span class="n">NUMBER</span>
         <span class="p">{</span>
-                <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">Temperature set</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\t</span><span class="s">Temperature set</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
         <span class="p">}</span>
         <span class="p">;</span>
 <span class="o">%%</span>
 <span class="kt">void</span> <span class="n">yyerror</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">)</span>
 <span class="p">{</span>
-        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="s">&quot;error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="n">str</span><span class="p">);</span>
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="s">"error: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="n">str</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="kt">int</span> <span class="n">yywrap</span><span class="p">()</span>
 <span class="p">{</span>
@@ -228,17 +232,21 @@ subroutines 部分用于定义c函数等。</p>
 <span class="n">main</span><span class="p">()</span>
 <span class="p">{</span>
         <span class="n">yyparse</span><span class="p">();</span>
-<span class="p">}</span></code></pre></div>
+<span class="p">}</span> </code></pre></figure>
 
-<p>该y文件的definitions部分声明了一个函数，并定义了一系列标记(TOKEN)。然后在rules部分定义了四个模式序列对应(语句)的动作，其中commands是一个递归定义。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。这个y文件实现了以下功能</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">输入：heat on
+
+该y文件的definitions部分声明了一个函数，并定义了一系列标记(TOKEN)。然后在rules部分定义了四个模式序列对应(语句)的动作，其中commands是一个递归定义。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。这个y文件实现了以下功能
+
+```
+输入：heat on
 输出：Heat turned on or off
 输入：target temperature 22
 输出：New temperature set!
-</code></pre></div>
-<h3 id="3-lex与yacc结合">3.lex与yacc结合</h3>
+```
 
-<p>也许你已经注意到了，l文件的definitions部分往往要包含#include &quot;y.tab.h&quot;。而y.tab.h是yacc对y文件编译后产生的c源文见。因此y文件必须限于l文件进行编译成c源文件，然后将l文件产生的c文件和y文件产生的c文件编译连接生产语法解析器。具体步骤见图：</p>
+###3.lex与yacc结合
+
+也许你已经注意到了，l文件的definitions部分往往要包含#include "y.tab.h"。而y.tab.h是yacc对y文件编译后产生的c源文见。因此y文件必须限于l文件进行编译成c源文件，然后将l文件产生的c文件和y文件产生的c文件编译连接生产语法解析器。具体步骤见图：
 
 <figure style="margin:0 auto;width:620px">
     <img src="/images/lex_yacc.jpg"/>
@@ -282,20 +290,20 @@ subroutines 部分用于定义c函数等。</p>
           <a href="/php-sapi/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

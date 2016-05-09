@@ -125,7 +125,7 @@ rel="stylesheet" type="text/css" -->
 
 <hr>
 
-<h3 id="1-原理篇">1.原理篇</h3>
+<h3 id="1">1.原理篇</h3>
 
 <p>Docker可以把应用程序和它所依赖的从操作系统到软件包的环境打包成一个镜像文件。听起来好像一个典型的虚拟机，但是Docker要比虚拟机轻量的多。那么，Docker和一个完全的虚拟机有何区别？Docker是如何做到提供一个完整的文件系统，独立的网络环境等等这些功能，同时还没有如此庞大？</p>
 
@@ -135,15 +135,15 @@ rel="stylesheet" type="text/css" -->
 
 <p>Docker核心是一个操作系统级虚拟化方法, 理解起来可能并不像VM那样直观。我们从虚拟化方法的四个方面：隔离性、资源限制性、便携性、安全性来详细介绍Docker的技术细节。</p>
 
-<h4 id="1-隔离性">(1).隔离性</h4>
+<h4 id="1">(1).隔离性</h4>
 
 <p>传统的vm用一个操作系统实现隔离性，而Docker基于LXC(linux container)实现隔离性。LXC是通过kernel namespace实现隔离性的。简单说就是同一个linux操作系统中可以存在多个不同的命名空间(容器)，不同namesapce中可以存在相同的pid、net、ipc、mnt、uts等。</p>
 
-<h4 id="2-资源限制性">(2).资源限制性</h4>
+<h4 id="2">(2).资源限制性</h4>
 
 <p>Docker通过使用cgroups 实现了对资源的配额和度量。 cgroups 的使用非常简单，可实现对单个进程(容器)的资源控制。groups可以限制blkio、cpu、cpuacct、cpuset、devices、freezer、memory、net_cls、ns九大子系统的资源</p>
 
-<h4 id="3-便携性">(3).便携性</h4>
+<h4 id="3">(3).便携性</h4>
 
 <p>Docker通过使用AUFS (AnotherUnionFS)实现便携性。AUFS(AnotherUnionFS) 是一种 Union FS, 简单来说就是支持将不同目录挂载到同一个虚拟文件系统下(unite several directories into a single virtual filesystem)的文件系统,  AUFS 里有一个类似分层的概念, 通过将一个 readonly 的 branch 和一个 writeable 的 branch 联合在一起，就可以实现对 readonly 权限的 branch 进行增量的进行修改(不影响 readonly 部分的)。</p>
 
@@ -151,69 +151,69 @@ rel="stylesheet" type="text/css" -->
 
 <p><img src="http://infoqstatic.com/resource/articles/docker-core-technology-preview/zh/resources/0731016.png" alt="enter image description here"></p>
 
-<h4 id="4-安全性">(4).安全性</h4>
+<h4 id="4">(4).安全性</h4>
 
 <p>关于安全性相关文章请参考<a href="http://docs.docker.com/articles/security/">Docker官方文档</a>。</p>
 
 <hr>
 
-<h3 id="2-构建镜像">2.构建镜像</h3>
+<h3 id="2">2.构建镜像</h3>
 
 <p>Docker需要linux kernel 3.8以上，安装过程非常简单，在此不再赘述，详细步骤参考<a href="http://docs.docker.com/installation/ubuntulinux/">官方安装文档</a>。</p>
 
 <p>在Docker中开发者可以打包他们的应用以及依赖环境到一镜像中，并可以在任意docke容器中运行这个镜像。在docker的<a href="https://registry.hub.docker.com/">官方register</a>中，有各种操作系统的镜像，我们可以基于这些镜像构建自己的镜像。构建镜像的有两种方法。</p>
 
-<h4 id="1-通过dockerfile创建镜像">(1).通过Dockerfile创建镜像</h4>
+<h4 id="1-dockerfile">(1).通过Dockerfile创建镜像</h4>
 
 <p>Dockerfile基本上是自解释的，从一个基础镜像开始，通过RUN命令在基本镜像上安装环境，然后通过CMD命令指定镜像启动的命令。下面的Dockerfile从ubuntu14.04镜像开始，安装并配置好sshd服务。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">FROM     ubuntu:14.04
-MAINTAINER Thatcher R. Peskens &quot;thatcher@dotcloud.com&quot;
+<div class="highlight"><pre><code class="language-" data-lang="">FROM     ubuntu:14.04
+MAINTAINER Thatcher R. Peskens "thatcher@dotcloud.com"
 RUN apt-get update &amp;&amp; apt-get install -y openssh-server
 RUN mkdir /var/run/sshd
-RUN echo &#39;root:screencast&#39; | chpasswd
-RUN sed -i &#39;s/PermitRootLogin without-password/PermitRootLogin yes/&#39; /etc/ssh/sshd_config
+RUN echo 'root:screencast' | chpasswd
+RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
 
 EXPOSE 22
-CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
+CMD ["/usr/sbin/sshd", "-D"]
 </code></pre></div>
 <p>编辑好Dockerfile后，可以通过docker build命令生成image。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker build -t test_sshd .
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker build -t test_sshd .
 </code></pre></div>
 <p>然后可以通过如下命令查看刚才生成的镜像。运行image的命令请参考docker<a href="http://docs.docker.com/reference/commandline/cli/">官方文档</a>。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker images
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker images
 </code></pre></div>
-<h4 id="2-通过commit创建镜像">(2).通过commit创建镜像</h4>
+<h4 id="2-commit">(2).通过commit创建镜像</h4>
 
 <p>我们可以先以交互的方式启动一个操作系统镜像，然后在其中做各种修改，最后通过commit命令提交。具体步骤如下：
 首先通过交互的方式启动一个镜像，这样会进入镜像操作系统shell中：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker run -t -i utuntu
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker run -t -i utuntu
 </code></pre></div>
 <p>然后在镜像操作系统中做各种修改，退出镜像操作系统。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">root@040acbb6c8c:/# exit
+<div class="highlight"><pre><code class="language-" data-lang="">root@040acbb6c8c:/# exit
 </code></pre></div>
 <p>记下镜像标志：040acbb6c8c，最后通过commit命令提交刚才所做的修改。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker commit -m &#39;your commit message&#39; -a &#39;your author info&#39; 040acbb6c8c your-image-name
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker commit -m 'your commit message' -a 'your author info' 040acbb6c8c your-image-name
 </code></pre></div>
 <p>这样一个新的image就生成了。通过以下命令就可以查看刚才生成的镜像了。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker images
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker images
 </code></pre></div>
 <hr>
 
-<h3 id="3-运行镜像">3.运行镜像</h3>
+<h3 id="3">3.运行镜像</h3>
 
 <p>镜像的运行还是比较简单的，比如如下命令运行ubuntu镜像并用echo输出hello world。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker run ubuntu echo &#39;hello world&#39;
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker run ubuntu echo 'hello world'
 </code></pre></div>
 <p>这条命令使用ubuntu镜像，如果本地docker镜像库中没有ubuntu镜像，会首先从docker的官方register中下载ubuntu镜像。echo输出完成后，改镜像就执行完成并退出了。</p>
 
 <p>如何让一个镜像在docker容器中长期运行呢？比如如下命令启动一个带有sshd服务的镜像，并长期运行。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker run -d ubuntu-sshd /bin/bash -c ‘sshd -D’
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker run -d ubuntu-sshd /bin/bash -c ‘sshd -D’
 </code></pre></div>
 <p>两个方面保证了该镜像在容器中长期运行，第一是run命令的-d参数，表示容器以detach的方式运行；第二是镜像初始化脚本中sshd的-D参数，-D参数表示sshd以非daemonized，非detach的方式运行。镜像运行后，可以通过</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker ps
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker ps
 </code></pre></div>
 <p>查看运行的容器实例。并通过</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">sudo docker inspect
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker inspect
 </code></pre></div>
 <p>查看容器的ip地址等信息。docker运行image相关的参数有很多，包括容器和宿主机器之间的端口映射等参数，本文都没有涉及，请参考官方手册。</p>
 
@@ -253,20 +253,20 @@ CMD [&quot;/usr/sbin/sshd&quot;, &quot;-D&quot;]
           <a href="/unicode-regular-expressions/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

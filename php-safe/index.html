@@ -123,38 +123,38 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-content">
       <p>php是一门极其灵活的编程语言，它是高效开发web程序的最佳选择之一。但是灵活性往往带来安全性问题，这就需要我们工程师时刻审视自己的代码安全性。下面列举一些经常容易出现安全性问题的场景极其解决方案。</p>
 
-<h1 id="安全准则">安全准则</h1>
-<div class="highlight"><pre><code class="language-text" data-lang="text">1.不信任任何从客户端传入的数据，如$SERVER,$_GET,$_POST,$_COOKIE,$FILES,$ENV,$REQUEST等。
+<h1 id=">安全准则</h1>
+<div class="highlight"><pre><code class="language-" data-lang="">1.不信任任何从客户端传入的数据，如$SERVER,$_GET,$_POST,$_COOKIE,$FILES,$ENV,$REQUEST等。
 2.最小化原则，将用户输入的数据的范围限制到最小化
 3.安全的代码不依赖任何安全配置，不能寄希望与php.ini的安全性配置
 4.程序的错误信息对外界屏蔽，程序的错误信息会给攻击者带来极大帮助
 </code></pre></div>
 <hr>
 
-<h1 id="安全场景">安全场景</h1>
+<h1 id=">安全场景</h1>
 
 <p>本文列举了数据库操作场景、文件操作场景、命令执行场景下容易出现的安全问题以及应对方案。</p>
 
-<h2 id="1-数据库操作场景">1 数据库操作场景</h2>
+<h2 id="1">1 数据库操作场景</h2>
 
-<h3 id="1-1-字符串变量注入">1.1 字符串变量注入</h3>
+<h3 id="1-1">1.1 字符串变量注入</h3>
 
 <p>比如如下php代码：。</p>
 
-<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">$user = $_POST[&#39;uesr&#39;];</span>
-<span class="x">$password = $_POST[&#39;password&#39;];</span>
-<span class="x">$query=&quot;select * from user where name = &#39;$user&#39; and password = &#39;$password&#39;&quot;;</span>
-<span class="x">$result=$mysqli-&gt;query($query);</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-php" data-lang="php">$user = $_POST['uesr'];
+$password = $_POST['password'];
+$query="select * from user where name = '$user' and password = '$password'";
+$result=$mysqli-&gt;query($query);</code></pre></figure>
 
 <p>这段代码没有对不可信输入做检查，当<code>$_POST[&#39;user&#39;] = &quot;&#39; OR &#39;&#39; = &#39;&quot;</code>且<code>$_POST[&#39;password&#39;] = &quot;&#39; OR &#39;&#39; = &#39;&quot;</code>，实际的sql为：<code>select * from user where name = &#39;&#39; OR &#39;&#39; = &#39;&#39; and password = &#39;&#39; OR &#39;&#39; = &#39;&#39;</code>，这样的sql就可能将所有的数据库中用户信息泄露。</p>
 
-<h3 id="1-2-整形注入">1.2 整形注入</h3>
+<h3 id="1-2">1.2 整形注入</h3>
 
 <p>比如如下php代码：。</p>
 
-<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">$user = $_POST[&#39;id&#39;];</span>
-<span class="x">$query=&quot;select * from user where id = $id&quot;;</span>
-<span class="x">$result=$mysqli-&gt;query($query);</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-php" data-lang="php">$user = $_POST['id'];
+$query="select * from user where id = $id";
+$result=$mysqli-&gt;query($query);</code></pre></figure>
 
 <p>这段代码没有对不可信输入做检查，当<code>$_POST[&#39;id&#39;] = &quot;1 OR &#39;&#39; = &#39;&#39;&quot;</code>，实际的sql为：<code>select * from user where id = 1 OR &#39;&#39; = &#39;&#39;</code>，这样的sql就可能将所有的数据库中用户信息泄露。</p>
 
@@ -164,27 +164,27 @@ rel="stylesheet" type="text/css" -->
 
 <hr>
 
-<h2 id="2-文件操作场景">2 文件操作场景</h2>
+<h2 id="2">2 文件操作场景</h2>
 
-<h3 id="2-1-文件名安全问题">2.1 文件名安全问题</h3>
+<h3 id="2-1">2.1 文件名安全问题</h3>
 
 <p>如下php代码段：</p>
 
-<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">$file = $_GET[&#39;file&#39;];</span>
-<span class="x">if(!empty($file)){</span>
-<span class="x">    include_once($file);</span>
-<span class="x">}</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-php" data-lang="php">$file = $_GET['file'];
+if(!empty($file)){
+    include_once($file);
+}</code></pre></figure>
 
 <p>include,include_once,require,requre_once这些函数的本质是载入php文件并执行，因此使用这些函数时务必非常小心。这段代码非常不安全，比如<code>$_GET[&#39;file&#39;]=&quot;../../../../../../../../etc/passwd%00.php&quot;</code>时，将会打开敏感文件/etc/passwd，因为<code>%00</code>是<code>\0</code>url编码后的值，对于操作系统而言相当于字符串的结束符。</p>
 
-<h3 id="2-2-文件读写安全问题">2.2 文件读写安全问题</h3>
+<h3 id="2-2">2.2 文件读写安全问题</h3>
 
 <p>如下php代码段：</p>
 
-<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">$filename=&quot;test1.txt&quot;;</span>
-<span class="x">$file_info=&quot;user input:\n&quot;;</span>
-<span class="x">$file_info.= &quot;$conent&quot;;</span>
-<span class="x">file_put_conent($filename,$conent);</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-php" data-lang="php">$filename="test1.txt";
+$file_info="user input:\n";
+$file_info.= "$conent";
+file_put_conent($filename,$conent);</code></pre></figure>
 
 <p>当<code>$conent=&quot;eval($php_code)&quot;</code>时，会执行代码中的php_code，理论上攻击者可以运行任何php代码。这段代码主要问题在于用<code>双引号</code>包含用户提交的文件内容。</p>
 
@@ -194,15 +194,15 @@ rel="stylesheet" type="text/css" -->
 
 <hr>
 
-<h2 id="3-命令行操作场景">3 命令行操作场景</h2>
+<h2 id="3">3 命令行操作场景</h2>
 
 <p>如下php代码段：</p>
 
-<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="x">uri = $request[&#39;uri&#39;];</span>
-<span class="x">$from = $request[&#39;from&#39;];</span>
-<span class="x">$to   = $request[&#39;to&#39;];</span>
-<span class="x">$tmp = &#39;/tmp/act_css_tmp_&#39; . $uri;  </span>
-<span class="x">system(&quot;/usr/bin/wget $from -O $tmp&quot;);</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-php" data-lang="php">uri = $request['uri'];
+$from = $request['from'];
+$to   = $request['to'];
+$tmp = '/tmp/act_css_tmp_' . $uri;  
+system("/usr/bin/wget $from -O $tmp");</code></pre></figure>
 
 <p>$request变量来自于用户URL的输入，最终进入到system函数里作为命令来执行，但是这段代码没有安全处理用户的输入，任意用户都可以通过如下URL来在机上执行自己的命令， <code>php?cmd=1190&amp;func=sync_css&amp;uri=hi&amp;from=;cat /etc/passwd;&amp;to=hi&amp;1=2</code> 最后导致系统的沦陷。</p>
 
@@ -212,20 +212,20 @@ rel="stylesheet" type="text/css" -->
 
 <hr>
 
-<h1 id="安全配置">安全配置</h1>
-<div class="highlight"><pre><code class="language-text" data-lang="text">register_globals = Off   
+<h1 id=">安全配置</h1>
+<div class="highlight"><pre><code class="language-" data-lang="">register_globals = Off   
 </code></pre></div>
 <p>register_globals允许php将$_GET和$_POST,$_COOKIE等变量里的内容自动注册为全局变量,如果程序里的某些变量没有经过初始化而直接使用将导致安全问题。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">isplay_errors = Off, log_errors = On 
+<div class="highlight"><pre><code class="language-" data-lang="">isplay_errors = Off, log_errors = On 
 </code></pre></div>
 <p>如果脚本运行时出错,错误信息将提供非常多的信息给黑客,里面可能包含了web路径,一些调试信息甚至是部分的php代码。我们应该强制在线上业务关闭错误信息对外的显示该选项。并将error_log 指定为我们自定义的错误路径。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">expose_php = Off
+<div class="highlight"><pre><code class="language-" data-lang="">expose_php = Off
 </code></pre></div>
 <p>防止php在http头输出中加入版本信息防止恶意攻击者从中获取敏感信息强制执行将此选项为off。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text"> allow_url_include = Off
+<div class="highlight"><pre><code class="language-" data-lang=""> allow_url_include = Off
 </code></pre></div>
 <p>防止php将远程资源作为php源文件执行。从而从一定程度上防范文件包含漏洞。强制执行此选项为off。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">max_input_vars = 1000 
+<div class="highlight"><pre><code class="language-" data-lang="">max_input_vars = 1000 
 </code></pre></div>
 <p>设置用户输入生成的最大变量值。防止利用大量无用变量造成php程序hashtable冲突导致占用大量系统资源。建议执行为默认1000个值。 </p>
 
@@ -261,20 +261,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/linux-expects/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

@@ -131,7 +131,7 @@ rel="stylesheet" type="text/css" -->
 
 <p><a href="https://github.com/foio/mvvm-demo">详细源代码在请到github下载</a>。</p>
 
-<h2 id="1-基本功能">1.基本功能</h2>
+<h2 id="1">1.基本功能</h2>
 
 <p>双向绑定作为MVVM框架的最大特点，是如何实现的呢？MVVM数据流示意图如下：</p>
 
@@ -140,39 +140,39 @@ rel="stylesheet" type="text/css" -->
 </figure>
 
 <p>示意图中可以看出双向数据流：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">View将变动通知到ViewModel，然后ViewModel对Model进行更新。
+<div class="highlight"><pre><code class="language-" data-lang="">View将变动通知到ViewModel，然后ViewModel对Model进行更新。
 Model将变动通知到ViewModel，然后ViewModel对View进行更新。
 </code></pre></div>
 <p>其中最核心的功能是对视图(View)和模型(Model)变动的监听。</p>
 
-<h3 id="1-视图变动的监听">(1).视图变动的监听</h3>
+<h3 id="1">(1).视图变动的监听</h3>
 
 <p>MVVM框架都是通过相应的指令，在HTML中声明式的标记出需要监听的DOM节点。本文实现中，我们主要涉及到两个指令：<code>foio-controller</code>、<code>foio-model</code>以及一个表达式{{}}。
 比如：</p>
-<div class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;text&quot;</span> <span class="na">foio-model=</span><span class="s">&quot;nickname&quot;</span><span class="nt">&gt;</span>
+<div class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">foio-model=</span><span class="s">"nickname"</span><span class="nt">&gt;</span>
 </code></pre></div>
 <p>上述指令foio-model，声明将View中的input的变动通知到Model中的nickname。通过对的视图节点(input)注册监听函数就可以得到视图(input)的变动了。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//对视图中的input节点注册input事件监听函数</span>
-<span class="kd">var</span> <span class="nx">elem</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">elem</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="s1">'input'</span><span class="p">);</span>
 <span class="k">if</span> <span class="p">(</span><span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+        <span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'input'</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-        <span class="nx">elem</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span><span class="s1">&#39;oninput&#39;</span><span class="p">,</span> <span class="nx">callback</span><span class="p">);</span>
+        <span class="nx">elem</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span><span class="s1">'oninput'</span><span class="p">,</span> <span class="nx">callback</span><span class="p">);</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="2-模型变动的监听">(2).模型变动的监听</h3>
+<h3 id="2">(2).模型变动的监听</h3>
 
 <p>对模型变动的监听可以通过ECMAScript5中的API实现。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">obj</span><span class="p">,</span> <span class="nx">prop</span><span class="p">,</span> <span class="nx">descriptor</span><span class="p">)</span>
 </code></pre></div>
 <p>可以通过该API为对象添加一个属性，并设置该属性的gett函数和set函数，在访问属性时会触发相应的get函数和set函数。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">air</span> <span class="o">=</span> <span class="p">{};</span>
-<span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">air</span><span class="p">,</span> <span class="s1">&#39;temperature&#39;</span><span class="p">,</span> <span class="p">{</span>
-    <span class="nx">get</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;get!&#39;</span><span class="p">);</span>
+<span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">air</span><span class="p">,</span> <span class="s1">'temperature'</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">get</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'get!'</span><span class="p">);</span>
     <span class="p">},</span>
-    <span class="nx">set</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;set!&#39;</span><span class="p">);</span>
+    <span class="na">set</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'set!'</span><span class="p">);</span>
     <span class="p">}</span>
 <span class="p">});</span>
 
@@ -181,14 +181,14 @@ Model将变动通知到ViewModel，然后ViewModel对View进行更新。
 </code></pre></div>
 <p>我们可以在set函数中得到模型的变动，并将相关变动通知到ViewModel。</p>
 
-<h2 id="2-总体实现">2.总体实现</h2>
+<h2 id="2">2.总体实现</h2>
 
 <p>MVVM的主要流程包括(View)视图扫描、(Model)模型构建、以及关联视图和模型(ViewModel)</p>
 
-<h3 id="1-view-视图-扫描">(1)View(视图)扫描</h3>
+<h3 id="1-view">(1)View(视图)扫描</h3>
 
 <p>处理View(视图)必然涉及到对DOM结构的扫描，通过扫描抽取指令(本文只有三种指令，foio-controller、foio-model、)；并对相应的节点进行如下处理：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">绑定通知函数，用于在视图更新时通知ViewModel
+<div class="highlight"><pre><code class="language-" data-lang="">绑定通知函数，用于在视图更新时通知ViewModel
 绑定更新函数，用于在模型更新时通过该函数更新视图
 </code></pre></div>
 <p>针对不同的节点类型，这些通知函数和更新函数都是预先定义好的，存储在<code>directives</code>结构中。在节点扫描过程中，当遇到指令时，就通过executeBindings函数对相应的节点进行绑定处理。流程图如下：</p>
@@ -197,17 +197,17 @@ Model将变动通知到ViewModel，然后ViewModel对View进行更新。
     <img src="/images/mvvm-flow.png" alt="mvvm overview">
 </figure>
 
-<h3 id="2-model-模型-构建">(2)Model(模型)构建</h3>
+<h3 id="2-model">(2)Model(模型)构建</h3>
 
 <p>而对Model的处理也主要是注册监听函数，用于在Model变化时得到通知，如上图所示。controller中的每一个变量都通过<code>Object.defineProperty(obj, prop, descriptor)</code>定义到Model上，其中descriptor上的get函数可以用于搜集依赖，而set函数则用于通知依赖于该Model的视图进行更新。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">descriptor</span> <span class="o">=</span> <span class="p">{</span>
     <span class="kd">var</span> <span class="nx">dependencyList</span> <span class="o">=</span> <span class="p">[];</span>
-    <span class="nx">get</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nl">get</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
             <span class="c1">//搜集依赖</span>
             <span class="nx">dependencyList</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
             <span class="k">return</span> <span class="nx">value</span><span class="p">;</span>
         <span class="p">},</span>
-    <span class="nx">set</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">newVal</span><span class="p">)</span> <span class="p">{</span>
+    <span class="na">set</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">newVal</span><span class="p">)</span> <span class="p">{</span>
             <span class="k">if</span> <span class="p">(</span><span class="nx">oldVal</span> <span class="o">===</span> <span class="nx">newVal</span><span class="p">)</span> <span class="p">{</span>
                 <span class="k">return</span><span class="p">;</span>
             <span class="p">}</span>
@@ -219,26 +219,26 @@ Model将变动通知到ViewModel，然后ViewModel对View进行更新。
         <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="3-关联模型和视图">(3)关联模型和视图</h3>
+<h3 id="3">(3)关联模型和视图</h3>
 
 <p>View(视图)扫描的结果是一个元素集合</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">bindings</span> <span class="o">=</span> <span class="p">[</span>
                 <span class="p">{</span>
-                    <span class="nx">type</span><span class="o">:</span> <span class="nx">type</span><span class="p">,</span> <span class="c1">//指令类型</span>
-                    <span class="nx">element</span><span class="o">:</span> <span class="nx">elem</span><span class="p">,</span> <span class="c1">//DOM节点</span>
-                    <span class="nx">expr</span><span class="o">:</span> <span class="nx">value</span><span class="p">,</span> <span class="c1">//绑定的变量名称</span>
+                    <span class="na">type</span><span class="p">:</span> <span class="nx">type</span><span class="p">,</span> <span class="c1">//指令类型</span>
+                    <span class="na">element</span><span class="p">:</span> <span class="nx">elem</span><span class="p">,</span> <span class="c1">//DOM节点</span>
+                    <span class="na">expr</span><span class="p">:</span> <span class="nx">value</span><span class="p">,</span> <span class="c1">//绑定的变量名称</span>
                 <span class="p">},</span>
                 <span class="p">{...}</span>
             <span class="p">]</span>
 </code></pre></div>
 <p>而Model(模型)构建的结果也是一个集合：</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">vmodels</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="nx">controller1</span><span class="o">:</span> <span class="p">{</span>
-                <span class="nx">expr1</span><span class="o">:</span> <span class="nx">value1</span><span class="p">,</span>
-                <span class="nx">expr2</span><span class="o">:</span> <span class="nx">value2</span><span class="p">,</span>
-                <span class="nx">binder</span><span class="o">:</span> <span class="p">{</span><span class="nx">expr1</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){},</span><span class="nx">expr2</span><span class="o">:</span><span class="kd">function</span><span class="p">(){}}</span>
+            <span class="na">controller1</span><span class="p">:</span> <span class="p">{</span>
+                <span class="na">expr1</span><span class="p">:</span> <span class="nx">value1</span><span class="p">,</span>
+                <span class="na">expr2</span><span class="p">:</span> <span class="nx">value2</span><span class="p">,</span>
+                <span class="na">binder</span><span class="p">:</span> <span class="p">{</span><span class="na">expr1</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){},</span><span class="na">expr2</span><span class="p">:</span><span class="kd">function</span><span class="p">(){}}</span>
             <span class="p">},</span>
-            <span class="nx">controller1</span><span class="o">:</span> <span class="p">{...}</span>
+            <span class="na">controller1</span><span class="p">:</span> <span class="p">{...}</span>
         <span class="p">}</span>
 </code></pre></div>
 <p>通过executeBindings函数，将视图和模型关联起来。</p>
@@ -248,20 +248,21 @@ Model将变动通知到ViewModel，然后ViewModel对View进行更新。
         <span class="nx">directives</span><span class="p">[</span><span class="nx">binding</span><span class="p">.</span><span class="nx">type</span><span class="p">](</span><span class="nx">binding</span><span class="p">);</span>
     <span class="p">};</span>
 <span class="p">}</span>
+
 </code></pre></div>
 <p>每一种指令都有不同的初始化函数，比如针对<code>foio-model</code>指令，当DOM节点为input类型时，初始化函数做了三件事：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">监听input和DOMAutoComplete事件
+<div class="highlight"><pre><code class="language-" data-lang="">监听input和DOMAutoComplete事件
 注册对模型的依赖
 提供更新该DOM节点的方法
 </code></pre></div>
 <p>详细代码如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">directives</span><span class="p">[</span><span class="s1">&#39;model&#39;</span><span class="p">]</span><span class="o">=</span><span class="p">{</span>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">directives</span><span class="p">[</span><span class="s1">'model'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span>
         <span class="k">switch</span> <span class="p">(</span><span class="nx">binding</span><span class="p">.</span><span class="nx">xtype</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">case</span> <span class="s2">&quot;input&quot;</span><span class="o">:</span>
+            <span class="k">case</span> <span class="s2">"input"</span><span class="p">:</span>
                 <span class="c1">//绑定input事件</span>
-                <span class="nx">binding</span><span class="p">.</span><span class="nx">bound</span><span class="p">(</span><span class="s1">&#39;input&#39;</span><span class="p">,</span> <span class="nx">updateVModel</span><span class="p">);</span>
+                <span class="nx">binding</span><span class="p">.</span><span class="nx">bound</span><span class="p">(</span><span class="s1">'input'</span><span class="p">,</span> <span class="nx">updateVModel</span><span class="p">);</span>
                 <span class="c1">//绑定DOMAutoComplete事件</span>
-                <span class="nx">binding</span><span class="p">.</span><span class="nx">bound</span><span class="p">(</span><span class="s1">&#39;DOMAutoComplete&#39;</span><span class="p">,</span> <span class="nx">updateVModel</span><span class="p">);</span>
+                <span class="nx">binding</span><span class="p">.</span><span class="nx">bound</span><span class="p">(</span><span class="s1">'DOMAutoComplete'</span><span class="p">,</span> <span class="nx">updateVModel</span><span class="p">);</span>
                 <span class="c1">//注册对模型的依赖</span>
                 <span class="nx">elem</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">closetVmodel</span><span class="p">.</span><span class="nx">binder</span><span class="p">[</span><span class="nx">binding</span><span class="p">.</span><span class="nx">expr</span><span class="p">].</span><span class="nx">apply</span><span class="p">(</span><span class="nx">binding</span><span class="p">);</span>
                 <span class="c1">//更新该DOM节点的方法</span>
@@ -306,20 +307,20 @@ Model将变动通知到ViewModel，然后ViewModel对View进行更新。
           <a href="/virtual-dom/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

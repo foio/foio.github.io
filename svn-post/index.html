@@ -125,22 +125,22 @@ rel="stylesheet" type="text/css" -->
 
 <hr>
 
-<h2 id="1-查看某个svn模块-文件提交记录">1.查看某个svn模块/文件提交记录</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text">基于日期: svn log -r {2012-04-01}:{2012-04-05} Test.java
+<h2 id="1-svn">1.查看某个svn模块/文件提交记录</h2>
+<div class="highlight"><pre><code class="language-" data-lang="">基于日期: svn log -r {2012-04-01}:{2012-04-05} Test.java
 基于版本号: svn log -r 1001:1003 Test.java
 </code></pre></div>
 <p>其中<strong>参数-r</strong>后面可以是日期，也可以是svn版本号</p>
 
 <hr>
 
-<h2 id="2-比较某个svn模块-文件的各个版本">2.比较某个svn模块/文件的各个版本</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text">基于版本号: svn diff -r 1001:1003 Test.java
+<h2 id="2-svn">2.比较某个svn模块/文件的各个版本</h2>
+<div class="highlight"><pre><code class="language-" data-lang="">基于版本号: svn diff -r 1001:1003 Test.java
 基于常量: svn diff -r PREV:COMMITTED Test.java
 </code></pre></div>
 <hr>
 
-<h2 id="3-将当前工作copy的模块-文件恢复到历史版本">3.将当前工作copy的模块/文件恢复到历史版本</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text">基于版本号: svn merge -r 1003:1001 Test.java
+<h2 id="3-copy">3.将当前工作copy的模块/文件恢复到历史版本</h2>
+<div class="highlight"><pre><code class="language-" data-lang="">基于版本号: svn merge -r 1003:1001 Test.java
 </code></pre></div>
 <p>merge的意思可以简单的理解为<strong>将diff的差异应用到本地工作copy</strong></p>
 
@@ -182,20 +182,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/shalemei-post/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

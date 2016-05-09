@@ -133,10 +133,10 @@ rel="stylesheet" type="text/css" -->
 
 <hr>
 
-<h1 id="1-环境篇">1.环境篇</h1>
+<h1 id="1">1.环境篇</h1>
 
 <p>下载python2.5、2.6或者2.7，firefox，<a href="https://ftp.mozilla.org/pub/mozilla.org/labs/jetpack/addon-sdk-1.16.zip">Add-ons SDK</a> 。确保python在系统的path中。解压下载的sdk的zip文件，在命令行模式下运行：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">cd add-ons 
+<div class="highlight"><pre><code class="language-" data-lang="">cd add-ons 
 bin\active
 #如果active(主要是初始化一些变量)运行成功，会改变当前的命令行前缀，类似如下:
 (C:\Users\mozilla\sdk\addon-sdk) C:\Users\Work\sdk\addon-sdk&gt;
@@ -148,12 +148,12 @@ cfg
 
 <hr>
 
-<h1 id="2-工具篇">2.工具篇</h1>
+<h1 id="2">2.工具篇</h1>
 
-<h1 id="1-用cfx-init产生扩展的基本框架">(1) 用cfx init产生扩展的基本框架</h1>
+<h1 id="1-cfx-init">(1) 用cfx init产生扩展的基本框架</h1>
 
 <p>工欲善其事，必先利其器，好的工具能够大幅度提高开发效率。我要介绍的工具是cfx。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">mkdir my-addon
+<div class="highlight"><pre><code class="language-" data-lang="">mkdir my-addon
 cd my-addon 
 cfx init
 * lib directory created
@@ -166,36 +166,36 @@ cfx init
 * lib/main.js written
 * doc/main.md written
 Your sample add-on is now ready for testing:
-try &quot;cfx test&quot; and then &quot;cfx run&quot;. Have fun!&quot;
+try "cfx test" and then "cfx run". Have fun!"
 </code></pre></div>
 <hr>
 
-<h1 id="2-实现扩展的具体逻辑">(2)实现扩展的具体逻辑</h1>
+<h1 id="2">(2)实现扩展的具体逻辑</h1>
 
 <p>扩展的具体逻辑在lib/main.js中。假如我们的想在浏览器的工具栏上实现一个button，点击后在新的tab页面中打开www.baidu.com。具体的逻辑代码如下：</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">widgets</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;sdk/widget&quot;</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">tabs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;sdk/tabs&quot;</span><span class="p">);</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">widgets</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"sdk/widget"</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">tabs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"sdk/tabs"</span><span class="p">);</span>
 <span class="kd">var</span> <span class="nx">widget</span> <span class="o">=</span> <span class="nx">widgets</span><span class="p">.</span><span class="nx">Widget</span><span class="p">({</span>
-  <span class="nx">id</span><span class="o">:</span> <span class="s2">&quot;mozilla-link&quot;</span><span class="p">,</span>
-  <span class="nx">label</span><span class="o">:</span> <span class="s2">&quot;Mozilla website&quot;</span><span class="p">,</span>
-  <span class="nx">contentURL</span><span class="o">:</span> <span class="nx">require</span><span class="p">(</span><span class="s2">&quot;sdk/self&quot;</span><span class="p">).</span><span class="nx">data</span><span class="p">.</span><span class="nx">url</span><span class="p">(</span><span class="s2">&quot;icon-16.png&quot;</span><span class="p">),</span>
-  <span class="nx">onClick</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">tabs</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s2">&quot;http://developer.mozilla.org/&quot;</span><span class="p">);</span>
+  <span class="na">id</span><span class="p">:</span> <span class="s2">"mozilla-link"</span><span class="p">,</span>
+  <span class="na">label</span><span class="p">:</span> <span class="s2">"Mozilla website"</span><span class="p">,</span>
+  <span class="na">contentURL</span><span class="p">:</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"sdk/self"</span><span class="p">).</span><span class="nx">data</span><span class="p">.</span><span class="nx">url</span><span class="p">(</span><span class="s2">"icon-16.png"</span><span class="p">),</span>
+  <span class="na">onClick</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="nx">tabs</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s2">"http://developer.mozilla.org/"</span><span class="p">);</span>
   <span class="p">}</span>
-<span class="p">});</span></code></pre></div>
+<span class="p">});</span></code></pre></figure>
 
 <p>当然你也可以自定义button的icon，只需要替换data目录下的icon-16.png，icon-32.png，icon-64.png</p>
 
 <hr>
 
-<h1 id="3-浏览器中测试">(3)浏览器中测试</h1>
+<h1 id="3">(3)浏览器中测试</h1>
 
 <p>使用cfx run在firefox中测试开发中扩展，cfx run命令会启动firefox并安装该插件。</p>
 
 <hr>
 
-<h1 id="4-打包">(4)打包</h1>
+<h1 id="4">(4)打包</h1>
 
 <p>使用cfx xpi打包插件为xpi包。打包后的xpi文件就可以直接使用浏览器安装了。</p>
 
@@ -233,20 +233,20 @@ try &quot;cfx test&quot; and then &quot;cfx run&quot;. Have fun!&quot;
           <a href="/firefox-profile/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

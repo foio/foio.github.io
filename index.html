@@ -16,7 +16,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="积木村の研究所">
 <meta property="og:description" content="this is a tech blog by foio">
-<meta property="og:url" content="/index.html">
+<meta property="og:url" content="/">
 <meta property="og:site_name" content="积木村の研究所">
 
 
@@ -119,6 +119,159 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2016-05-01T00:00:00+08:00"><a href="/mean-web/">May 01, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/mean-web/" rel="bookmark" title="使用MEAN进行现代化WEB开发" itemprop="url">使用MEAN进行现代化WEB开发</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>纵观世界历史，生产工具的进步一次次地推动着人类社会的发展。在Web领域，最近几年也出现了一种新的生产工具栈，MEAN(MongoDB,Express,AngularJS,NodeJS)，虽然其无法完全取代LAMP(Linux,Apache,MySql,PHP)/LNMP(Linux,Nginx,MySql,PHP)，但确实是一种更先进的生产方式。</p>
+
+<p>在MEAN技术栈中，NoSql优等生MongoDB取代了传统的关系型数据库劳模MySql。<a href="https://www.mongodb.com/compare/mongodb-mysql">MongoDB官网上有其与Mysql的功能对比</a>。相比MySql，MongoDB的唯一缺点是没法支持复杂的事务，在现实的互联网应用场景中，我们面对更多的是高并发、非事务性的业务；而对于一些简单事务场景，MongoDB也是可以应对的，请参考<a href="http://foio.github.io/mongo-atom/">关于mongo原子操作的探讨</a>。MongoDB天生是分布式的，支持自动分片(Auto-Sharding)、复制集(Replication Set)，使得其可以很好的满足大数据时代背景下，超高并发、自动容错的存储要求。</p>
+
+<p>传统WEB技术(LAMP/LNMP)中的PHP，被NodeJS取代。本质上讲，PHP并不算后端语言，其主要目的是为了从各个数据源获取数据，拼接处理完成后，返回给页面，因此我们也经常将PHP称为<code>“胶水语言”</code>。PHP语言特性决定了其只能串行地从各个数据源获取数据，因此其响应时间为各个数据源的响应时间之和。而NodeJS的异步特性，使得其可以并发的请求多个数据源，其响应时间为各个数据源的响应时间之中最长的。相比PHP，NodeJS更适合作为<code>“胶水语言”</code>。</p>
+
+<p>MEAN中的Express,AngularJS分别为后端WEB框架和前端SPA(Single Page Application)开发框架。</p>
+
+<p>现代化的WEB生产方式需要有清晰的架构、高效的调试方法、规范的测试方法、以及工程化的构建方法。下面，我们就从这些方面了解基于MEAN开发的WEB开发方式，本文要求读者有传统LAMP/LNMP开发经验，同时熟悉NodeJS，并了解MongoDB。</p>
+
+<h2 id="1-mean">1.MEAN基本代码框架</h2>
+
+<p>NodeJS是一个强社区驱动的技术方案，除了核心模块外，大部分功能需要第三方模块支持，这就导致一个WEB应用可能有几十个模块，对于初学者，有较高的学习门槛，而一个标准的项目模板是一个比较好的入门方式。《MEAN WEB开发》一书从无到有构建了一个规范的MEAN项目，非常适合作为种子项目，该书的源代码请从<a href="https://github.com/amoshaviv/mean-web-development">github上下载</a>，本文也可以看作该书的读书笔记。让我们先从代码组织架构入手。</p>
+
+<h3 id="1-mvc">(1). 服务端MVC模型</h3>
+
+<p>NodeJS实现了CommonJS规范，其天生就支持现代化的模块化开发理念；而基于Express的中间件的架构，我们可以很方便地将常用功能(比如用户权限验证、日志模块)抽象为中间件模块。我们将服务端的代码组织为：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">app/
+    controllers/
+    models/
+    views/
+    routes/
+    config/
+    tests/
+</code></pre></div>
+<p>这里使用ejs作为view层的模板引擎，使用Mongoose作为Model层的ORM(对象关系映射)框架，每一个controller对应的独立express路由文件放在routes文件夹中，config文件夹存放各个中间件(passport、Mongoose)的配置，服务端单元测试脚本在tests文件夹中。</p>
+
+<h3 id="2-mvvm">(2). 客户端MVVM模型</h3>
+
+<p>客户端的基本框架是AngularJS，其本身也是将模块化理念作为其设计之本。我们将客户端代码组织如下：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">public/
+    articles/
+        aritcle.client.modules.js
+        controllers/
+        views/
+        config/
+        services/
+        test/
+            unit/
+            e2e/
+    users/
+    lib/
+    application.js
+</code></pre></div>
+<p>所有前端代码存储在public中，对应服务端的每一个controller，客户端都有一个相应的模块，每个模块放在单独的文件夹中，比如articles和users文件夹。以articles模块为例，其中包含模块定义文件aritcle.client.modules.js、控制器controllers、视图模板views、路由文件config、以及需要提供给其他模块使用的service，其中test文件夹用来存放单元测试脚本和端到端测试脚本。application.js是前端文件的入口，用于加载各个模块(比如articles和users)。</p>
+
+<h2 id="2">2.高效的调试</h2>
+
+<p>只有高效的调试方式才能适应互联网web产品的快速迭代的需求。下面我们分别介绍基于MEAN开发WEB应用过程中的前端和后端调试方法。</p>
+
+<h3 id="1-node-inspector">(1). 使用node-inspector调试服务端代码</h3>
+
+<p>借助于node-inspector，我们可以像调试浏览器端JS代码一样调试服务端代码。首先安装node-inspector。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">npm install -g node-inspector
+</code></pre></div>
+<p>然后启动node-inspecor，并在启动WEB应用时使用--debug参数</p>
+<div class="highlight"><pre><code class="language-" data-lang="">$: node-inspector
+Visit http://127.0.0.1:8080/?port=5858 to start debugging.
+$: node --debug server
+</code></pre></div>
+<p>这里的端口是可以修改的。使用chrome打开<a href="http://127.0.0.1:8080/?port=5858%EF%BC%8C%E6%88%91%E4%BB%AC%E5%B0%B1%E5%8F%AF%E4%BB%A5%E5%83%8F%E8%B0%83%E8%AF%95%E5%B8%B8%E8%A7%84%E5%89%8D%E7%AB%AFJS%E6%96%87%E4%BB%B6%E4%B8%80%E6%A0%B7%E8%B0%83%E8%AF%95%E6%9C%8D%E5%8A%A1%E7%AB%AF%E4%BB%A3%E7%A0%81%E4%BA%86%E3%80%82">http://127.0.0.1:8080/?port=5858，我们就可以像调试常规前端JS文件一样调试服务端代码了。</a></p>
+
+<h3 id="2-batarang-angularjs">(2). 使用Batarang调试AngularJS</h3>
+
+<p>在调试前端JS代码时，我们经常需要对AngularJS内部进行调试，而由于AngularJS的过度封装，对其内部调试往往很棘手。为此，AngularJS团队开发了一款名为<a href="https://chrome.google.com/webstore/detail/angularjs-batarang/ighdmehidhipcmcojjgiloacoafjmpfk?hl=en">Batarang的Chrome插件</a>。安装完Batarang插件后，用chrome打开基于AngularJS框架的页面时，使用开发者工具面板，就会出现了一个新的AngularJS标签页，使用该标签可以结构化的预览AngularJS各个Scope的变量，并可以查看AngularJS的性能。</p>
+
+<p><img src="/images/chrome-angular.png" alt="chrome-angular.png"></p>
+
+<h2 id="3">3.规范的测试</h2>
+
+<p>规范化的测试是项目持续健康发展的根基，这里我们主要介绍服务端单元测试。对于服务端，我们采用<a href="https://github.com/mochajs/mocha">Mocha测试框架</a>，Mocha提供了简洁的接口，可以方便的实现单元测试：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">describle(description,callback); //描述和封装测试集，callback用于封装测试逻辑
+it(description,callback); //描述测试指标，callback用于封装测试逻辑
+before、after、beforeEach、afterEach等4个钩子函数用来在测试的不同阶段执行
+</code></pre></div>
+<p>其中describle用于描述一个单元测试，it用于测试具体的逻辑，一个describle测试单元可以包含多个it测试，只有当所有被包含的it测试都通过时，describle描述的测试单元才能通过。此外，Mocah框架还提供了四个钩子函数，用于在测试前中做一些初始化的工作和在测试后做一些清理工作。</p>
+
+<p>Mocha测试框架并没有提供断言库，因此缺少对测试结果进行逻辑判断的功能。通过使用<a href="https://github.com/shouldjs/should.js">Should.js</a>提供的语义化接口，我们可以方便对验证代码逻辑的结果：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">user</span><span class="p">.</span><span class="nx">should</span><span class="p">.</span><span class="nx">be</span><span class="p">.</span><span class="nx">an</span><span class="p">.</span><span class="nb">Object</span><span class="p">.</span><span class="nx">and</span><span class="p">.</span><span class="nx">have</span><span class="p">.</span><span class="nx">property</span><span class="p">(</span><span class="s1">'name'</span><span class="p">);</span>
+</code></pre></div>
+<p>Should.js可以非常方便的测试对象，但却无法对HTTP结果进行测试，我们需要<a href="https://github.com/visionmedia/supertest">SuperTest断言库</a>来测试HTTP请求的结果。SuperTest断言库也提供了语义化的接口：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">request</span><span class="p">(</span><span class="nx">app</span><span class="p">).</span><span class="nx">get</span><span class="p">(</span><span class="s1">'/user'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">'Accept'</span><span class="p">,</span><span class="s1">'application/json'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">expect</span><span class="p">(</span><span class="s1">'Content-type'</span><span class="p">,</span><span class="sr">/json/</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">expect</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span><span class="nx">done</span><span class="p">);</span>
+</code></pre></div>
+<p>通过使用Mocha、Should.js和SuperTest组成的工具集，我们可以方便的实现服务端的单元测试，一个单元测试的例子如下：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//创建Article Model的测试集</span>
+<span class="nx">describe</span><span class="p">(</span><span class="s1">'Article Model Unit Tests:'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>  
+    <span class="c1">//每次测试前执行的勾子函数</span>
+    <span class="nx">beforeEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//创建测试过程中所需要的数据   </span>
+        <span class="nx">done</span><span class="p">();</span>
+    <span class="p">});</span>
+
+    <span class="c1">//测试article是否能够存储成功</span>
+    <span class="nx">describe</span><span class="p">(</span><span class="s1">'Testing the save method'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="c1">//测试正常文章存储逻辑</span>
+        <span class="nx">it</span><span class="p">(</span><span class="s1">'Should be able to save without problems'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">article</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">should</span><span class="p">.</span><span class="nx">not</span><span class="p">.</span><span class="nx">exist</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">});</span>
+
+        <span class="c1">//测试异常文章存储逻辑</span>
+        <span class="nx">it</span><span class="p">(</span><span class="s1">'Should not be able to save an article without a title'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">article</span><span class="p">.</span><span class="nx">title</span> <span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+            <span class="nx">article</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">should</span><span class="p">.</span><span class="nx">exist</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+
+    <span class="c1">// 每次测试后执行的勾子函数</span>
+    <span class="nx">afterEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//清除测试过程中产生的数据</span>
+        <span class="nx">done</span><span class="p">();</span>
+    <span class="p">});</span>
+</code></pre></div>
+<p>运行测试用例:</p>
+<div class="highlight"><pre><code class="language-" data-lang="">mocha --reporter spec app/tests
+</code></pre></div>
+<p>正常情况下，该测试的结果是：</p>
+<div class="highlight"><pre><code class="language-" data-lang=""> Article Model Unit Tests:
+    Testing the save method
+      √ Should be able to save without problems
+      √ Should not be able to save an article without a title
+ 2 passing (135ms)
+</code></pre></div>
+<p>对于前端，主要采用我们熟悉的AngularJS单元测试和e2e测试，请参考<a href="http://www.cnblogs.com/vipyoumay/p/5331787.html">这篇博客</a>。</p>
+
+<h2 id="4">4.自动化的项目流程</h2>
+
+<p>前端工作的特点决定了其工程问题多于技术问题，因此在开始实际的项目代码开发之前，应该首先做好项目流程的自动化。前端项目构建工具很多，包括Grunt、Gulp、WebPack以及国内的fis等。一个完善的自动化项目流程主要包括：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">自动化构建：js、css代码检查，前端js、css合并、md5戳生成、雪碧图生成、上传的CDN等重复性操作
+自动化调试：通过添加特定的参数，比如--debug，可以方便的调试应用
+自动化测试：每次运行应用运用之前，将单元测试集运行一遍，确保功能正常
+自动化运行：以上三个步骤完成后，就可以运行应用了
+</code></pre></div>
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2016-04-30T00:00:00+08:00"><a href="/animation-performace/">April 30, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -128,12 +281,12 @@ rel="stylesheet" type="text/css" -->
   </header>
   <div class="entry-content">
     <p>何为高性能动画？让人感觉流程顺滑即可。24fps的电影就能让人感觉到流畅，但是游戏却要60fps以上才能让人感觉到流畅。分析原因，我们得出如下结论：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">(1)视频的每一帧记录的是一段时间段(1/24s)的信息，而游戏的每一帧都由显卡绘制，它只能生成一个时间点的信息;
+<div class="highlight"><pre><code class="language-" data-lang="">(1)视频的每一帧记录的是一段时间段(1/24s)的信息，而游戏的每一帧都由显卡绘制，它只能生成一个时间点的信息;
 (2)视频的帧率是稳定的，而在系统负载不平稳时，显卡很难保证游戏帧率的稳定性；
 </code></pre></div>
 <p>前端动画与游戏的原理类似，我们设计高性能动画的基本思路就是<code>提高帧率</code>和<code>稳定帧率</code>。让我们首先一起了解一下浏览器渲染页面的基本过程。</p>
 
-<h2 id="1-理解浏览器渲染流水线">1.理解浏览器渲染流水线</h2>
+<h2 id="1">1.理解浏览器渲染流水线</h2>
 
 <p>渲染的基本流程是：扫描HTML文档结构、计算对应的CSS样式并生成RenderTree，然后根据RenderTree进行布局和绘制，基本过程示意图如下：</p>
 
@@ -171,9 +324,9 @@ rel="stylesheet" type="text/css" -->
     <img src="/images/render-flow-exlucde-layout-and-paint.jpg" alt="render-flow-exlucde-layout-and-paint">
 </figure>
 
-<h2 id="2-监控动画性能">2.监控动画性能</h2>
+<h2 id="2">2.监控动画性能</h2>
 
-<h3 id="1-使用chrome开发者工具">(1) 使用chrome开发者工具</h3>
+<h3 id="1-chrome">(1) 使用chrome开发者工具</h3>
 
 <p>我们必须首先学会如何对动画的性能指标(帧率数、帧率稳定性)进行监控，才能有针对性的提高动画的性能。chrome开发者工具中的timeline是绝佳的工具，我们可以查看每一帧都经过渲染流水线的哪些步骤：</p>
 
@@ -183,26 +336,26 @@ rel="stylesheet" type="text/css" -->
 
 <p>上图中，我选中了其中一帧，可以从最底部的Event Log中看到这一帧没有经过渲染流水线中的layout和paint阶段。</p>
 
-<h3 id="2-通过时间戳计算帧率">(2) 通过时间戳计算帧率</h3>
+<h3 id="2">(2) 通过时间戳计算帧率</h3>
 
 <p>chrome开发者工具中的timeline最大的问题就是其本身比较消耗资源，在开启timeline后，动画的帧率下降明显，因此其数据可能无法反映动画的正常运行情况。如果只是需要统计帧率，可以通过记录绘制每个帧消耗的时间来计算，<a href="https://github.com/mrdoob/stats.js">第三方库stats.js</a>帮我们做了这些事情。下面是一个可视化的例子：</p>
 
 <p><a class="jsbin-embed" href="http://jsbin.com/ruxukiyejo/1/embed?output">JS Bin on jsbin.com</a><script src="http://static.jsbin.com/js/embed.min.js?3.35.11"></script></p>
 
-<h2 id="3-提高动画性能指标">3.提高动画性能指标</h2>
+<h2 id="3">3.提高动画性能指标</h2>
 
 <p>上文提到过，动画的性能指标有两个，帧率数和帧率稳定性。我们分别从动画实现，节点的处理，属性的选择等方面讨论如何提高这两个动画性能指标。</p>
 
-<h3 id="1-选择稳定的实现方式">(1).选择稳定的实现方式</h3>
+<h3 id="1">(1).选择稳定的实现方式</h3>
 
 <p>css3动画使用起来非常简单，目前的浏览器支持率也不错，足以应对一般的交互需求，我们应该优先使用它。当浏览器不支持css3时，或动画场景过于复杂而仅凭css3无能为力时，就需要引入js来帮忙了。我们最常想到的js动画的实现方式，就是固定时间间隔修改元素的样式：</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">setInterval</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="kd">var</span> <span class="nx">anmationNode</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;animation-node&#39;</span><span class="p">);</span> 
+    <span class="kd">var</span> <span class="nx">anmationNode</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'animation-node'</span><span class="p">);</span> 
     <span class="c1">//定期修改节点的样式</span>
 <span class="p">},</span> <span class="mi">100</span><span class="p">)</span>
 </code></pre></div>
 <p>但这是一种非常粗暴的方式，其弱点是很明显的。浏览器的timer的触发时间点是不固定的，如果遇到比较长的同步任务，其触发时间点就会推迟，显然也就<code>保证不了动画帧率的平稳性</code>。HTML5为创建逐帧动画提供了一个新的API：<code>RequestAnimationFrame</code>，该方法在每次浏览器渲染时触发，其触发频率为60fps，我们可以通过这个函数来实现动画，而当动画中某些帧计算量太大无法在1/60s完成时，浏览器会将刷新评论降低到30fps，以保证帧率的稳定性。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">function step(){
+<div class="highlight"><pre><code class="language-" data-lang="">function step(){
     //修改节点样式
     RequestAnimationFrame(step);
 }
@@ -212,22 +365,22 @@ RequestAnimationFrame(step);
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">getAnimationFrame</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">requestAnimationFrame</span><span class="p">)</span> <span class="p">{</span> <span class="c1">//较新浏览器</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="nx">request</span><span class="o">:</span> <span class="nx">requestAnimationFrame</span><span class="p">,</span>
-            <span class="nx">cancel</span><span class="o">:</span> <span class="nx">cancelAnimationFrame</span><span class="p">,</span>
+            <span class="na">request</span><span class="p">:</span> <span class="nx">requestAnimationFrame</span><span class="p">,</span>
+            <span class="na">cancel</span><span class="p">:</span> <span class="nx">cancelAnimationFrame</span><span class="p">,</span>
         <span class="p">}</span>
     <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">mozRequestAnimationFrame</span> <span class="o">&amp;&amp;</span> <span class="nb">window</span><span class="p">.</span><span class="nx">mozCancelAnimationFrame</span><span class="p">)</span> <span class="p">{</span> <span class="c1">//firfox浏览器</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="nx">request</span><span class="o">:</span> <span class="nx">mozRequestAnimationFrame</span><span class="p">,</span>
-            <span class="nx">cancel</span><span class="o">:</span> <span class="nx">mozCancelAnimationFrame</span>
+            <span class="na">request</span><span class="p">:</span> <span class="nx">mozRequestAnimationFrame</span><span class="p">,</span>
+            <span class="na">cancel</span><span class="p">:</span> <span class="nx">mozCancelAnimationFrame</span>
         <span class="p">}</span>
     <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">webkitRequestAnimationFrame</span> <span class="o">&amp;&amp;</span> <span class="nx">webkitRequestAnimationFrame</span><span class="p">(</span><span class="nb">String</span><span class="p">))</span> <span class="p">{</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="nx">request</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
-                <span class="k">return</span><span class="o">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitRequestAnimationFrame</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="na">request</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nl">return</span><span class="p">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitRequestAnimationFrame</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
                     <span class="k">return</span> <span class="nx">callback</span><span class="p">(</span><span class="k">new</span> <span class="nb">Date</span> <span class="o">-</span> <span class="mi">0</span><span class="p">);</span> <span class="c1">//修正部分webkit版本下没有给callback传time参数的bug</span>
                 <span class="p">});</span>
             <span class="p">},</span>
-            <span class="nx">cancel</span><span class="o">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitCancelAnimationFrame</span> <span class="o">||</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitCancelRequestAnimationFrame</span>
+            <span class="na">cancel</span><span class="p">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitCancelAnimationFrame</span> <span class="o">||</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitCancelRequestAnimationFrame</span>
         <span class="p">}</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="c1">//用setInterval模拟requestAnimationFrame</span>
         <span class="kd">var</span> <span class="nx">millisec</span> <span class="o">=</span> <span class="mi">25</span><span class="p">;</span> <span class="c1">//40fps;</span>
@@ -242,7 +395,7 @@ RequestAnimationFrame(step);
             <span class="nx">callbacks</span><span class="p">.</span><span class="nx">length</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
             <span class="kd">var</span> <span class="nx">hits</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
             <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">callback</span><span class="p">;</span> <span class="nx">callback</span> <span class="o">=</span> <span class="nx">cloned</span><span class="p">[</span><span class="nx">i</span><span class="o">++</span><span class="p">];)</span> <span class="p">{</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">callback</span> <span class="o">!==</span> <span class="s1">&#39;cancelled&#39;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">callback</span> <span class="o">!==</span> <span class="s1">'cancelled'</span><span class="p">)</span> <span class="p">{</span>
                     <span class="nx">callback</span><span class="p">(</span><span class="k">new</span> <span class="nx">Data</span> <span class="o">-</span> <span class="mi">0</span><span class="p">);</span>
                     <span class="nx">hits</span><span class="o">++</span><span class="p">;</span>
                 <span class="p">}</span>
@@ -254,22 +407,22 @@ RequestAnimationFrame(step);
 
         <span class="nx">timerId</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">setInterval</span><span class="p">(</span><span class="nx">playAll</span><span class="p">,</span> <span class="nx">millisec</span><span class="p">);</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="nx">request</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">handler</span><span class="p">)</span> <span class="p">{</span>
+            <span class="na">request</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">handler</span><span class="p">)</span> <span class="p">{</span>
                 <span class="nx">callbacks</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">handler</span><span class="p">);</span>
                 <span class="k">return</span> <span class="nx">id</span><span class="o">++</span><span class="p">;</span>
             <span class="p">},</span>
-            <span class="nx">cancel</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-                <span class="nx">callbacks</span><span class="p">[</span><span class="nx">id</span> <span class="o">-</span> <span class="nx">cursor</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;cancelled&#39;</span><span class="p">;</span>
+            <span class="na">cancel</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">callbacks</span><span class="p">[</span><span class="nx">id</span> <span class="o">-</span> <span class="nx">cursor</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'cancelled'</span><span class="p">;</span>
             <span class="p">}</span>
         <span class="p">}</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="2-为动画节点创建新的渲染层">(2).为动画节点创建新的渲染层</h3>
+<h3 id="2">(2).为动画节点创建新的渲染层</h3>
 
 <p>通过将动画节点与文档中的其他节点隔离开来，可以有效的减少重新布局(relayout)和重新绘制(repaint)的面积，从而提高页面的整体性能。隔离动画节点与文档中的其他节点方法通常是为动画节点创建新的渲染层(render layer)。下面是创建渲染层的常用方法：</p>
 
-<h4 id="使用3d变换"><1> 使用3D变换</h4>
+<h4 id="3d"><1> 使用3D变换</h4>
 
 <p>大家一定经常看到网上的文章说使用<code>transform: translate3d(0, 0, 0)/translateZ(0)</code>可以开启GPU加速，亲自试验以后发现其的确可以提高页面的渲染速度，我就曾经用它解决了一些低端机的闪烁问题。
 那么其原理是什么呢？这种方式并非一定能够开启GPU加速。</p>
@@ -282,7 +435,7 @@ RequestAnimationFrame(step);
 
 <p>其主要意思就是3D变换会创建新的渲染层，而不是与其父节点在同一个渲染层中。在新的渲染层中修改节点不会干扰到其他节点，防止了对其他节点的重新布局(relayout)和重新绘制(repaint)，自然也就加快了页面的渲染速度。除了<code>transform: translate3d(0, 0, 0)/translateZ(0)</code>，我们还可以使用<code>will-change</code>。</p>
 
-<h4 id="使用will-change"><2> 使用will-change</h4>
+<h4 id="will-change"><2> 使用will-change</h4>
 
 <p>我们可以使用will-change让浏览器提前了解预期的元素变换，它允许浏览器提前做好适当的优化，使之最后能够快速和流畅的渲染。<code>will-change: transform</code>同样也会为节点创建新的渲染层。
 <code>
@@ -299,22 +452,22 @@ RequestAnimationFrame(step);
 
 <p>上图中右侧有对创建layer原因的描述: has a will-change hint。但是管理渲染层是有成本的，过多的渲染层可能会降低页面的渲染速度，因此我们应该避免滥用渲染层。</p>
 
-<h3 id="3-选择高效的动画属性">(3).选择高效的动画属性</h3>
+<h3 id="3">(3).选择高效的动画属性</h3>
 
 <p>修改节点的大部分属性都会引起重新绘制，甚至是重新布局。而理想情况下，我们应避免重新绘制和重新布局。幸运的当仅仅修改<code>transfrom</code>属性或<code>opacity</code>属性，可以做到不重新绘制。具体的思路是：为需要创建动画的节点创建新的渲染层，并且在新渲染层中只修改<code>transform</code>和<code>opacity</code>属性。<code>只有做到以上两点才可以避免重新布局和重新绘制，真正使用GPU加速。</code></p>
 
-<h3 id="4-避免引起多余的渲染">(4).避免引起多余的渲染</h3>
+<h3 id="4">(4).避免引起多余的渲染</h3>
 
 <p>我们在实现动画的过程中，经常需要获取某个元素的属性，然后对该属性做出修改：</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">step</span><span class="p">(){</span>
-    <span class="kd">var</span> <span class="nx">animationNode</span> <span class="o">=</span> <span class="nx">doucment</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;animation-node&#39;</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">animationNode</span> <span class="o">=</span> <span class="nx">doucment</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'animation-node'</span><span class="p">);</span>
     <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="mi">20</span> <span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
         <span class="nx">animationNode</span><span class="p">.</span><span class="nx">width</span> <span class="o">=</span> <span class="nx">animationNode</span><span class="p">.</span><span class="nx">width</span> <span class="o">+</span> <span class="mi">1</span><span class="err">；</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>上述的for循环语句将导致浏览器进行20次多余的渲染，严重影响页面性能。通常来讲JS对页面样式的多次修改只会在页面下次刷新时渲染一次，而通过DOM API获取样式时，会强制页面完成一次渲染以体现最新修改后的值。上述例子就是这样导致浏览器多次渲染的。而正确的写法应该是读写分离。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">animationNode</span> <span class="o">=</span> <span class="nx">doucment</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;animation-node&#39;</span><span class="p">);</span>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">animationNode</span> <span class="o">=</span> <span class="nx">doucment</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'animation-node'</span><span class="p">);</span>
 <span class="kd">var</span> <span class="nx">initialWidth</span> <span class="o">=</span> <span class="nx">animationNode</span><span class="p">.</span><span class="nx">style</span><span class="p">.</span><span class="nx">width</span><span class="p">;</span>
 <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="mi">20</span> <span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
     <span class="nx">initialWidth</span><span class="o">+=</span><span class="mi">1</span><span class="err">；</span>
@@ -340,71 +493,6 @@ RequestAnimationFrame(step);
 <p><a href="https://github.com/wilsonpage/fastdom">https://github.com/wilsonpage/fastdom</a></p>
 
 <p><a href="https://github.com/mrdoob/stats.js">https://github.com/mrdoob/stats.js</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-04-20T00:00:00+08:00"><a href="/ui-preview/">April 20, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/ui-preview/" rel="bookmark" title="使用UI预览提升页面感知速度" itemprop="url">使用UI预览提升页面感知速度</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>作为一个前端工程师，我们都知道页面的速度对产品业务的发展至关重要，在日常工作中我们除了完成业务逻辑之外，也在持续的优化前端页面的速度。但我们往往从加载速度和渲染速度这两个方面着手，而忽略了感知速度的提升，本文我们就来探讨一下如何从感知速度着手提升前端页面的感知速度。</p>
-
-<h2 id="1-ui预览">1.UI预览</h2>
-
-<p>对于常见的前后端分离项目，一般的工作流程是：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">1. 页面JS请求后端接口
-2. 后端接口返回JSON数据
-3. 前端模板引擎根据JSON数据和预设模板输出最终的HTML片段
-4. 前端模板引擎将HTML片段插入DOM中，浏览器重新局部渲染，显示最终结果
-</code></pre></div>
-<p>而从第1步到第4步之间，我们往往使用一个加载条，来提示用户继续等待。本质上，在这期间UI对用户不可见(UI是阻塞的)，给用户的感觉就是页面较慢，而UI预览就可以从这里介入从而提升用户感知速度。</p>
-
-<p>在使用一些知名网站时，我们经常会看到UI预览，比如新浪微博的文章，在文章主体加载完成之前提前给出页面的基本布局：
-<figure style="width:400px;margin: 0 auto;">
-    <img src="/images/weibo-ui-preview.jpg" alt="weibo-ui-preview">
-</figure>
-facebook在信息流加载完成之前，也会给出UI预览：
-<figure>
-    <img src="/images/facebook-interface-preview.png" alt="facebook-interface-preview">
-</figure></p>
-
-<h2 id="2-ui预览的实现方式">2.UI预览的实现方式</h2>
-
-<p>UI预览的实现方式主要有两种，一种就是伪UI预览，另一种是真实UI预览。</p>
-
-<h3 id="1-伪ui预览">(1).伪UI预览</h3>
-
-<p>伪UI预览的应用场景较为有限，需要提前人工写好需要预览的UI的布局和样式，因此其只能适用于UI较为简单的场景。facbook的每一条feed的布局都非常相似，它使用的就是伪UI预览，在真实feed加载完成之前，先显示UI预览，当真实feed加载完成后，隐藏UI预览，显示真实feed内容。比如下图是一条feed的UI预览：</p>
-
-<figure style="width:500px;margin: 0 auto;">
-    <img src="/images/facebook-feed-preview.jpg" alt="facebook-feed-preview">
-</figure>
-
-<h3 id="2-真实ui预览">(2).真实UI预览</h3>
-
-<p>真实UI预览实现起来较为复杂，但是其适用场景较为也更为广泛。一种实现真实UI预览的方案是，通过真实测试数据生成真实UI预览，当然这里对测试数据有一定的要求：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">(1)文本用空格代替
-(2)图像用默认图像代替
-</code></pre></div>
-<p>真实UI预览的生成可以通过构建工具完成，比如grunt、gulp、fis等。当真实数据获取成功时，即可隐藏UI预览，显示真实用户页面。</p>
-
-<p>UI预览可以极大的提升用户的感知速度，使网站留住更多用户。虽然在网速较好的情况下，其作用有限，但却不失为锦上添花之举。</p>
-
-<hr>
-
-<p>参考资料</p>
-
-<p><a href="https://dribbble.com/shots/2138907-Non-Blocking-Settings-Page-UI">https://dribbble.com/shots/2138907-Non-Blocking-Settings-Page-UI</a></p>
-
-<p><a href="http://www.callumhart.com/blog/non-blocking-uis-with-interface-previews">http://www.callumhart.com/blog/non-blocking-uis-with-interface-previews</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->

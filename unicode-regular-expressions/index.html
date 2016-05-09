@@ -125,54 +125,54 @@ rel="stylesheet" type="text/css" -->
 
 <hr>
 
-<h3 id="1-unicode的编码特点">1.Unicode的编码特点</h3>
+<h3 id="1-unicode">1.Unicode的编码特点</h3>
 
 <p>每一个Unicode字符都对应一个唯一的Unicode编码，一种语言的Unicode编码是在一个连续区间内的，除了这些基本特征外，Unicode编码还有三种属性Property、 Block、Script。我们可以用<code>\p</code>引用Unicode的属性，</p>
 
 <blockquote>
 <p><strong>Property</strong>用于表示字符本身的功能，比如符号，空格，字母等。可以用<code>\p{L}</code>表示字母、文字，而对应<code>\P{L}</code>表示不是字母、文字。Property是与语言无关的，即<code>\p{L}</code>用于表示所有语言的字符。比如：</p>
 </blockquote>
-<div class="highlight"><pre><code class="language-text" data-lang="text">L或者Letter:所有语言的字符
+<div class="highlight"><pre><code class="language-" data-lang="">L或者Letter:所有语言的字符
 P或者Punctuation:所有语言的标点 
 S或者Separator:所有语言的分隔符
 </code></pre></div>
 <blockquote>
 <p><strong>Block</strong>表示Uincode的一个区间，某种语言的字符通常是落在同一区间的，所以可以通过Block粗略表示某类语言的字符，比如<code>\p{InHebrew}</code>表示希伯莱语字符，<code>\p{InCJK_Compatibility}</code>表示兼容CJK（汉语、韩语、日本语）的字符。如下表所示：每一个Block表示方法都对应一段编码区间：</p>
 </blockquote>
-<div class="highlight"><pre><code class="language-text" data-lang="text">InCJK_Compatibility:\u3300–\u33F
+<div class="highlight"><pre><code class="language-" data-lang="">InCJK_Compatibility:\u3300–\u33F
 InHebrew:\u0590–\u05F
 </code></pre></div>
 <blockquote>
 <p><strong>Script</strong>表示Uincode的一个书写系统，比如<code>\p{Greek}</code>表示希腊语字符，<code>\p{Han}</code>表示汉语（中文字符），比如如下列举了希腊，汉语和阿拉伯书写系统。</p>
 </blockquote>
-<div class="highlight"><pre><code class="language-text" data-lang="text">Greek
+<div class="highlight"><pre><code class="language-" data-lang="">Greek
 Han
 Arabic
 </code></pre></div>
 <hr>
 
-<h3 id="2-unicode正则应用案例">2.Unicode正则应用案例</h3>
+<h3 id="2-unicode">2.Unicode正则应用案例</h3>
 
 <ul>
 <li>匹配单个Unicode字符，下面例子去掉&quot;发&quot;字。</li>
 </ul>
 
-<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“</span><span class="n">发财了</span><span class="err">，</span><span class="n">发了</span><span class="err">”</span><span class="o">;</span>
-<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;\u53d1&quot;</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“发财了，发了”</span><span class="o">;</span>
+<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">"\u53d1"</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></figure>
 
 <ul>
 <li>匹配所有标点符号，下面例子去掉所有标点符号</li>
 </ul>
 
-<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“</span><span class="n">发财了</span><span class="err">，</span><span class="n">发了</span><span class="err">！</span><span class="o">&lt;</span><span class="n">Software</span> <span class="n">Engineer</span> <span class="n">is</span> <span class="n">great</span><span class="o">!&gt;</span><span class="err">”</span><span class="o">;</span>
-<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;\\pP&quot;</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“发财了，发了！</span><span class="o">&lt;</span><span class="n">Software</span> <span class="n">Engineer</span> <span class="n">is</span> <span class="n">great</span><span class="o">!&gt;</span><span class="err">”</span><span class="o">;</span>
+<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">"\\pP"</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></figure>
 
 <ul>
 <li>匹配某种语言，下面例子去掉所有汉字</li>
 </ul>
 
-<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“</span><span class="n">发财了</span><span class="err">，</span><span class="n">发了</span><span class="err">！</span><span class="o">&lt;</span><span class="n">Software</span> <span class="n">Engineer</span> <span class="n">is</span> <span class="n">great</span><span class="o">!&gt;</span><span class="err">”</span><span class="o">;</span>
-<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">&quot;\\pHan&quot;</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“发财了，发了！</span><span class="o">&lt;</span><span class="n">Software</span> <span class="n">Engineer</span> <span class="n">is</span> <span class="n">great</span><span class="o">!&gt;</span><span class="err">”</span><span class="o">;</span>
+<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">"\\pHan"</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></figure>
 
 <hr>
 
@@ -211,20 +211,20 @@ Arabic
           <a href="/lex-yacc/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

@@ -123,25 +123,25 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-content">
       <p>配置好nginx和php后发现php-error一直没有日志。google了一下终于搞定了，主要对php-fpm.conf和php.ini做出如下修改:</p>
 
-<h4 id="1-修改php-fpm-conf">1.修改php-fpm.conf</h4>
+<h4 id="1-php-fpm-conf">1.修改php-fpm.conf</h4>
 
 <p>修改php-fpm.conf也可能是pool.d下的www.conf的worker进程配置，将错误信息输出。默认情况下worker进程的错误日志会重定向到/dev/null</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">; Redirect worker stdout and stderr into main error log. If not set, stdout and
+<div class="highlight"><pre><code class="language-" data-lang="">; Redirect worker stdout and stderr into main error log. If not set, stdout and
 ; stderr will be redirected to /dev/null according to FastCGI specs.
 ; Note: on highloaded environement, this can cause some delay in the page
 ; process time (several ms).
 ; Default Value: no
 catch_workers_output = yes
 </code></pre></div>
-<h4 id="2-修改php-ini中配置">2.修改php.ini中配置</h4>
+<h4 id="2-php-ini">2.修改php.ini中配置</h4>
 
 <p>修改php.ini中配置，不让php将error信息输出到网页，而是输出到文件系统</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">display_errors Off
+<div class="highlight"><pre><code class="language-" data-lang="">display_errors Off
 log_errors On
 error_log /var/log/php/php_errors.log
 </code></pre></div>
 <p>现在就应该配置完成了，但是要注意php-fpm的worker进程要有日志文件的写权限。查看一下php-fpm worker进程的owner.</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">ps aux    |    grep php-fpm
+<div class="highlight"><pre><code class="language-" data-lang="">ps aux    |    grep php-fpm
 </code></pre></div>
 <p>比如我的系统，php-fpm master进程的owner为root，php-fpm worer进程的owner为www-data，对我而言只需要目录/var/log/php/的owner和group为www-data即可。</p>
 
@@ -177,20 +177,20 @@ error_log /var/log/php/php_errors.log
           <a href="/RESTful/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

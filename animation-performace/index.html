@@ -122,12 +122,12 @@ rel="stylesheet" type="text/css" -->
     </header>
     <div class="entry-content">
       <p>何为高性能动画？让人感觉流程顺滑即可。24fps的电影就能让人感觉到流畅，但是游戏却要60fps以上才能让人感觉到流畅。分析原因，我们得出如下结论：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">(1)视频的每一帧记录的是一段时间段(1/24s)的信息，而游戏的每一帧都由显卡绘制，它只能生成一个时间点的信息;
+<div class="highlight"><pre><code class="language-" data-lang="">(1)视频的每一帧记录的是一段时间段(1/24s)的信息，而游戏的每一帧都由显卡绘制，它只能生成一个时间点的信息;
 (2)视频的帧率是稳定的，而在系统负载不平稳时，显卡很难保证游戏帧率的稳定性；
 </code></pre></div>
 <p>前端动画与游戏的原理类似，我们设计高性能动画的基本思路就是<code>提高帧率</code>和<code>稳定帧率</code>。让我们首先一起了解一下浏览器渲染页面的基本过程。</p>
 
-<h2 id="1-理解浏览器渲染流水线">1.理解浏览器渲染流水线</h2>
+<h2 id="1">1.理解浏览器渲染流水线</h2>
 
 <p>渲染的基本流程是：扫描HTML文档结构、计算对应的CSS样式并生成RenderTree，然后根据RenderTree进行布局和绘制，基本过程示意图如下：</p>
 
@@ -165,9 +165,9 @@ rel="stylesheet" type="text/css" -->
     <img src="/images/render-flow-exlucde-layout-and-paint.jpg" alt="render-flow-exlucde-layout-and-paint">
 </figure>
 
-<h2 id="2-监控动画性能">2.监控动画性能</h2>
+<h2 id="2">2.监控动画性能</h2>
 
-<h3 id="1-使用chrome开发者工具">(1) 使用chrome开发者工具</h3>
+<h3 id="1-chrome">(1) 使用chrome开发者工具</h3>
 
 <p>我们必须首先学会如何对动画的性能指标(帧率数、帧率稳定性)进行监控，才能有针对性的提高动画的性能。chrome开发者工具中的timeline是绝佳的工具，我们可以查看每一帧都经过渲染流水线的哪些步骤：</p>
 
@@ -177,26 +177,26 @@ rel="stylesheet" type="text/css" -->
 
 <p>上图中，我选中了其中一帧，可以从最底部的Event Log中看到这一帧没有经过渲染流水线中的layout和paint阶段。</p>
 
-<h3 id="2-通过时间戳计算帧率">(2) 通过时间戳计算帧率</h3>
+<h3 id="2">(2) 通过时间戳计算帧率</h3>
 
 <p>chrome开发者工具中的timeline最大的问题就是其本身比较消耗资源，在开启timeline后，动画的帧率下降明显，因此其数据可能无法反映动画的正常运行情况。如果只是需要统计帧率，可以通过记录绘制每个帧消耗的时间来计算，<a href="https://github.com/mrdoob/stats.js">第三方库stats.js</a>帮我们做了这些事情。下面是一个可视化的例子：</p>
 
 <p><a class="jsbin-embed" href="http://jsbin.com/ruxukiyejo/1/embed?output">JS Bin on jsbin.com</a><script src="http://static.jsbin.com/js/embed.min.js?3.35.11"></script></p>
 
-<h2 id="3-提高动画性能指标">3.提高动画性能指标</h2>
+<h2 id="3">3.提高动画性能指标</h2>
 
 <p>上文提到过，动画的性能指标有两个，帧率数和帧率稳定性。我们分别从动画实现，节点的处理，属性的选择等方面讨论如何提高这两个动画性能指标。</p>
 
-<h3 id="1-选择稳定的实现方式">(1).选择稳定的实现方式</h3>
+<h3 id="1">(1).选择稳定的实现方式</h3>
 
 <p>css3动画使用起来非常简单，目前的浏览器支持率也不错，足以应对一般的交互需求，我们应该优先使用它。当浏览器不支持css3时，或动画场景过于复杂而仅凭css3无能为力时，就需要引入js来帮忙了。我们最常想到的js动画的实现方式，就是固定时间间隔修改元素的样式：</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">setInterval</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="kd">var</span> <span class="nx">anmationNode</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;animation-node&#39;</span><span class="p">);</span> 
+    <span class="kd">var</span> <span class="nx">anmationNode</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'animation-node'</span><span class="p">);</span> 
     <span class="c1">//定期修改节点的样式</span>
 <span class="p">},</span> <span class="mi">100</span><span class="p">)</span>
 </code></pre></div>
 <p>但这是一种非常粗暴的方式，其弱点是很明显的。浏览器的timer的触发时间点是不固定的，如果遇到比较长的同步任务，其触发时间点就会推迟，显然也就<code>保证不了动画帧率的平稳性</code>。HTML5为创建逐帧动画提供了一个新的API：<code>RequestAnimationFrame</code>，该方法在每次浏览器渲染时触发，其触发频率为60fps，我们可以通过这个函数来实现动画，而当动画中某些帧计算量太大无法在1/60s完成时，浏览器会将刷新评论降低到30fps，以保证帧率的稳定性。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">function step(){
+<div class="highlight"><pre><code class="language-" data-lang="">function step(){
     //修改节点样式
     RequestAnimationFrame(step);
 }
@@ -206,22 +206,22 @@ RequestAnimationFrame(step);
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">getAnimationFrame</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">requestAnimationFrame</span><span class="p">)</span> <span class="p">{</span> <span class="c1">//较新浏览器</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="nx">request</span><span class="o">:</span> <span class="nx">requestAnimationFrame</span><span class="p">,</span>
-            <span class="nx">cancel</span><span class="o">:</span> <span class="nx">cancelAnimationFrame</span><span class="p">,</span>
+            <span class="na">request</span><span class="p">:</span> <span class="nx">requestAnimationFrame</span><span class="p">,</span>
+            <span class="na">cancel</span><span class="p">:</span> <span class="nx">cancelAnimationFrame</span><span class="p">,</span>
         <span class="p">}</span>
     <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">mozRequestAnimationFrame</span> <span class="o">&amp;&amp;</span> <span class="nb">window</span><span class="p">.</span><span class="nx">mozCancelAnimationFrame</span><span class="p">)</span> <span class="p">{</span> <span class="c1">//firfox浏览器</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="nx">request</span><span class="o">:</span> <span class="nx">mozRequestAnimationFrame</span><span class="p">,</span>
-            <span class="nx">cancel</span><span class="o">:</span> <span class="nx">mozCancelAnimationFrame</span>
+            <span class="na">request</span><span class="p">:</span> <span class="nx">mozRequestAnimationFrame</span><span class="p">,</span>
+            <span class="na">cancel</span><span class="p">:</span> <span class="nx">mozCancelAnimationFrame</span>
         <span class="p">}</span>
     <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">webkitRequestAnimationFrame</span> <span class="o">&amp;&amp;</span> <span class="nx">webkitRequestAnimationFrame</span><span class="p">(</span><span class="nb">String</span><span class="p">))</span> <span class="p">{</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="nx">request</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
-                <span class="k">return</span><span class="o">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitRequestAnimationFrame</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="na">request</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nl">return</span><span class="p">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitRequestAnimationFrame</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
                     <span class="k">return</span> <span class="nx">callback</span><span class="p">(</span><span class="k">new</span> <span class="nb">Date</span> <span class="o">-</span> <span class="mi">0</span><span class="p">);</span> <span class="c1">//修正部分webkit版本下没有给callback传time参数的bug</span>
                 <span class="p">});</span>
             <span class="p">},</span>
-            <span class="nx">cancel</span><span class="o">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitCancelAnimationFrame</span> <span class="o">||</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitCancelRequestAnimationFrame</span>
+            <span class="na">cancel</span><span class="p">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitCancelAnimationFrame</span> <span class="o">||</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitCancelRequestAnimationFrame</span>
         <span class="p">}</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="c1">//用setInterval模拟requestAnimationFrame</span>
         <span class="kd">var</span> <span class="nx">millisec</span> <span class="o">=</span> <span class="mi">25</span><span class="p">;</span> <span class="c1">//40fps;</span>
@@ -236,7 +236,7 @@ RequestAnimationFrame(step);
             <span class="nx">callbacks</span><span class="p">.</span><span class="nx">length</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
             <span class="kd">var</span> <span class="nx">hits</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
             <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">callback</span><span class="p">;</span> <span class="nx">callback</span> <span class="o">=</span> <span class="nx">cloned</span><span class="p">[</span><span class="nx">i</span><span class="o">++</span><span class="p">];)</span> <span class="p">{</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">callback</span> <span class="o">!==</span> <span class="s1">&#39;cancelled&#39;</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">callback</span> <span class="o">!==</span> <span class="s1">'cancelled'</span><span class="p">)</span> <span class="p">{</span>
                     <span class="nx">callback</span><span class="p">(</span><span class="k">new</span> <span class="nx">Data</span> <span class="o">-</span> <span class="mi">0</span><span class="p">);</span>
                     <span class="nx">hits</span><span class="o">++</span><span class="p">;</span>
                 <span class="p">}</span>
@@ -248,22 +248,22 @@ RequestAnimationFrame(step);
 
         <span class="nx">timerId</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">setInterval</span><span class="p">(</span><span class="nx">playAll</span><span class="p">,</span> <span class="nx">millisec</span><span class="p">);</span>
         <span class="k">return</span> <span class="p">{</span>
-            <span class="nx">request</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">handler</span><span class="p">)</span> <span class="p">{</span>
+            <span class="na">request</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">handler</span><span class="p">)</span> <span class="p">{</span>
                 <span class="nx">callbacks</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">handler</span><span class="p">);</span>
                 <span class="k">return</span> <span class="nx">id</span><span class="o">++</span><span class="p">;</span>
             <span class="p">},</span>
-            <span class="nx">cancel</span><span class="o">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-                <span class="nx">callbacks</span><span class="p">[</span><span class="nx">id</span> <span class="o">-</span> <span class="nx">cursor</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;cancelled&#39;</span><span class="p">;</span>
+            <span class="na">cancel</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="nx">callbacks</span><span class="p">[</span><span class="nx">id</span> <span class="o">-</span> <span class="nx">cursor</span><span class="p">]</span> <span class="o">=</span> <span class="s1">'cancelled'</span><span class="p">;</span>
             <span class="p">}</span>
         <span class="p">}</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="2-为动画节点创建新的渲染层">(2).为动画节点创建新的渲染层</h3>
+<h3 id="2">(2).为动画节点创建新的渲染层</h3>
 
 <p>通过将动画节点与文档中的其他节点隔离开来，可以有效的减少重新布局(relayout)和重新绘制(repaint)的面积，从而提高页面的整体性能。隔离动画节点与文档中的其他节点方法通常是为动画节点创建新的渲染层(render layer)。下面是创建渲染层的常用方法：</p>
 
-<h4 id="使用3d变换"><1> 使用3D变换</h4>
+<h4 id="3d"><1> 使用3D变换</h4>
 
 <p>大家一定经常看到网上的文章说使用<code>transform: translate3d(0, 0, 0)/translateZ(0)</code>可以开启GPU加速，亲自试验以后发现其的确可以提高页面的渲染速度，我就曾经用它解决了一些低端机的闪烁问题。
 那么其原理是什么呢？这种方式并非一定能够开启GPU加速。</p>
@@ -276,7 +276,7 @@ RequestAnimationFrame(step);
 
 <p>其主要意思就是3D变换会创建新的渲染层，而不是与其父节点在同一个渲染层中。在新的渲染层中修改节点不会干扰到其他节点，防止了对其他节点的重新布局(relayout)和重新绘制(repaint)，自然也就加快了页面的渲染速度。除了<code>transform: translate3d(0, 0, 0)/translateZ(0)</code>，我们还可以使用<code>will-change</code>。</p>
 
-<h4 id="使用will-change"><2> 使用will-change</h4>
+<h4 id="will-change"><2> 使用will-change</h4>
 
 <p>我们可以使用will-change让浏览器提前了解预期的元素变换，它允许浏览器提前做好适当的优化，使之最后能够快速和流畅的渲染。<code>will-change: transform</code>同样也会为节点创建新的渲染层。
 <code>
@@ -293,22 +293,22 @@ RequestAnimationFrame(step);
 
 <p>上图中右侧有对创建layer原因的描述: has a will-change hint。但是管理渲染层是有成本的，过多的渲染层可能会降低页面的渲染速度，因此我们应该避免滥用渲染层。</p>
 
-<h3 id="3-选择高效的动画属性">(3).选择高效的动画属性</h3>
+<h3 id="3">(3).选择高效的动画属性</h3>
 
 <p>修改节点的大部分属性都会引起重新绘制，甚至是重新布局。而理想情况下，我们应避免重新绘制和重新布局。幸运的当仅仅修改<code>transfrom</code>属性或<code>opacity</code>属性，可以做到不重新绘制。具体的思路是：为需要创建动画的节点创建新的渲染层，并且在新渲染层中只修改<code>transform</code>和<code>opacity</code>属性。<code>只有做到以上两点才可以避免重新布局和重新绘制，真正使用GPU加速。</code></p>
 
-<h3 id="4-避免引起多余的渲染">(4).避免引起多余的渲染</h3>
+<h3 id="4">(4).避免引起多余的渲染</h3>
 
 <p>我们在实现动画的过程中，经常需要获取某个元素的属性，然后对该属性做出修改：</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">step</span><span class="p">(){</span>
-    <span class="kd">var</span> <span class="nx">animationNode</span> <span class="o">=</span> <span class="nx">doucment</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;animation-node&#39;</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">animationNode</span> <span class="o">=</span> <span class="nx">doucment</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'animation-node'</span><span class="p">);</span>
     <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="mi">20</span> <span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
         <span class="nx">animationNode</span><span class="p">.</span><span class="nx">width</span> <span class="o">=</span> <span class="nx">animationNode</span><span class="p">.</span><span class="nx">width</span> <span class="o">+</span> <span class="mi">1</span><span class="err">；</span>
     <span class="p">}</span>
 <span class="p">}</span>
 </code></pre></div>
 <p>上述的for循环语句将导致浏览器进行20次多余的渲染，严重影响页面性能。通常来讲JS对页面样式的多次修改只会在页面下次刷新时渲染一次，而通过DOM API获取样式时，会强制页面完成一次渲染以体现最新修改后的值。上述例子就是这样导致浏览器多次渲染的。而正确的写法应该是读写分离。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">animationNode</span> <span class="o">=</span> <span class="nx">doucment</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;animation-node&#39;</span><span class="p">);</span>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">animationNode</span> <span class="o">=</span> <span class="nx">doucment</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'animation-node'</span><span class="p">);</span>
 <span class="kd">var</span> <span class="nx">initialWidth</span> <span class="o">=</span> <span class="nx">animationNode</span><span class="p">.</span><span class="nx">style</span><span class="p">.</span><span class="nx">width</span><span class="p">;</span>
 <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;=</span> <span class="mi">20</span> <span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
     <span class="nx">initialWidth</span><span class="o">+=</span><span class="mi">1</span><span class="err">；</span>
@@ -367,20 +367,20 @@ RequestAnimationFrame(step);
           <a href="/ui-preview/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h3>
-          <p>使用UI预览提升页面感知速度,异步UI <a href="/ui-preview/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/mvvm-overview/" title="如何实现一个MVVM框架">如何实现一个MVVM框架</a></h4>
-            <span>Published on February 24, 2016</span>
+            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
+            <span>Published on April 10, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

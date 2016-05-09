@@ -123,23 +123,23 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-content">
       <p>我们在写web应用程序时通常对每个类都建立一个 PHP 源文件。为了使用这些源文件，我们就需要在每个脚本开头写大量的的包含语句(include,require)。在 PHP 5 中，不再需要这样了。我们可__autoload()函数和spl_autoload_register函数实现实现自己的加载源文件的机制，它们会在试图使用尚未被定义的类时自动调用。通过调用这些函数，脚本引擎在 PHP 出错失败前有了最后一个机会加载所需的类。本文的主要目标是讲述如何在扩展中用C语言实现自动加载源文件的机制，但是在这之前我们先熟悉一下在PHP脚本中实现自动加载的方法。</p>
 
-<h3 id="1-在php脚本中实现自动加载">1. 在php脚本中实现自动加载</h3>
+<h3 id="1-php">1. 在php脚本中实现自动加载</h3>
 
 <p>在 PHP 5 中我们可以定义一个 __autoload() 函数，它会在试图使用尚未被定义的类时自动调用，这样我们就可以定义一些自己的加载规则了。</p>
 <div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
 <span class="k">function</span> <span class="nf">__autoload</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">require_once</span> <span class="nv">$class_name</span> <span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
+    <span class="k">require_once</span> <span class="nv">$class_name</span> <span class="o">.</span> <span class="s1">'.php'</span><span class="p">;</span>
 <span class="p">}</span>
 
 <span class="nv">$obj</span>  <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass1</span><span class="p">();</span>
 <span class="nv">$obj2</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass2</span><span class="p">();</span>
-<span class="cp">?&gt;</span><span class="x"></span>
+<span class="cp">?&gt;</span>
 </code></pre></div>
 <p>使用<code>spl_autoload_register</code>我们可以一次注册多个加载函数，PHP会在试图使用尚未被定义的类时按注册顺序调用。</p>
 <div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
 <span class="k">function</span> <span class="nf">autoload_services</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span>
 <span class="p">{</span>
-    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">&#39;services/&#39;</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
+    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">'services/'</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">'.php'</span><span class="p">;</span>
     <span class="k">if</span> <span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="nv">$file</span><span class="p">))</span>
     <span class="p">{</span>
         <span class="k">require_once</span><span class="p">(</span><span class="nv">$file</span><span class="p">);</span>
@@ -147,22 +147,22 @@ rel="stylesheet" type="text/css" -->
 <span class="p">}</span>
 <span class="k">function</span> <span class="nf">autoload_vos</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span>
 <span class="p">{</span>
-    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">&#39;vos/&#39;</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">&#39;.php&#39;</span><span class="p">;</span>
+    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">'vos/'</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">'.php'</span><span class="p">;</span>
     <span class="k">if</span> <span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="nv">$file</span><span class="p">))</span>
     <span class="p">{</span>
         <span class="k">require_once</span><span class="p">(</span><span class="nv">$file</span><span class="p">);</span>
     <span class="p">}</span>
 <span class="p">}</span>
-<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">&#39;autoload_services&#39;</span><span class="p">);</span>
-<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">&#39;autoload_vos&#39;</span><span class="p">);</span>
-<span class="cp">?&gt;</span><span class="x"></span>
+<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">'autoload_services'</span><span class="p">);</span>
+<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">'autoload_vos'</span><span class="p">);</span>
+<span class="cp">?&gt;</span>
 </code></pre></div>
-<h3 id="2-在php扩展中实现自动加载">2. 在php扩展中实现自动加载</h3>
+<h3 id="2-php">2. 在php扩展中实现自动加载</h3>
 
 <p>最近在写一个php扩展，其中一个功能就是实现类的自动加载，其实也是通过在内核中调用<code>spl_autoload_register</code>函数来实现。使用zend API调用<code>spl_autoload_register</code>函数还是相对简单的，下面我们主要讲一下如何在内核中实现<code>inclue/require/include_once/require_once</code>等指令的功能。其实<code>inclue/require/include_once/require_once</code>等指令主要是读入文件编译并执行，下面的方法就是完成了这些操作，代码中有详细的注释。</p>
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cm">/*</span>
-<span class="cm">*  loader_import首先将PHP源文件编译成op_array，然后依次执行op_array中的opcode</span>
-<span class="cm">*/</span>
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cm">/*
+*  loader_import首先将PHP源文件编译成op_array，然后依次执行op_array中的opcode
+*/</span>
 <span class="kt">int</span> <span class="nf">loader_import</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">len</span> <span class="n">TSRMLS_DC</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">zend_file_handle</span> <span class="n">file_handle</span><span class="p">;</span>
     <span class="n">zend_op_array</span>   <span class="o">*</span><span class="n">op_array</span><span class="p">;</span>
@@ -178,8 +178,8 @@ rel="stylesheet" type="text/css" -->
     <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
     <span class="n">file_handle</span><span class="p">.</span><span class="n">handle</span><span class="p">.</span><span class="n">fp</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
 
-    <span class="c1">//调用zend API编译源文件</span>
-    <span class="n">op_array</span> <span class="o">=</span> <span class="n">zend_compile_file</span><span class="p">(</span><span class="o">&amp;</span><span class="n">file_handle</span><span class="p">,</span> <span class="n">ZEND_INCLUDE</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+    <span class="c1">//调用zend API编译源文件
+</span>    <span class="n">op_array</span> <span class="o">=</span> <span class="n">zend_compile_file</span><span class="p">(</span><span class="o">&amp;</span><span class="n">file_handle</span><span class="p">,</span> <span class="n">ZEND_INCLUDE</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
 
     <span class="k">if</span> <span class="p">(</span><span class="n">op_array</span> <span class="o">&amp;&amp;</span> <span class="n">file_handle</span><span class="p">.</span><span class="n">handle</span><span class="p">.</span><span class="n">stream</span><span class="p">.</span><span class="n">handle</span><span class="p">)</span> <span class="p">{</span>
         <span class="kt">int</span> <span class="n">dummy</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
@@ -188,41 +188,41 @@ rel="stylesheet" type="text/css" -->
             <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span> <span class="o">=</span> <span class="n">path</span><span class="p">;</span>
         <span class="p">}</span>
 
-        <span class="c1">//将源文件注册到执行期间的全局变量(EG)的include_files列表中，这样就标记了源文件已经包含过了</span>
-        <span class="n">zend_hash_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">EG</span><span class="p">(</span><span class="n">included_files</span><span class="p">),</span> <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">dummy</span><span class="p">,</span>
+        <span class="c1">//将源文件注册到执行期间的全局变量(EG)的include_files列表中，这样就标记了源文件已经包含过了
+</span>        <span class="n">zend_hash_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">EG</span><span class="p">(</span><span class="n">included_files</span><span class="p">),</span> <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">dummy</span><span class="p">,</span>
                 <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">),</span> <span class="nb">NULL</span><span class="p">);</span>
     <span class="p">}</span>
     <span class="n">zend_destroy_file_handle</span><span class="p">(</span><span class="o">&amp;</span><span class="n">file_handle</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
 
-    <span class="c1">//开始执行op_array</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">op_array</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">//开始执行op_array
+</span>    <span class="k">if</span> <span class="p">(</span><span class="n">op_array</span><span class="p">)</span> <span class="p">{</span>
         <span class="n">zval</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
-        <span class="c1">//保存原来的执行环境，包括active_op_array,opline_ptr等</span>
-        <span class="n">zval</span> <span class="o">**</span> <span class="n">__old_return_value_pp</span>   <span class="o">=</span>  <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">);</span>
+        <span class="c1">//保存原来的执行环境，包括active_op_array,opline_ptr等
+</span>        <span class="n">zval</span> <span class="o">**</span> <span class="n">__old_return_value_pp</span>   <span class="o">=</span>  <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">);</span>
         <span class="n">zend_op</span> <span class="o">**</span> <span class="n">__old_opline_ptr</span>     <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">opline_ptr</span><span class="p">);</span> 
         <span class="n">zend_op_array</span> <span class="o">*</span> <span class="n">__old_op_array</span>  <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">);</span>
-        <span class="c1">//保存环境完成后，初始化本次执行环境，替换op_array</span>
-        <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">result</span><span class="p">;</span>
+        <span class="c1">//保存环境完成后，初始化本次执行环境，替换op_array
+</span>        <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">result</span><span class="p">;</span>
         <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span>      <span class="o">=</span> <span class="n">op_array</span><span class="p">;</span>
 
-<span class="cp">#if ((PHP_MAJOR_VERSION == 5) &amp;&amp; (PHP_MINOR_VERSION &gt; 2)) || (PHP_MAJOR_VERSION &gt; 5)</span>
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">))</span> <span class="p">{</span>
+<span class="cp">#if ((PHP_MAJOR_VERSION == 5) &amp;&amp; (PHP_MINOR_VERSION &gt; 2)) || (PHP_MAJOR_VERSION &gt; 5)
+</span>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">))</span> <span class="p">{</span>
             <span class="n">zend_rebuild_symbol_table</span><span class="p">(</span><span class="n">TSRMLS_C</span><span class="p">);</span>
         <span class="p">}</span>
-<span class="cp">#endif</span>
-        <span class="c1">//调用zend API执行源文件的op_array</span>
-        <span class="n">zend_execute</span><span class="p">(</span><span class="n">op_array</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
-        <span class="c1">//op_array执行完成后销毁，要不然就要内存泄露了，哈哈</span>
-        <span class="n">destroy_op_array</span><span class="p">(</span><span class="n">op_array</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+<span class="cp">#endif
+</span>        <span class="c1">//调用zend API执行源文件的op_array
+</span>        <span class="n">zend_execute</span><span class="p">(</span><span class="n">op_array</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+        <span class="c1">//op_array执行完成后销毁，要不然就要内存泄露了，哈哈
+</span>        <span class="n">destroy_op_array</span><span class="p">(</span><span class="n">op_array</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
         <span class="n">efree</span><span class="p">(</span><span class="n">op_array</span><span class="p">);</span>
-        <span class="c1">//通过检查执行期间的全局变量(EG)的exception是否被标记来确定是否有异常</span>
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">EG</span><span class="p">(</span><span class="n">exception</span><span class="p">))</span> <span class="p">{</span>
+        <span class="c1">//通过检查执行期间的全局变量(EG)的exception是否被标记来确定是否有异常
+</span>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">EG</span><span class="p">(</span><span class="n">exception</span><span class="p">))</span> <span class="p">{</span>
             <span class="k">if</span> <span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">*</span><span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">))</span> <span class="p">{</span>
                 <span class="n">zval_ptr_dtor</span><span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">));</span>
             <span class="p">}</span>
         <span class="p">}</span>
-        <span class="c1">//ok,执行到这里说明源文件的op_array已经执行完成了，我们要恢复原来的执行环境了</span>
-        <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="n">__old_return_value_pp</span><span class="p">;</span>
+        <span class="c1">//ok,执行到这里说明源文件的op_array已经执行完成了，我们要恢复原来的执行环境了
+</span>        <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="n">__old_return_value_pp</span><span class="p">;</span>
         <span class="n">EG</span><span class="p">(</span><span class="n">opline_ptr</span><span class="p">)</span>           <span class="o">=</span> <span class="n">__old_opline_ptr</span><span class="p">;</span> 
         <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span>      <span class="o">=</span> <span class="n">__old_op_array</span><span class="p">;</span> 
 
@@ -268,20 +268,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/php-hash/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

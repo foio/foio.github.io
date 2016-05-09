@@ -6,7 +6,7 @@
     
     
     <url>
-        <loc>/404.html</loc>
+        <loc>/404/</loc>
     </url>
     
     <url>
@@ -18,7 +18,7 @@
     </url>
     
     <url>
-        <loc>/index.html</loc>
+        <loc>/</loc>
     </url>
     
     <url>
@@ -38,110 +38,114 @@
     </url>
     
     <url>
-        <loc>/page2/index.html</loc>
+        <loc>/page2/</loc>
     </url>
     
     <url>
-        <loc>/page3/index.html</loc>
+        <loc>/page3/</loc>
     </url>
     
     <url>
-        <loc>/page4/index.html</loc>
+        <loc>/page4/</loc>
     </url>
     
     <url>
-        <loc>/page5/index.html</loc>
+        <loc>/page5/</loc>
     </url>
     
     <url>
-        <loc>/page6/index.html</loc>
+        <loc>/page6/</loc>
     </url>
     
     <url>
-        <loc>/page7/index.html</loc>
+        <loc>/page7/</loc>
     </url>
     
     <url>
-        <loc>/page8/index.html</loc>
+        <loc>/page8/</loc>
     </url>
     
     <url>
-        <loc>/page9/index.html</loc>
+        <loc>/page9/</loc>
     </url>
     
     <url>
-        <loc>/page10/index.html</loc>
+        <loc>/page10/</loc>
     </url>
     
     <url>
-        <loc>/page11/index.html</loc>
+        <loc>/page11/</loc>
     </url>
     
     <url>
-        <loc>/page12/index.html</loc>
+        <loc>/page12/</loc>
     </url>
     
     <url>
-        <loc>/page13/index.html</loc>
+        <loc>/page13/</loc>
     </url>
     
     <url>
-        <loc>/page14/index.html</loc>
+        <loc>/page14/</loc>
     </url>
     
     <url>
-        <loc>/page15/index.html</loc>
+        <loc>/page15/</loc>
     </url>
     
     <url>
-        <loc>/page16/index.html</loc>
+        <loc>/page16/</loc>
     </url>
     
     <url>
-        <loc>/page17/index.html</loc>
+        <loc>/page17/</loc>
     </url>
     
     <url>
-        <loc>/page18/index.html</loc>
+        <loc>/page18/</loc>
     </url>
     
     <url>
-        <loc>/page19/index.html</loc>
+        <loc>/page19/</loc>
     </url>
     
     <url>
-        <loc>/page20/index.html</loc>
+        <loc>/page20/</loc>
     </url>
     
     <url>
-        <loc>/page21/index.html</loc>
+        <loc>/page21/</loc>
     </url>
     
     <url>
-        <loc>/page22/index.html</loc>
+        <loc>/page22/</loc>
     </url>
     
     <url>
-        <loc>/page23/index.html</loc>
+        <loc>/page23/</loc>
     </url>
     
     <url>
-        <loc>/page24/index.html</loc>
+        <loc>/page24/</loc>
     </url>
     
     <url>
-        <loc>/page25/index.html</loc>
+        <loc>/page25/</loc>
     </url>
     
     <url>
-        <loc>/page26/index.html</loc>
+        <loc>/page26/</loc>
     </url>
     
     <url>
-        <loc>/page27/index.html</loc>
+        <loc>/page27/</loc>
     </url>
     
 
+    
+    <url>
+        <loc>/mean-web/</loc>
+    </url>
     
     <url>
         <loc>/animation-performace/</loc>

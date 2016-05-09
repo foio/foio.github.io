@@ -123,8 +123,8 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-content">
       <p>总有一些人，热衷于窃取他人的劳动果实。比如好事者用一个空头域名指向你的主机，从而利用你的网站内容提升他自己的域名排名。比如我就发现有两个空头域名sunrisenet.cn、mbagroup.cn指向了我的网站，我们该如何防止这种情况发生呢?</p>
 
-<h2 id="方法1：将来自其他域名的访问导向自己的域名">方法1：将来自其他域名的访问导向自己的域名</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text"> server {
+<h2 id="1">方法1：将来自其他域名的访问导向自己的域名</h2>
+<div class="highlight"><pre><code class="language-" data-lang=""> server {
      listen 80 default;
      server_name _;
      rewrite ^(.*) http://www.xuanhao360.com;
@@ -137,8 +137,8 @@ rel="stylesheet" type="text/css" -->
      ......
  }
 </code></pre></div>
-<h2 id="方法2：对来自其他域名的访问返回500错误">方法2：对来自其他域名的访问返回500错误</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text">server {
+<h2 id="2-500">方法2：对来自其他域名的访问返回500错误</h2>
+<div class="highlight"><pre><code class="language-" data-lang="">server {
         listen 80 default;
         server_name _;
         return 500;
@@ -151,8 +151,8 @@ rel="stylesheet" type="text/css" -->
      ......
  }
 </code></pre></div>
-<h2 id="方法3：黑名单">方法3：黑名单</h2>
-<div class="highlight"><pre><code class="language-text" data-lang="text"> server {
+<h2 id="3">方法3：黑名单</h2>
+<div class="highlight"><pre><code class="language-" data-lang=""> server {
      listen 80 default;
      server_name sunrisenet.cn;
      return 500;
@@ -197,20 +197,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/php-safe/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

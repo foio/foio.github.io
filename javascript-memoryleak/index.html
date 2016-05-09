@@ -123,7 +123,7 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-content">
       <p>这篇文章我们主要研究下，几种常见的内存泄露模式以及预防方法，最后说一下jquery容易造成内存泄露的地方。</p>
 
-<h3 id="1-ie8以下版本js和dom循环引用造成的内存泄露">1.IE8以下版本js和dom循环引用造成的内存泄露</h3>
+<h3 id="1-ie8-js-dom">1.IE8以下版本js和dom循环引用造成的内存泄露</h3>
 
 <hr>
 
@@ -131,25 +131,25 @@ rel="stylesheet" type="text/css" -->
 
 <p>如下代码在IE&lt;=8中会造成内存泄露：</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">setHandler</span><span class="p">()</span> <span class="p">{</span>
-  <span class="kd">var</span> <span class="nx">elem</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;id&#39;</span><span class="p">)</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">setHandler</span><span class="p">()</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">elem</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'id'</span><span class="p">)</span>
   <span class="nx">elem</span><span class="p">.</span><span class="nx">onclick</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
+<span class="p">}</span></code></pre></figure>
 
 <p>由于有作用域链的存在，以上代码即便function为空，也会存在循环引用，会在
 IE8以下版本的浏览器中造成内存泄露。</p>
 
-<h3 id="2-ie浏览器的跨页面内存泄露">2.IE浏览器的跨页面内存泄露</h3>
+<h3 id="2-ie">2.IE浏览器的跨页面内存泄露</h3>
 
 <hr>
 
 <p>我们在动态创建dom片段结构并添加到dom时也会出现内存泄露，这种内存泄露，即使关闭页面也不会回收，只有当IE进程终止时才会回收。比如如下代码（其实这些代码应该很少出现在项目中，因为不会有人直接将事件绑定写成javascript内联函数），就会出现内存泄露：</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//dom结构必须绑定javascript事件函数才会由内存泄露问题</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//dom结构必须绑定javascript事件函数才会由内存泄露问题</span>
 <span class="kd">var</span> <span class="nx">parentDiv</span> <span class="o">=</span>
-    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;&lt;div onClick=&#39;foo()&#39;&gt;&quot;</span><span class="p">);</span>
+    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">"&lt;div onClick='foo()'&gt;"</span><span class="p">);</span>
 <span class="kd">var</span> <span class="nx">childDiv</span> <span class="o">=</span>
-    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;&lt;div onClick=&#39;foo()&#39;&gt;&quot;</span><span class="p">);</span>
+    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">"&lt;div onClick='foo()'&gt;"</span><span class="p">);</span>
 
 <span class="c1">// 这里会造成内存泄露</span>
 <span class="nx">parentDiv</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
@@ -157,15 +157,15 @@ IE8以下版本的浏览器中造成内存泄露。</p>
 <span class="nx">hostElement</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
 <span class="nx">parentDiv</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
 <span class="nx">parentDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
-<span class="nx">childDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span></code></pre></div>
+<span class="nx">childDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span></code></pre></figure>
 
 <p>这是因为，为临时父节点添加子节点时会创建临时的作用域变量，而将节点片段添加到根dom结构时，他们都会从根dom结构继承作用域，这就会导致临时作用域变量无法回收。避免这种内存泄露的最简单方法
 是改变dom插入顺序，防止创建临时作用域链。</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">parentDiv</span> <span class="o">=</span>
-    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;&lt;div onClick=&#39;foo()&#39;&gt;&quot;</span><span class="p">);</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">parentDiv</span> <span class="o">=</span>
+    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">"&lt;div onClick='foo()'&gt;"</span><span class="p">);</span>
 <span class="kd">var</span> <span class="nx">childDiv</span> <span class="o">=</span>
-    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;&lt;div onClick=&#39;foo()&#39;&gt;&quot;</span><span class="p">);</span>
+    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">"&lt;div onClick='foo()'&gt;"</span><span class="p">);</span>
 
 <span class="c1">//改变了dom插入顺序，避免了临时作用域变量的创建，从而防止了内存泄露</span>
 <span class="nx">hostElement</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
@@ -173,68 +173,68 @@ IE8以下版本的浏览器中造成内存泄露。</p>
 <span class="nx">hostElement</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
 <span class="nx">parentDiv</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
 <span class="nx">parentDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
-<span class="nx">childDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span></code></pre></div>
+<span class="nx">childDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span></code></pre></figure>
 
-<h3 id="3-ie9以下浏览器的xmlhttprequest造成的内存泄露">3.IE9以下浏览器的XMLHttpRequest造成的内存泄露</h3>
+<h3 id="3-ie9-xmlhttprequest">3.IE9以下浏览器的XMLHttpRequest造成的内存泄露</h3>
 
 <hr>
 
 <p>以下常用的代码，就会找出内存泄露。</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">xhr</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">XMLHttpRequest</span><span class="p">()</span> <span class="c1">// or ActiveX in older IE</span>
-<span class="nx">xhr</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="s1">&#39;/server.url&#39;</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">xhr</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">XMLHttpRequest</span><span class="p">()</span> <span class="c1">// or ActiveX in older IE</span>
+<span class="nx">xhr</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="s1">'/server.url'</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span>
 <span class="nx">xhr</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
   <span class="k">if</span><span class="p">(</span><span class="nx">xhr</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="nx">xhr</span><span class="p">.</span><span class="nx">status</span> <span class="o">==</span> <span class="mi">200</span><span class="p">)</span> <span class="p">{</span>            
     <span class="c1">// ...</span>
   <span class="p">}</span>
 <span class="p">}</span>
-<span class="nx">xhr</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span></code></pre></div>
+<span class="nx">xhr</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span></code></pre></figure>
 
 <p>当请求完成时，xhr变量引用为0 了，应该会被垃圾回收啊，但是浏览器自己也需要持有一个XMLHttpRequest的引用用于管理请求的状态，而浏览器没有能正确处理。</p>
 
-<h3 id="4-闭包造成的内存泄露">4.闭包造成的内存泄露</h3>
+<h3 id="4">4.闭包造成的内存泄露</h3>
 
 <hr>
 
 <p>Javascript解析器并不知道内嵌函数需要外部函数中的哪些局部变量，因此它会把外部函数中的全部变量都放在作用域对象中，这就会造成外层函数中的变量即便不使用也不会得到释放。如下代码：</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">f</span><span class="p">()</span> <span class="p">{</span>
-  <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="s2">&quot;Large piece of data, probably received from server&quot;</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">f</span><span class="p">()</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="s2">"Large piece of data, probably received from server"</span>
   <span class="kd">function</span> <span class="nx">inner</span><span class="p">()</span> <span class="p">{</span>
       <span class="c1">//inner中并没有使用data</span>
   <span class="p">}</span>
   <span class="k">return</span> <span class="nx">inner</span>
-<span class="p">}</span></code></pre></div>
+<span class="p">}</span></code></pre></figure>
 
 <p>一种处理方式是在返回内嵌函数时将外部函数中不需要的便利设置为null，如下：</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">f</span><span class="p">()</span> <span class="p">{</span>
-  <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="s2">&quot;Large piece of data, probably received from server&quot;</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">f</span><span class="p">()</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="s2">"Large piece of data, probably received from server"</span>
   <span class="kd">function</span> <span class="nx">inner</span><span class="p">()</span> <span class="p">{</span>
       <span class="c1">//inner中并没有使用data</span>
   <span class="p">}</span>
   <span class="nx">data</span> <span class="o">=</span> <span class="kc">null</span>
   <span class="k">return</span> <span class="nx">inner</span>
-<span class="p">}</span></code></pre></div>
+<span class="p">}</span></code></pre></figure>
 
-<h3 id="5-jquery是如何处理的，带来了什么新的问题">5.jQuery是如何处理的，带来了什么新的问题</h3>
+<h3 id="5-jquery">5.jQuery是如何处理的，带来了什么新的问题</h3>
 
 <hr>
 
 <p>我们经常使用<code>$.data()</code>来给dom结构绑定数据属性，jQuery的事件处理机制也在内部使用了<code>$.data()</code>API，其实jQuery的内部实现是为每个dom生产一个id，然后将数据存储在jQuyer.cache对象中。</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//生成唯一id</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//生成唯一id</span>
 <span class="nx">elem</span><span class="p">[</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">expando</span> <span class="p">]</span> <span class="o">=</span> <span class="nx">id</span> <span class="o">=</span> <span class="o">++</span><span class="nx">jQuery</span><span class="p">.</span><span class="nx">uuid</span>
 <span class="c1">//将数据存储在cache对象中</span>
-<span class="nx">jQuery</span><span class="p">.</span><span class="nx">cache</span><span class="p">[</span><span class="nx">id</span><span class="p">][</span><span class="s1">&#39;prop&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="nx">val</span></code></pre></div>
+<span class="nx">jQuery</span><span class="p">.</span><span class="nx">cache</span><span class="p">[</span><span class="nx">id</span><span class="p">][</span><span class="s1">'prop'</span><span class="p">]</span> <span class="o">=</span> <span class="nx">val</span></code></pre></figure>
 
 <p>这种方式避免了dom结构指向js对象，从而有效的防止了循环引用造成的内存泄露。看似完美，其实又带来了新的问题。以下代码存在内存泄露：</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">&#39;&lt;div/&gt;&#39;</span><span class="p">)</span>
-  <span class="p">.</span><span class="nx">html</span><span class="p">(</span><span class="k">new</span> <span class="nb">Array</span><span class="p">(</span><span class="mi">1000</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;text&#39;</span><span class="p">))</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">'&lt;div/&gt;'</span><span class="p">)</span>
+  <span class="p">.</span><span class="nx">html</span><span class="p">(</span><span class="k">new</span> <span class="nb">Array</span><span class="p">(</span><span class="mi">1000</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s1">'text'</span><span class="p">))</span>
   <span class="p">.</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="p">})</span>
-  <span class="p">.</span><span class="nx">appendTo</span><span class="p">(</span><span class="s1">&#39;#data&#39;</span><span class="p">)</span>
-<span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">).</span><span class="nx">innerHTML</span> <span class="o">=</span> <span class="s1">&#39;&#39;</span></code></pre></div>
+  <span class="p">.</span><span class="nx">appendTo</span><span class="p">(</span><span class="s1">'#data'</span><span class="p">)</span>
+<span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'data'</span><span class="p">).</span><span class="nx">innerHTML</span> <span class="o">=</span> <span class="s1">''</span></code></pre></figure>
 
 <p>Dom结构已经被删除了，为什么还是会泄露内存呢？因为<code>jQuery.cache</code>中还保存这指向<code>function</code>的引用，而<code>function</code>中存在指向<code>div</code>片段的引用，这就导致<code>function</code>和<code>div</code>片段形成的整个闭包都无法被内存回收。</p>
 
@@ -277,20 +277,20 @@ IE8以下版本的浏览器中造成内存泄露。</p>
           <a href="/jquery-callback/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

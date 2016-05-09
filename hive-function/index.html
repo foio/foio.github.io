@@ -125,50 +125,50 @@ rel="stylesheet" type="text/css" -->
 <p>Hive可以将类sql查询语句转换成Hadoop的map reduce任务，让熟悉关系型数据库的人也可以利用hadoop的强大并行计算能力。Hive提供了强大的内置函数支持，但是总有一些特殊情况，内置函数无法覆盖，这就要求我们对定义自己的函数。接下来我们通过一个例子看一下如何自定义hive函数。</p>
 </blockquote>
 
-<h3 id="1-自定义函数的实现">1. 自定义函数的实现</h3>
+<h3 id="1">1. 自定义函数的实现</h3>
 
 <p>假设我们的关系型数据库中user表有一个status字段，代表着用户的活跃等级，取值为1~10，活跃度一次递增。现在我们要根据status字段将用户分为3个活跃度等级。Hive显然没有这种与业务逻辑强耦合的内置函数，但这不应该成为阻碍我们使用Hive的理由。下面的扩展函数就可以满足需求。</p>
 
-<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">test</span><span class="o">.</span><span class="na">example</span><span class="o">;</span>
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">test</span><span class="o">.</span><span class="na">example</span><span class="o">;</span>
 <span class="kn">import</span> <span class="nn">org.apache.hadoop.hive.ql.exec.Description</span><span class="o">;</span>
 <span class="kn">import</span> <span class="nn">org.apache.hadoop.hive.ql.exec.UDF</span><span class="o">;</span>
 <span class="kn">import</span> <span class="nn">org.apache.hadoop.io.Text</span><span class="o">;</span>
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserStatus</span> <span class="kd">extends</span> <span class="n">UDF</span> <span class="o">{</span>
-   <span class="kd">public</span> <span class="n">Text</span> <span class="nf">evaluate</span><span class="o">(</span><span class="n">Text</span> <span class="n">input</span><span class="o">)</span> <span class="o">{</span>
+   <span class="kd">public</span> <span class="n">Text</span> <span class="n">evaluate</span><span class="o">(</span><span class="n">Text</span> <span class="n">input</span><span class="o">)</span> <span class="o">{</span>
      <span class="k">if</span><span class="o">(</span><span class="n">input</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
      <span class="kt">int</span> <span class="n">status</span><span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">input</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
      <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span> <span class="mi">3</span><span class="o">){</span>
-         <span class="k">return</span> <span class="k">new</span> <span class="nf">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
-     <span class="o">}</span><span class="k">else</span> <span class="nf">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">7</span><span class="o">){</span>
-         <span class="k">return</span> <span class="k">new</span> <span class="nf">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">2</span><span class="o">));</span>
-     <span class="o">}</span><span class="k">else</span> <span class="nf">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">7</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">10</span><span class="o">){</span>
-         <span class="k">return</span> <span class="k">new</span> <span class="nf">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">3</span><span class="o">));</span>
+         <span class="k">return</span> <span class="k">new</span> <span class="n">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+     <span class="o">}</span><span class="k">else</span> <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">7</span><span class="o">){</span>
+         <span class="k">return</span> <span class="k">new</span> <span class="n">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">2</span><span class="o">));</span>
+     <span class="o">}</span><span class="k">else</span> <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">7</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">10</span><span class="o">){</span>
+         <span class="k">return</span> <span class="k">new</span> <span class="n">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">3</span><span class="o">));</span>
      <span class="o">}</span>
      <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
    <span class="o">}</span>
-<span class="o">}</span></code></pre></div>
+<span class="o">}</span></code></pre></figure>
 
 <p>从上面的例子可以看出实现自定义的hive函数还是相当简单的。就是继承org.apache.hadoop.hive.ql.exec.UDF 并实现execute函数。</p>
 
-<h3 id="2-自定义函数的使用">2. 自定义函数的使用</h3>
+<h3 id="2">2. 自定义函数的使用</h3>
 
 <p>定义为自定义函数后该如何使用呢？其实也是相关简单的。假设包含自定义函数的jar包为mydf.jar。</p>
 
-<h4 id="1-在hive-shell中加载">(1).在hive shell中加载</h4>
+<h4 id="1-hive-shell">(1).在hive shell中加载</h4>
 
 <p>首先加载jar包，并创建临时函数\</p>
 
-<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="o">%&gt;</span> <span class="n">hive</span>
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="o">%&gt;</span> <span class="n">hive</span>
 <span class="n">hive</span><span class="o">&gt;</span> <span class="n">ADD</span> <span class="n">JAR</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">mydf</span><span class="o">.</span><span class="na">jar</span><span class="o">;</span>
-<span class="n">hive</span><span class="o">&gt;</span> <span class="n">create</span> <span class="n">temporary</span> <span class="n">function</span> <span class="n">userStatus</span> <span class="n">as</span> <span class="err">&#39;</span><span class="n">com</span><span class="o">.</span><span class="na">test</span><span class="o">.</span><span class="na">example</span><span class="o">.</span><span class="na">UserStatus</span><span class="err">&#39;</span><span class="o">;</span></code></pre></div>
+<span class="n">hive</span><span class="o">&gt;</span> <span class="n">create</span> <span class="n">temporary</span> <span class="n">function</span> <span class="n">userStatus</span> <span class="n">as</span> <span class="err">'</span><span class="n">com</span><span class="o">.</span><span class="na">test</span><span class="o">.</span><span class="na">example</span><span class="o">.</span><span class="na">UserStatus</span><span class="err">'</span><span class="o">;</span></code></pre></figure>
 
 <p>然后就可以直接使用了</p>
 
-<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">hive</span><span class="o">&gt;</span> <span class="n">select</span> <span class="nf">userStatus</span><span class="o">(</span><span class="mi">4</span><span class="o">);</span></code></pre></div>
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">hive</span><span class="o">&gt;</span> <span class="n">select</span> <span class="n">userStatus</span><span class="o">(</span><span class="mi">4</span><span class="o">);</span></code></pre></figure>
 
 <p>但是每次使用都要加载一次，太费劲了。有没有别的方法呢。</p>
 
-<h4 id="2-在-hiverc中加载">(2).在.hiverc中加载</h4>
+<h4 id="2-hiverc">(2).在.hiverc中加载</h4>
 
 <p>编辑home目录下的.hiverc文件，如果没有这个文件就新建一个。将加载jar包的命令写入.hiverc文件，启动hive shell时会自动执行.hiverc文件，不需要每个shell都load一遍。</p>
 
@@ -208,20 +208,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/php-extension-autoload/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

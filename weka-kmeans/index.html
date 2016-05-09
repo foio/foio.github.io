@@ -126,7 +126,7 @@ rel="stylesheet" type="text/css" -->
 <hr>
 
 <p><strong>训练数据集集</strong></p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">@relation race
+<div class="highlight"><pre><code class="language-" data-lang="">@relation race
 
 @attribute height NUMERIC
 @attribute weight NUMERIC
@@ -147,7 +147,7 @@ rel="stylesheet" type="text/css" -->
 170,70,1,2
 </code></pre></div>
 <p><strong>测试数据集集</strong></p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">@relation race
+<div class="highlight"><pre><code class="language-" data-lang="">@relation race
 
 @attribute height NUMERIC
 @attribute weight NUMERIC
@@ -160,20 +160,20 @@ rel="stylesheet" type="text/css" -->
 </code></pre></div>
 <hr>
 
-<h3 id="代码">代码</h3>
+<h3 id=">代码</h3>
 
-<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">KmeansTest</span> <span class="o">{</span>
-      <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-            <span class="n">File</span> <span class="n">trainFile</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">File</span><span class="o">(</span><span class="s">&quot;race_train.arff&quot;</span><span class="o">);</span>
-            <span class="n">File</span> <span class="n">testFile</span>  <span class="o">=</span> <span class="k">new</span> <span class="nf">File</span><span class="o">(</span><span class="s">&quot;race_test.arff&quot;</span><span class="o">);</span>
-            <span class="n">ArffLoader</span> <span class="n">atf</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ArffLoader</span><span class="o">();</span>  
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">KmeansTest</span> <span class="o">{</span>
+      <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="n">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+            <span class="n">File</span> <span class="n">trainFile</span> <span class="o">=</span> <span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="s">"race_train.arff"</span><span class="o">);</span>
+            <span class="n">File</span> <span class="n">testFile</span>  <span class="o">=</span> <span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="s">"race_test.arff"</span><span class="o">);</span>
+            <span class="n">ArffLoader</span> <span class="n">atf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArffLoader</span><span class="o">();</span>  
             <span class="c1">// load data</span>
             <span class="n">atf</span><span class="o">.</span><span class="na">setFile</span><span class="o">(</span><span class="n">trainFile</span><span class="o">);</span>  
             <span class="n">Instances</span> <span class="n">train</span> <span class="o">=</span> <span class="n">atf</span><span class="o">.</span><span class="na">getDataSet</span><span class="o">();</span>
             <span class="n">atf</span><span class="o">.</span><span class="na">setFile</span><span class="o">(</span><span class="n">testFile</span><span class="o">);</span>  
             <span class="n">Instances</span> <span class="n">test</span> <span class="o">=</span> <span class="n">atf</span><span class="o">.</span><span class="na">getDataSet</span><span class="o">();</span> 
             <span class="c1">// build clusterer</span>
-            <span class="n">SimpleKMeans</span> <span class="n">clusterer</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">SimpleKMeans</span><span class="o">();</span>
+            <span class="n">SimpleKMeans</span> <span class="n">clusterer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleKMeans</span><span class="o">();</span>
             <span class="n">clusterer</span><span class="o">.</span><span class="na">setNumClusters</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
             <span class="n">clusterer</span><span class="o">.</span><span class="na">buildClusterer</span><span class="o">(</span><span class="n">train</span><span class="o">);</span>   
             <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">clusterer</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
@@ -182,19 +182,19 @@ rel="stylesheet" type="text/css" -->
               <span class="kt">int</span> <span class="n">cluster</span> <span class="o">=</span> <span class="n">clusterer</span><span class="o">.</span><span class="na">clusterInstance</span><span class="o">(</span><span class="n">test</span><span class="o">.</span><span class="na">instance</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
               <span class="kt">double</span><span class="o">[]</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">clusterer</span><span class="o">.</span><span class="na">distributionForInstance</span><span class="o">(</span><span class="n">test</span><span class="o">.</span><span class="na">instance</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
               <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">));</span>
-              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">&quot; - &quot;</span><span class="o">);</span>
+              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">" - "</span><span class="o">);</span>
               <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">cluster</span><span class="o">);</span>
-              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">&quot; - &quot;</span><span class="o">);</span>
+              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">" - "</span><span class="o">);</span>
               <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">Utils</span><span class="o">.</span><span class="na">arrayToString</span><span class="o">(</span><span class="n">dist</span><span class="o">));</span>
               <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">();</span>
             <span class="o">}</span> 
           <span class="o">}</span>
-<span class="o">}</span></code></pre></div>
+<span class="o">}</span></code></pre></figure>
 
 <hr>
 
-<h3 id="结果如下">结果如下</h3>
-<div class="highlight"><pre><code class="language-text" data-lang="text">//kMeans聚类结果信息如下，比较重要的是每个聚类的中心以及误差
+<h3 id=">结果如下</h3>
+<div class="highlight"><pre><code class="language-" data-lang="">//kMeans聚类结果信息如下，比较重要的是每个聚类的中心以及误差
 kMeans
 ======
 
@@ -215,6 +215,7 @@ hairColor       1.4545          2     1.1429
 //分类结果如下
 1 - 1 - 0.0,1.0
 2 - 0 - 1.0,0.0
+
 </code></pre></div>
 <blockquote>
 <p>更多资料请阅读<a href="http://www.cs.waikato.ac.nz/ml/weka/">weka官网</a>。</p>
@@ -252,20 +253,20 @@ hairColor       1.4545          2     1.1429
           <a href="/kpusher/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

@@ -145,52 +145,52 @@ rel="stylesheet" type="text/css" -->
 
 <p>我们经常使如下jQuery语句,用于在页面dom结构刚刚加载完成时,执行代码.</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//普通方式</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//普通方式</span>
 <span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
     <span class="c1">//your code here</span>
 <span class="p">});</span>
 <span class="c1">//简写方式</span>
 <span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
     <span class="c1">//your code here</span>
-<span class="p">});</span></code></pre></div>
+<span class="p">});</span></code></pre></figure>
 
 <p>那么jquery的ready函数是如何实现的呢? 它时如何保证ready在load之前执行的呢?</p>
 
-<h3 id="1-现代浏览器通过domcontentloaded事件实现">1. 现代浏览器通过DOMContentLoaded事件实现</h3>
+<h3 id="1-domcontentloaded">1. 现代浏览器通过DOMContentLoaded事件实现</h3>
 
 <p>当HTML文档下载并解析完成以后，就会在document对象上触发DOMContentLoaded事件。这时，仅仅完成了HTML文档的解析（整张页面的DOM生成），所有外部资源（样式表、脚本、iframe等等）可能还没有下载结束。也就是说，这个事件比load事件，发生时间早得多。</p>
 
 <p>因此可以通过如下方式实现jQuery的ready函数.</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s2">&quot;DOMContentLoaded&quot;</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s2">"DOMContentLoaded"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
   <span class="c1">//your code here</span>
-<span class="p">});</span></code></pre></div>
+<span class="p">});</span></code></pre></figure>
 
 <p>但是对于IE8以及以下的浏览器,世界就没有那么友好了. </p>
 
-<h3 id="2-低版本浏览器通过readystatechange事件实现">2. 低版本浏览器通过readystatechange事件实现?</h3>
+<h3 id="2-readystatechange">2. 低版本浏览器通过readystatechange事件实现?</h3>
 
 <p>写过AJAX原生代码的童鞋都知道, readystatechange用于表示XMLHttpRequest的状态发生改变,当readyState=2时表示AJAX执行成功. readystatechange也会在dom状态发生变化时触发.</p>
 
 <p>因此可以通过如下方式实现jQuery的ready函数.</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;interactive&quot;</span> <span class="o">||</span> <span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;complete&quot;</span><span class="p">)</span> <span class="p">{</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">"interactive"</span> <span class="o">||</span> <span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">"complete"</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">initApplication</span><span class="p">();</span>
   <span class="p">}</span>
-<span class="p">}</span></code></pre></div>
+<span class="p">}</span></code></pre></figure>
 
 <p>但是readyState为interactive时, DOM结构并没有稳定, 此时依然会有脚本修改DOM元素,导致执行事件太早. readyState为complete时, 图片已经加载完毕, 所以complete虽然在window.onload前执行, 导致执行事件太晚.
 让我们看看jQuery的源码时如何实现的.</p>
 
-<h3 id="3-jquery在低版本浏览器上是如何实现ready方法的">3. jQuery在低版本浏览器上是如何实现ready方法的</h3>
+<h3 id="3-jquery-ready">3. jQuery在低版本浏览器上是如何实现ready方法的</h3>
 
 <p>jQuery源码中使用了Diego Perini 在 2007 年的时候报告的一种检测 IE 是否加载完成的方式的方法. 该方法通过使用 doScroll 方法调用，可以看下这哥们的<a href="http://javascript.nwbox.com/IEContentLoaded/">博客</a>。</p>
 
 <p>原理就是对于 IE 在非 iframe 内时，只有不断地通过能否执行 doScroll 判断 DOM 是否加载完毕。在上述中间隔 50 毫秒尝试去执行 doScroll，注意，由于页面没有加载完成的时候，调用 doScroll 会导致异常，所以使用了 try -catch 来捕获异常。</p>
 
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// 用于保证事件在onload之前执行</span>
-<span class="nb">document</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span> <span class="s2">&quot;onreadystatechange&quot;</span><span class="p">,</span> <span class="nx">completed</span> <span class="p">);</span>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// 用于保证事件在onload之前执行</span>
+<span class="nb">document</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span> <span class="s2">"onreadystatechange"</span><span class="p">,</span> <span class="nx">completed</span> <span class="p">);</span>
 <span class="c1">// 如果是IE且不是iframe就通过不停的检查doScroll来判断dom结构是否ready</span>
 <span class="kd">var</span> <span class="nx">top</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
 <span class="k">try</span> <span class="p">{</span>
@@ -201,7 +201,7 @@ rel="stylesheet" type="text/css" -->
         <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="nx">jQuery</span><span class="p">.</span><span class="nx">isReady</span> <span class="p">)</span> <span class="p">{</span><span class="c1">//ready方法没有执行过</span>
             <span class="k">try</span> <span class="p">{</span>
                 <span class="c1">// 检查是否可以向左scroll滑动,当dom结构还没有解析完成时会抛出异常</span>
-                <span class="nx">top</span><span class="p">.</span><span class="nx">doScroll</span><span class="p">(</span><span class="s2">&quot;left&quot;</span><span class="p">);</span>
+                <span class="nx">top</span><span class="p">.</span><span class="nx">doScroll</span><span class="p">(</span><span class="s2">"left"</span><span class="p">);</span>
             <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
                 <span class="c1">//递归调用,直到当dom结构解析完成</span>
                 <span class="k">return</span> <span class="nx">setTimeout</span><span class="p">(</span> <span class="nx">doScrollCheck</span><span class="p">,</span> <span class="mi">50</span> <span class="p">);</span>
@@ -213,7 +213,7 @@ rel="stylesheet" type="text/css" -->
             <span class="nx">jQuery</span><span class="p">.</span><span class="nx">ready</span><span class="p">();</span>
         <span class="p">}</span>
     <span class="p">})();</span>
-<span class="p">}</span></code></pre></div>
+<span class="p">}</span></code></pre></figure>
 
 <p>当然,通过检查doScroll的方法也不是完美的, 这种实现的jQuery的ready方法执行时,readyState可能为interactive, 也可能为complete.  也即没法保证dom加载完成后立刻执行, 但是一定会在DOM结构稳定后, 且图片加载完毕前执行.</p>
 
@@ -255,20 +255,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/mongo-atom/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

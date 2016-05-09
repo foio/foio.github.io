@@ -126,23 +126,23 @@ rel="stylesheet" type="text/css" -->
 <p>在使用angular的过程中，我们经常需要通过不同的url定位到不通过的页面。</p>
 
 <p>这时候我们就可以借助angular的routeProvider提供的when方法来实现，比如</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">myApp</span><span class="p">.</span><span class="nx">config</span><span class="p">([</span><span class="s1">&#39;$routeProvider&#39;</span><span class="p">,</span> <span class="s1">&#39;$httpProvider&#39;</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">$routeProvider</span><span class="p">,</span><span class="nx">$httpProvider</span><span class="p">)</span> <span class="p">{</span>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">myApp</span><span class="p">.</span><span class="nx">config</span><span class="p">([</span><span class="s1">'$routeProvider'</span><span class="p">,</span> <span class="s1">'$httpProvider'</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">$routeProvider</span><span class="p">,</span><span class="nx">$httpProvider</span><span class="p">)</span> <span class="p">{</span>
      <span class="c1">//配置路由</span>
      <span class="nx">$routeProvider</span><span class="p">.</span>
-         <span class="nx">when</span><span class="p">(</span><span class="s1">&#39;/tab1&#39;</span><span class="p">,</span> <span class="p">{</span>
-         <span class="nx">templateUrl</span><span class="o">:</span> <span class="s1">&#39;sections/tab1.html&#39;</span><span class="p">,</span>
-         <span class="nx">controller</span><span class="o">:</span> <span class="s1">&#39;Tab1Ctrl&#39;</span><span class="p">,</span>
+         <span class="nx">when</span><span class="p">(</span><span class="s1">'/tab1'</span><span class="p">,</span> <span class="p">{</span>
+         <span class="na">templateUrl</span><span class="p">:</span> <span class="s1">'sections/tab1.html'</span><span class="p">,</span>
+         <span class="na">controller</span><span class="p">:</span> <span class="s1">'Tab1Ctrl'</span><span class="p">,</span>
      <span class="p">}).</span>
-         <span class="nx">when</span><span class="p">(</span><span class="s1">&#39;/tab2&#39;</span><span class="p">,</span> <span class="p">{</span>
-         <span class="nx">templateUrl</span><span class="o">:</span> <span class="s1">&#39;sections/tab2.html&#39;</span><span class="p">,</span>
-         <span class="nx">controller</span><span class="o">:</span> <span class="s1">&#39;Tab2Ctrl&#39;</span><span class="p">,</span>
+         <span class="nx">when</span><span class="p">(</span><span class="s1">'/tab2'</span><span class="p">,</span> <span class="p">{</span>
+         <span class="na">templateUrl</span><span class="p">:</span> <span class="s1">'sections/tab2.html'</span><span class="p">,</span>
+         <span class="na">controller</span><span class="p">:</span> <span class="s1">'Tab2Ctrl'</span><span class="p">,</span>
      <span class="p">}).</span>
-         <span class="nx">when</span><span class="p">(</span><span class="s1">&#39;/tab3&#39;</span><span class="p">,</span> <span class="p">{</span>
-         <span class="nx">templateUrl</span><span class="o">:</span> <span class="s1">&#39;sections/tab3.html&#39;</span><span class="p">,</span>
-         <span class="nx">controller</span><span class="o">:</span> <span class="s1">&#39;Tab3Ctrl&#39;</span><span class="p">,</span>
+         <span class="nx">when</span><span class="p">(</span><span class="s1">'/tab3'</span><span class="p">,</span> <span class="p">{</span>
+         <span class="na">templateUrl</span><span class="p">:</span> <span class="s1">'sections/tab3.html'</span><span class="p">,</span>
+         <span class="na">controller</span><span class="p">:</span> <span class="s1">'Tab3Ctrl'</span><span class="p">,</span>
      <span class="p">}).</span>
          <span class="nx">otherwise</span><span class="p">({</span>
-         <span class="nx">redirectTo</span><span class="o">:</span> <span class="s1">&#39;/tab1&#39;</span>
+         <span class="na">redirectTo</span><span class="p">:</span> <span class="s1">'/tab1'</span>
      <span class="p">});</span>
 </code></pre></div>
 <p>when方法的原型是：when(path, route)，其中path</p>
@@ -155,19 +155,20 @@ rel="stylesheet" type="text/css" -->
 
 <p>比如，path为：<code>/color/:color/largecode/:largecode*\/edit</code>会匹配<code>/color/brown/largecode/code/with/slashes/edit</code>
 会匹配：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">color: brown
+<div class="highlight"><pre><code class="language-" data-lang="">color: brown
 largecode: code/with/slashes.
 </code></pre></div>
 <p>但是如果我们要实现以<code>/tab1</code>开头的url全部路由到<code>/tab1</code>呢？比如<code>/tab1click</code>、<code>/tab1touch</code>等都路由到/tab1。用正则表达式描述就是：<code>/tab1.*</code>全部路由到<code>/tab1</code>，使用上述的when方法我们无能为力了。 于是有人出来叫喧说，angular的路由连正则表达式都不支持，实在太弱了，但是其实我们是有方法实现完全按正则进行路由分发地。angular有个$locationChangeStart事件，我们可以监听这个事件，修改location。下面的例子就可以实现以/<code>tab1</code>开头的url全部路由到<code>/tab1</code>，即<code>/tab1.*</code>全部路由到<code>/tab1</code>。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">myApp</span><span class="p">.</span><span class="nx">config</span><span class="p">()</span>
-<span class="p">.</span><span class="nx">run</span><span class="p">([</span><span class="s1">&#39;$rootScope&#39;</span><span class="p">,</span><span class="s1">&#39;$location&#39;</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">$rootScope</span><span class="p">,</span><span class="nx">$location</span><span class="p">){</span>
-    <span class="nx">$rootScope</span><span class="p">.</span><span class="nx">$on</span><span class="p">(</span><span class="s1">&#39;$locationChangeStart&#39;</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span><span class="nx">next</span><span class="p">,</span><span class="nx">current</span><span class="p">){</span>
-        <span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="sr">/#\/(tab1).*/i</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">next</span><span class="p">);</span>
+<span class="p">.</span><span class="nx">run</span><span class="p">([</span><span class="s1">'$rootScope'</span><span class="p">,</span><span class="s1">'$location'</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">$rootScope</span><span class="p">,</span><span class="nx">$location</span><span class="p">){</span>
+    <span class="nx">$rootScope</span><span class="p">.</span><span class="nx">$on</span><span class="p">(</span><span class="s1">'$locationChangeStart'</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span><span class="nx">next</span><span class="p">,</span><span class="nx">current</span><span class="p">){</span>
+        <span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="sr">/#</span><span class="se">\/(</span><span class="sr">tab1</span><span class="se">)</span><span class="sr">.*/i</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">next</span><span class="p">);</span>
         <span class="k">if</span><span class="p">(</span><span class="nx">path</span> <span class="o">&amp;&amp;</span> <span class="nx">path</span><span class="p">[</span><span class="mi">1</span><span class="p">]){</span>
-            <span class="nx">$location</span><span class="p">.</span><span class="nx">path</span><span class="p">(</span><span class="s1">&#39;/tab1&#39;</span><span class="p">);</span>
+            <span class="nx">$location</span><span class="p">.</span><span class="nx">path</span><span class="p">(</span><span class="s1">'/tab1'</span><span class="p">);</span>
         <span class="p">}</span>
     <span class="p">});</span>
 <span class="p">}]);</span>
+
 </code></pre></div>
 <p>在事件$locationChangeStart触发时，我们就对路由的变化有了全部的控制，各种正则匹配自然不在话下。</p>
 
@@ -203,20 +204,20 @@ largecode: code/with/slashes.
           <a href="/javascript-asyn-pattern/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

@@ -1,0 +1,329 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>使用MEAN进行现代化WEB开发 &#8211; 积木村の研究所</title>
+<meta name="description" content="使用MEAN进行现代化WEB开发">
+<meta name="keywords" content="Monogo, Express, AngularJS, NodeJS">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="使用MEAN进行现代化WEB开发">
+<meta property="og:description" content="使用MEAN进行现代化WEB开发">
+<meta property="og:url" content="/mean-web/">
+<meta property="og:site_name" content="积木村の研究所">
+
+
+
+
+
+<link rel="canonical" href="/mean-web/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/mean-web/" rel="bookmark" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h1>
+        
+        <h2>May 01, 2016</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>纵观世界历史，生产工具的进步一次次地推动着人类社会的发展。在Web领域，最近几年也出现了一种新的生产工具栈，MEAN(MongoDB,Express,AngularJS,NodeJS)，虽然其无法完全取代LAMP(Linux,Apache,MySql,PHP)/LNMP(Linux,Nginx,MySql,PHP)，但确实是一种更先进的生产方式。</p>
+
+<p>在MEAN技术栈中，NoSql优等生MongoDB取代了传统的关系型数据库劳模MySql。<a href="https://www.mongodb.com/compare/mongodb-mysql">MongoDB官网上有其与Mysql的功能对比</a>。相比MySql，MongoDB的唯一缺点是没法支持复杂的事务，在现实的互联网应用场景中，我们面对更多的是高并发、非事务性的业务；而对于一些简单事务场景，MongoDB也是可以应对的，请参考<a href="http://foio.github.io/mongo-atom/">关于mongo原子操作的探讨</a>。MongoDB天生是分布式的，支持自动分片(Auto-Sharding)、复制集(Replication Set)，使得其可以很好的满足大数据时代背景下，超高并发、自动容错的存储要求。</p>
+
+<p>传统WEB技术(LAMP/LNMP)中的PHP，被NodeJS取代。本质上讲，PHP并不算后端语言，其主要目的是为了从各个数据源获取数据，拼接处理完成后，返回给页面，因此我们也经常将PHP称为<code>“胶水语言”</code>。PHP语言特性决定了其只能串行地从各个数据源获取数据，因此其响应时间为各个数据源的响应时间之和。而NodeJS的异步特性，使得其可以并发的请求多个数据源，其响应时间为各个数据源的响应时间之中最长的。相比PHP，NodeJS更适合作为<code>“胶水语言”</code>。</p>
+
+<p>MEAN中的Express,AngularJS分别为后端WEB框架和前端SPA(Single Page Application)开发框架。</p>
+
+<p>现代化的WEB生产方式需要有清晰的架构、高效的调试方法、规范的测试方法、以及工程化的构建方法。下面，我们就从这些方面了解基于MEAN开发的WEB开发方式，本文要求读者有传统LAMP/LNMP开发经验，同时熟悉NodeJS，并了解MongoDB。</p>
+
+<h2 id="1-mean">1.MEAN基本代码框架</h2>
+
+<p>NodeJS是一个强社区驱动的技术方案，除了核心模块外，大部分功能需要第三方模块支持，这就导致一个WEB应用可能有几十个模块，对于初学者，有较高的学习门槛，而一个标准的项目模板是一个比较好的入门方式。《MEAN WEB开发》一书从无到有构建了一个规范的MEAN项目，非常适合作为种子项目，该书的源代码请从<a href="https://github.com/amoshaviv/mean-web-development">github上下载</a>，本文也可以看作该书的读书笔记。让我们先从代码组织架构入手。</p>
+
+<h3 id="1-mvc">(1). 服务端MVC模型</h3>
+
+<p>NodeJS实现了CommonJS规范，其天生就支持现代化的模块化开发理念；而基于Express的中间件的架构，我们可以很方便地将常用功能(比如用户权限验证、日志模块)抽象为中间件模块。我们将服务端的代码组织为：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">app/
+    controllers/
+    models/
+    views/
+    routes/
+    config/
+    tests/
+</code></pre></div>
+<p>这里使用ejs作为view层的模板引擎，使用Mongoose作为Model层的ORM(对象关系映射)框架，每一个controller对应的独立express路由文件放在routes文件夹中，config文件夹存放各个中间件(passport、Mongoose)的配置，服务端单元测试脚本在tests文件夹中。</p>
+
+<h3 id="2-mvvm">(2). 客户端MVVM模型</h3>
+
+<p>客户端的基本框架是AngularJS，其本身也是将模块化理念作为其设计之本。我们将客户端代码组织如下：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">public/
+    articles/
+        aritcle.client.modules.js
+        controllers/
+        views/
+        config/
+        services/
+        test/
+            unit/
+            e2e/
+    users/
+    lib/
+    application.js
+</code></pre></div>
+<p>所有前端代码存储在public中，对应服务端的每一个controller，客户端都有一个相应的模块，每个模块放在单独的文件夹中，比如articles和users文件夹。以articles模块为例，其中包含模块定义文件aritcle.client.modules.js、控制器controllers、视图模板views、路由文件config、以及需要提供给其他模块使用的service，其中test文件夹用来存放单元测试脚本和端到端测试脚本。application.js是前端文件的入口，用于加载各个模块(比如articles和users)。</p>
+
+<h2 id="2">2.高效的调试</h2>
+
+<p>只有高效的调试方式才能适应互联网web产品的快速迭代的需求。下面我们分别介绍基于MEAN开发WEB应用过程中的前端和后端调试方法。</p>
+
+<h3 id="1-node-inspector">(1). 使用node-inspector调试服务端代码</h3>
+
+<p>借助于node-inspector，我们可以像调试浏览器端JS代码一样调试服务端代码。首先安装node-inspector。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">npm install -g node-inspector
+</code></pre></div>
+<p>然后启动node-inspecor，并在启动WEB应用时使用--debug参数</p>
+<div class="highlight"><pre><code class="language-" data-lang="">$: node-inspector
+Visit http://127.0.0.1:8080/?port=5858 to start debugging.
+$: node --debug server
+</code></pre></div>
+<p>这里的端口是可以修改的。使用chrome打开<a href="http://127.0.0.1:8080/?port=5858%EF%BC%8C%E6%88%91%E4%BB%AC%E5%B0%B1%E5%8F%AF%E4%BB%A5%E5%83%8F%E8%B0%83%E8%AF%95%E5%B8%B8%E8%A7%84%E5%89%8D%E7%AB%AFJS%E6%96%87%E4%BB%B6%E4%B8%80%E6%A0%B7%E8%B0%83%E8%AF%95%E6%9C%8D%E5%8A%A1%E7%AB%AF%E4%BB%A3%E7%A0%81%E4%BA%86%E3%80%82">http://127.0.0.1:8080/?port=5858，我们就可以像调试常规前端JS文件一样调试服务端代码了。</a></p>
+
+<h3 id="2-batarang-angularjs">(2). 使用Batarang调试AngularJS</h3>
+
+<p>在调试前端JS代码时，我们经常需要对AngularJS内部进行调试，而由于AngularJS的过度封装，对其内部调试往往很棘手。为此，AngularJS团队开发了一款名为<a href="https://chrome.google.com/webstore/detail/angularjs-batarang/ighdmehidhipcmcojjgiloacoafjmpfk?hl=en">Batarang的Chrome插件</a>。安装完Batarang插件后，用chrome打开基于AngularJS框架的页面时，使用开发者工具面板，就会出现了一个新的AngularJS标签页，使用该标签可以结构化的预览AngularJS各个Scope的变量，并可以查看AngularJS的性能。</p>
+
+<p><img src="/images/chrome-angular.png" alt="chrome-angular.png"></p>
+
+<h2 id="3">3.规范的测试</h2>
+
+<p>规范化的测试是项目持续健康发展的根基，这里我们主要介绍服务端单元测试。对于服务端，我们采用<a href="https://github.com/mochajs/mocha">Mocha测试框架</a>，Mocha提供了简洁的接口，可以方便的实现单元测试：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">describle(description,callback); //描述和封装测试集，callback用于封装测试逻辑
+it(description,callback); //描述测试指标，callback用于封装测试逻辑
+before、after、beforeEach、afterEach等4个钩子函数用来在测试的不同阶段执行
+</code></pre></div>
+<p>其中describle用于描述一个单元测试，it用于测试具体的逻辑，一个describle测试单元可以包含多个it测试，只有当所有被包含的it测试都通过时，describle描述的测试单元才能通过。此外，Mocah框架还提供了四个钩子函数，用于在测试前中做一些初始化的工作和在测试后做一些清理工作。</p>
+
+<p>Mocha测试框架并没有提供断言库，因此缺少对测试结果进行逻辑判断的功能。通过使用<a href="https://github.com/shouldjs/should.js">Should.js</a>提供的语义化接口，我们可以方便对验证代码逻辑的结果：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">user</span><span class="p">.</span><span class="nx">should</span><span class="p">.</span><span class="nx">be</span><span class="p">.</span><span class="nx">an</span><span class="p">.</span><span class="nb">Object</span><span class="p">.</span><span class="nx">and</span><span class="p">.</span><span class="nx">have</span><span class="p">.</span><span class="nx">property</span><span class="p">(</span><span class="s1">'name'</span><span class="p">);</span>
+</code></pre></div>
+<p>Should.js可以非常方便的测试对象，但却无法对HTTP结果进行测试，我们需要<a href="https://github.com/visionmedia/supertest">SuperTest断言库</a>来测试HTTP请求的结果。SuperTest断言库也提供了语义化的接口：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">request</span><span class="p">(</span><span class="nx">app</span><span class="p">).</span><span class="nx">get</span><span class="p">(</span><span class="s1">'/user'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">'Accept'</span><span class="p">,</span><span class="s1">'application/json'</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">expect</span><span class="p">(</span><span class="s1">'Content-type'</span><span class="p">,</span><span class="sr">/json/</span><span class="p">)</span>
+    <span class="p">.</span><span class="nx">expect</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span><span class="nx">done</span><span class="p">);</span>
+</code></pre></div>
+<p>通过使用Mocha、Should.js和SuperTest组成的工具集，我们可以方便的实现服务端的单元测试，一个单元测试的例子如下：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//创建Article Model的测试集</span>
+<span class="nx">describe</span><span class="p">(</span><span class="s1">'Article Model Unit Tests:'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>  
+    <span class="c1">//每次测试前执行的勾子函数</span>
+    <span class="nx">beforeEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//创建测试过程中所需要的数据   </span>
+        <span class="nx">done</span><span class="p">();</span>
+    <span class="p">});</span>
+
+    <span class="c1">//测试article是否能够存储成功</span>
+    <span class="nx">describe</span><span class="p">(</span><span class="s1">'Testing the save method'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="c1">//测试正常文章存储逻辑</span>
+        <span class="nx">it</span><span class="p">(</span><span class="s1">'Should be able to save without problems'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">article</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">should</span><span class="p">.</span><span class="nx">not</span><span class="p">.</span><span class="nx">exist</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">});</span>
+
+        <span class="c1">//测试异常文章存储逻辑</span>
+        <span class="nx">it</span><span class="p">(</span><span class="s1">'Should not be able to save an article without a title'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">article</span><span class="p">.</span><span class="nx">title</span> <span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+            <span class="nx">article</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">should</span><span class="p">.</span><span class="nx">exist</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
+            <span class="p">});</span>
+        <span class="p">});</span>
+    <span class="p">});</span>
+
+    <span class="c1">// 每次测试后执行的勾子函数</span>
+    <span class="nx">afterEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//清除测试过程中产生的数据</span>
+        <span class="nx">done</span><span class="p">();</span>
+    <span class="p">});</span>
+</code></pre></div>
+<p>运行测试用例:</p>
+<div class="highlight"><pre><code class="language-" data-lang="">mocha --reporter spec app/tests
+</code></pre></div>
+<p>正常情况下，该测试的结果是：</p>
+<div class="highlight"><pre><code class="language-" data-lang=""> Article Model Unit Tests:
+    Testing the save method
+      √ Should be able to save without problems
+      √ Should not be able to save an article without a title
+ 2 passing (135ms)
+</code></pre></div>
+<p>对于前端，主要采用我们熟悉的AngularJS单元测试和e2e测试，请参考<a href="http://www.cnblogs.com/vipyoumay/p/5331787.html">这篇博客</a>。</p>
+
+<h2 id="4">4.自动化的项目流程</h2>
+
+<p>前端工作的特点决定了其工程问题多于技术问题，因此在开始实际的项目代码开发之前，应该首先做好项目流程的自动化。前端项目构建工具很多，包括Grunt、Gulp、WebPack以及国内的fis等。一个完善的自动化项目流程主要包括：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">自动化构建：js、css代码检查，前端js、css合并、md5戳生成、雪碧图生成、上传的CDN等重复性操作
+自动化调试：通过添加特定的参数，比如--debug，可以方便的调试应用
+自动化测试：每次运行应用运用之前，将单元测试集运行一遍，确保功能正常
+自动化运行：以上三个步骤完成后，就可以运行应用了
+</code></pre></div>
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#Monogo" title="Pages tagged Monogo" class="tag">Monogo</a><a href="/tags/#Express" title="Pages tagged Express" class="tag">Express</a><a href="/tags/#AngularJS" title="Pages tagged AngularJS" class="tag">AngularJS</a><a href="/tags/#NodeJS" title="Pages tagged NodeJS" class="tag">NodeJS</a></span>
+        <span><a href="/mean-web/" rel="bookmark" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a> was published on <span class="entry-date date published updated"><time datetime="2016-05-01T00:00:00+08:00">May 01, 2016</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2016-05-01">05/01/2016</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+
+    
+<div style="max-width:800px;background-color:#fff;padding: 20px;margin:0 auto;">
+<!--高速版-->
+    <div id="SOHUCS" style="max-width:800px;"></div>
+    <script charset="utf-8" type="text/javascript" src="http://changyan.sohu.com/upload/changyan.js" ></script>
+    <script type="text/javascript">
+        window.changyan.api.config({
+            appid: 'cyrgTvN9G',
+            conf: 'prod_e42e502ec2a5653d7d595968a1a242c1'
+        });
+    </script>
+</div>
+
+	        
+
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/animation-performace/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
+          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
+            <span>Published on April 10, 2016</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+	        
+</body>
+</html>

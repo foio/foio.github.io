@@ -124,7 +124,7 @@ rel="stylesheet" type="text/css" -->
       <p>前端页面加载速度的优化是一个系统性的工程，包括常见资源合并压缩、静态资源请求多域名化、CDN等。用户请求显示一个网页的详细过程也是十分复杂，包括DNS解析、建立TCP连接、加载HTML以及静态资源、渲染页面dom结构等多个阶段，任何一个阶段出现瓶颈都会影响用户体验，我们如何在真实的用户环境中准确的统计各个阶段的耗时呢？本文给出一个可行的方案。</p>
 
 <p>借助于W3C的Navigation Timing API(目前大多数浏览器都已经支持，包括IE9以上版本)，该API通过window.performance提供页面加载相关的信息，我们这里只需要关注window.performance.timing。打开chrome开发工具的console标签，输入window.performance.timing，典型的输出如下：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">connectEnd: 1450349863256
+<div class="highlight"><pre><code class="language-" data-lang="">connectEnd: 1450349863256
 connectStart: 1450349863216
 domComplete: 1450349864919
 domContentLoadedEventEnd: 1450349864091
@@ -153,10 +153,10 @@ unloadEventStart: 0
 </figure></p>
 
 <p>比如我们要获取dns的时间：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">domainLookupEnd-domainLookupStart
+<div class="highlight"><pre><code class="language-" data-lang="">domainLookupEnd-domainLookupStart
 </code></pre></div>
 <p>连接建立耗时：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">connectEnd-connectStart
+<div class="highlight"><pre><code class="language-" data-lang="">connectEnd-connectStart
 </code></pre></div>
 <p>目前这些数据都可以在浏览器中读到，将他们发布到服务端机器上，就可以统计分析用户真实网络环境先的各项指标了。
 发布到服务端机器的一种最简单的方法就是：将这些数据作为参数请求一个后端文件，然后我们就可以在access日志中得到这些数据。一段伪代码如下：</p>
@@ -164,9 +164,9 @@ unloadEventStart: 0
     <span class="kd">var</span> <span class="nx">timing</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">performance</span><span class="p">.</span><span class="nx">timing</span><span class="p">.</span><span class="nx">toJSON</span><span class="p">();</span>
     <span class="kd">var</span> <span class="nx">params</span> <span class="o">=</span> <span class="p">[];</span>
     <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">ntItem</span> <span class="k">in</span> <span class="nx">timing</span><span class="p">){</span>
-        <span class="nx">params</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">ntItem</span><span class="o">+</span><span class="s1">&#39;=&#39;</span><span class="o">+</span><span class="nx">timing</span><span class="p">[</span><span class="nx">ntItem</span><span class="p">]);</span>
+        <span class="nx">params</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">ntItem</span><span class="o">+</span><span class="s1">'='</span><span class="o">+</span><span class="nx">timing</span><span class="p">[</span><span class="nx">ntItem</span><span class="p">]);</span>
     <span class="p">}</span>
-    <span class="kd">var</span> <span class="nx">targetUrl</span> <span class="o">=</span> <span class="s1">&#39;www.baidu.com?&#39;</span><span class="o">+</span><span class="nx">params</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s1">&#39;&amp;&#39;</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">targetUrl</span> <span class="o">=</span> <span class="s1">'www.baidu.com?'</span><span class="o">+</span><span class="nx">params</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s1">'&amp;'</span><span class="p">);</span>
     <span class="nx">ajaxGet</span><span class="p">(</span><span class="nx">targetUrl</span><span class="p">);</span>
 <span class="p">}</span>
 </code></pre></div>
@@ -206,20 +206,20 @@ unloadEventStart: 0
           <a href="/angular-route/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

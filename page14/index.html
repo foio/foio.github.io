@@ -16,7 +16,7 @@
 <meta property="og:type" content="article">
 <meta property="og:title" content="积木村の研究所">
 <meta property="og:description" content="this is a tech blog by foio">
-<meta property="og:url" content="/page14/index.html">
+<meta property="og:url" content="/page14/">
 <meta property="og:site_name" content="积木村の研究所">
 
 
@@ -119,6 +119,78 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-09-02T00:00:00+08:00"><a href="/unicode-regular-expressions/">September 02, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/unicode-regular-expressions/" rel="bookmark" title="unicode正则表达式书写技巧" itemprop="url">unicode正则表达式书写技巧</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>Unicode字符多种多样，除去ascii中的字母、数字、标点和中文字符，还包括其它多种语言和多种符号，有些符号甚至很难打出来，这时候该如何表示呢？接下来我们首先简单的介绍以下Unicode的编码特点，然后针对不同的场景分别介绍如何写正则表达式。</p>
+
+<hr>
+
+<h3 id="1-unicode">1.Unicode的编码特点</h3>
+
+<p>每一个Unicode字符都对应一个唯一的Unicode编码，一种语言的Unicode编码是在一个连续区间内的，除了这些基本特征外，Unicode编码还有三种属性Property、 Block、Script。我们可以用<code>\p</code>引用Unicode的属性，</p>
+
+<blockquote>
+<p><strong>Property</strong>用于表示字符本身的功能，比如符号，空格，字母等。可以用<code>\p{L}</code>表示字母、文字，而对应<code>\P{L}</code>表示不是字母、文字。Property是与语言无关的，即<code>\p{L}</code>用于表示所有语言的字符。比如：</p>
+</blockquote>
+<div class="highlight"><pre><code class="language-" data-lang="">L或者Letter:所有语言的字符
+P或者Punctuation:所有语言的标点 
+S或者Separator:所有语言的分隔符
+</code></pre></div>
+<blockquote>
+<p><strong>Block</strong>表示Uincode的一个区间，某种语言的字符通常是落在同一区间的，所以可以通过Block粗略表示某类语言的字符，比如<code>\p{InHebrew}</code>表示希伯莱语字符，<code>\p{InCJK_Compatibility}</code>表示兼容CJK（汉语、韩语、日本语）的字符。如下表所示：每一个Block表示方法都对应一段编码区间：</p>
+</blockquote>
+<div class="highlight"><pre><code class="language-" data-lang="">InCJK_Compatibility:\u3300–\u33F
+InHebrew:\u0590–\u05F
+</code></pre></div>
+<blockquote>
+<p><strong>Script</strong>表示Uincode的一个书写系统，比如<code>\p{Greek}</code>表示希腊语字符，<code>\p{Han}</code>表示汉语（中文字符），比如如下列举了希腊，汉语和阿拉伯书写系统。</p>
+</blockquote>
+<div class="highlight"><pre><code class="language-" data-lang="">Greek
+Han
+Arabic
+</code></pre></div>
+<hr>
+
+<h3 id="2-unicode">2.Unicode正则应用案例</h3>
+
+<ul>
+<li>匹配单个Unicode字符，下面例子去掉&quot;发&quot;字。</li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“发财了，发了”</span><span class="o">;</span>
+<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">"\u53d1"</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></figure>
+
+<ul>
+<li>匹配所有标点符号，下面例子去掉所有标点符号</li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“发财了，发了！</span><span class="o">&lt;</span><span class="n">Software</span> <span class="n">Engineer</span> <span class="n">is</span> <span class="n">great</span><span class="o">!&gt;</span><span class="err">”</span><span class="o">;</span>
+<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">"\\pP"</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></figure>
+
+<ul>
+<li>匹配某种语言，下面例子去掉所有汉字</li>
+</ul>
+
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">String</span> <span class="n">testStr</span> <span class="o">=</span> <span class="err">“发财了，发了！</span><span class="o">&lt;</span><span class="n">Software</span> <span class="n">Engineer</span> <span class="n">is</span> <span class="n">great</span><span class="o">!&gt;</span><span class="err">”</span><span class="o">;</span>
+<span class="n">testStr</span><span class="o">.</span><span class="na">replaceAll</span><span class="o">(</span><span class="s">"\\pHan"</span><span class="o">,</span><span class="n">testStr</span><span class="o">);</span></code></pre></figure>
+
+<hr>
+
+<p>关于uicode编码属性可以参考<a href="http://www.regular-expressions.info/unicode.html">这篇文章</a>。</br>
+关于Unicode码表可以参考<a href="http://zh.wikibooks.org/wiki/Unicode">这里</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-08-29T00:00:00+08:00"><a href="/lex-yacc/">August 29, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -136,7 +208,7 @@ rel="stylesheet" type="text/css" -->
 <p>lex是一种词法分析器，可以识别文本中的词汇模式，模式可以用正则表达式表示。通过lex编译l文件(词法文件)就可以生产对应的c代码，然后编译连接c代码就可以生成词法分析器了。</p>
 
 <p>一个l文件分为三个部分，每部分通过双百分号(%%)分割。如下所示：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">... definitions ...
+<div class="highlight"><pre><code class="language-" data-lang="">... definitions ...
 %%
 ... rules ...
 %%
@@ -148,34 +220,36 @@ subroutines 部分用于定义c函数等。</p>
 
 <p>一个简单的l文件例子，test.l。</p>
 
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
     <span class="kt">int</span> <span class="n">yylineno</span><span class="p">;</span>
 <span class="o">%</span><span class="p">}</span>
 <span class="o">%%</span>
-<span class="o">^</span><span class="p">(.</span><span class="o">*</span><span class="p">)</span><span class="err">\</span><span class="n">n</span>    <span class="n">printf</span><span class="p">(</span><span class="s">&quot;%4d</span><span class="se">\t</span><span class="s">%s&quot;</span><span class="p">,</span> <span class="o">++</span><span class="n">yylineno</span><span class="p">,</span> <span class="n">yytext</span><span class="p">);</span>
+<span class="o">^</span><span class="p">(.</span><span class="o">*</span><span class="p">)</span><span class="err">\</span><span class="n">n</span>    <span class="n">printf</span><span class="p">(</span><span class="s">"%4d</span><span class="se">\t</span><span class="s">%s"</span><span class="p">,</span> <span class="o">++</span><span class="n">yylineno</span><span class="p">,</span> <span class="n">yytext</span><span class="p">);</span>
 <span class="o">%%</span>
 <span class="kt">int</span> <span class="n">main</span><span class="p">(</span><span class="kt">int</span> <span class="n">argc</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">argv</span><span class="p">[])</span> <span class="p">{</span>
-    <span class="n">yyin</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">&quot;r&quot;</span><span class="p">);</span>
+    <span class="n">yyin</span> <span class="o">=</span> <span class="n">fopen</span><span class="p">(</span><span class="n">argv</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="s">"r"</span><span class="p">);</span>
     <span class="n">yylex</span><span class="p">();</span>
     <span class="n">fclose</span><span class="p">(</span><span class="n">yyin</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="kt">int</span> <span class="n">yywrap</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
+<span class="p">}</span></code></pre></figure>
 
-<p>首先这个l文件在definitions 部分定义了一个int型变量yylineno用于记录行号。然后，在rules定义了一个模式动作：当遇到一行的结尾时，输出当前行号，并输出当前行内容。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。</p>
 
-<hr>
+首先这个l文件在definitions 部分定义了一个int型变量yylineno用于记录行号。然后，在rules定义了一个模式动作：当遇到一行的结尾时，输出当前行号，并输出当前行内容。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。
 
-<h3 id="2-yacc">2.yacc</h3>
+----
 
-<p>Yacc( Yet Another Compiler Compiler)。 Yacc 的 GNU 版叫做 Bison。它是一种工具，将一种编程语言的语法翻译成针对此种语言的 Yacc 语法解析器。从上文中我们可以知道lex可以参数一系列标记，如果我们想当某个标记序列出现时执行某一动作，该怎么实现呢？Yacc该出场了。通过yacc编译y文件(语法文件)就可以产生对应的c程序了；生成的c代码通过编译链接就可以生产语法分析器了。但是，语法分析的前提是词法分析，因此我们需要lex出现输入文件并生成标记。在讲解y文件(语法文件)之前我们假设以及存在如下l文件(词法文件)：</p>
+###2.yacc
 
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
-<span class="cp">#include &lt;stdio.h&gt;</span>
-<span class="cp">#include &quot;y.tab.h&quot;</span>
-<span class="o">%</span><span class="p">}</span>
+Yacc( Yet Another Compiler Compiler)。 Yacc 的 GNU 版叫做 Bison。它是一种工具，将一种编程语言的语法翻译成针对此种语言的 Yacc 语法解析器。从上文中我们可以知道lex可以参数一系列标记，如果我们想当某个标记序列出现时执行某一动作，该怎么实现呢？Yacc该出场了。通过yacc编译y文件(语法文件)就可以产生对应的c程序了；生成的c代码通过编译链接就可以生产语法分析器了。但是，语法分析的前提是词法分析，因此我们需要lex出现输入文件并生成标记。在讲解y文件(语法文件)之前我们假设以及存在如下l文件(词法文件)：
+
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
+<span class="cp">#include &lt;stdio.h&gt;
+#include "y.tab.h"
+</span><span class="o">%</span><span class="p">}</span>
 <span class="o">%%</span>
 <span class="p">[</span><span class="mi">0</span><span class="o">-</span><span class="mi">9</span><span class="p">]</span><span class="o">+</span>                  <span class="k">return</span> <span class="n">NUMBER</span><span class="p">;</span>
 <span class="n">heat</span>                    <span class="k">return</span> <span class="n">TOKHEAT</span><span class="p">;</span>
@@ -184,48 +258,50 @@ subroutines 部分用于定义c函数等。</p>
 <span class="n">temperature</span>             <span class="k">return</span> <span class="n">TOKTEMPERATURE</span><span class="p">;</span>
 <span class="err">\</span><span class="n">n</span>                      <span class="cm">/* ignore end of line */</span><span class="p">;</span>
 <span class="p">[</span> <span class="err">\</span><span class="n">t</span><span class="p">]</span><span class="o">+</span>                  <span class="cm">/* ignore whitespace */</span><span class="p">;</span>
-<span class="o">%%</span></code></pre></div>
+<span class="o">%%</span></code></pre></figure>
 
-<p>这个l文件主要是参数y文件定义的各种token，大家可以看到它的subroutines部分为空，因为该词法分析器的结果直接输出到语法分析器，因此不需要额外的函数。<strong>下面的y文件都依赖于该l文件</strong>。</p>
 
-<p>一个y文件(语法文件)同样包含definitions、rules、subroutines三个部分，每部分同样通过双百分号(%%)分割。各个部分的作用l文件的对应部分也基本一致。</p>
+这个l文件主要是参数y文件定义的各种token，大家可以看到它的subroutines部分为空，因为该词法分析器的结果直接输出到语法分析器，因此不需要额外的函数。**下面的y文件都依赖于该l文件**。
 
-<p>一个简单的y文件例子，test.y。</p>
+一个y文件(语法文件)同样包含definitions、rules、subroutines三个部分，每部分同样通过双百分号(%%)分割。各个部分的作用l文件的对应部分也基本一致。
 
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
-<span class="cp">#include &lt;stdio.h&gt;</span>
-<span class="cp">#include &lt;string.h&gt;</span>
-<span class="kt">void</span> <span class="n">yyerror</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">);</span>
+一个简单的y文件例子，test.y。
+
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="o">%</span><span class="p">{</span>
+<span class="cp">#include &lt;stdio.h&gt;
+#include &lt;string.h&gt;
+</span><span class="kt">void</span> <span class="n">yyerror</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">);</span>
 <span class="o">%</span><span class="p">}</span>
 <span class="o">%</span><span class="n">token</span> <span class="n">NUMBER</span> <span class="n">TOKHEAT</span> <span class="n">STATE</span> <span class="n">TOKTARGET</span> <span class="n">TOKTEMPERATURE</span>
 <span class="o">%%</span> 
-<span class="nl">commands</span><span class="p">:</span> <span class="cm">/* empty */</span>
+<span class="n">commands</span><span class="o">:</span> <span class="cm">/* empty */</span>
         <span class="o">|</span> <span class="n">commands</span> <span class="n">command</span>
         <span class="p">;</span>
 
-<span class="nl">command</span><span class="p">:</span>
+<span class="n">command</span><span class="o">:</span>
         <span class="n">heat_switch</span>
         <span class="o">|</span>
         <span class="n">target_set</span>
         <span class="p">;</span>
 
-<span class="nl">heat_switch</span><span class="p">:</span>
+<span class="n">heat_switch</span><span class="o">:</span>
         <span class="n">TOKHEAT</span> <span class="n">STATE</span>
         <span class="p">{</span>
-                <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">Heat turned on or off</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\t</span><span class="s">Heat turned on or off</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
         <span class="p">}</span>
         <span class="p">;</span>
 
-<span class="nl">target_set</span><span class="p">:</span>
+<span class="n">target_set</span><span class="o">:</span>
         <span class="n">TOKTARGET</span> <span class="n">TOKTEMPERATURE</span> <span class="n">NUMBER</span>
         <span class="p">{</span>
-                <span class="n">printf</span><span class="p">(</span><span class="s">&quot;</span><span class="se">\t</span><span class="s">Temperature set</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">);</span>
+                <span class="n">printf</span><span class="p">(</span><span class="s">"</span><span class="se">\t</span><span class="s">Temperature set</span><span class="se">\n</span><span class="s">"</span><span class="p">);</span>
         <span class="p">}</span>
         <span class="p">;</span>
 <span class="o">%%</span>
 <span class="kt">void</span> <span class="n">yyerror</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">)</span>
 <span class="p">{</span>
-        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="s">&quot;error: %s</span><span class="se">\n</span><span class="s">&quot;</span><span class="p">,</span><span class="n">str</span><span class="p">);</span>
+        <span class="n">fprintf</span><span class="p">(</span><span class="n">stderr</span><span class="p">,</span><span class="s">"error: %s</span><span class="se">\n</span><span class="s">"</span><span class="p">,</span><span class="n">str</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="kt">int</span> <span class="n">yywrap</span><span class="p">()</span>
 <span class="p">{</span>
@@ -234,17 +310,21 @@ subroutines 部分用于定义c函数等。</p>
 <span class="n">main</span><span class="p">()</span>
 <span class="p">{</span>
         <span class="n">yyparse</span><span class="p">();</span>
-<span class="p">}</span></code></pre></div>
+<span class="p">}</span> </code></pre></figure>
 
-<p>该y文件的definitions部分声明了一个函数，并定义了一系列标记(TOKEN)。然后在rules部分定义了四个模式序列对应(语句)的动作，其中commands是一个递归定义。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。这个y文件实现了以下功能</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">输入：heat on
+
+该y文件的definitions部分声明了一个函数，并定义了一系列标记(TOKEN)。然后在rules部分定义了四个模式序列对应(语句)的动作，其中commands是一个递归定义。最后在subroutines部分定义了一个c语言main函数,读取文件，并实现yywrap并返回1表示停止解析。这个y文件实现了以下功能
+
+```
+输入：heat on
 输出：Heat turned on or off
 输入：target temperature 22
 输出：New temperature set!
-</code></pre></div>
-<h3 id="3-lex与yacc结合">3.lex与yacc结合</h3>
+```
 
-<p>也许你已经注意到了，l文件的definitions部分往往要包含#include &quot;y.tab.h&quot;。而y.tab.h是yacc对y文件编译后产生的c源文见。因此y文件必须限于l文件进行编译成c源文件，然后将l文件产生的c文件和y文件产生的c文件编译连接生产语法解析器。具体步骤见图：</p>
+###3.lex与yacc结合
+
+也许你已经注意到了，l文件的definitions部分往往要包含#include "y.tab.h"。而y.tab.h是yacc对y文件编译后产生的c源文见。因此y文件必须限于l文件进行编译成c源文件，然后将l文件产生的c文件和y文件产生的c文件编译连接生产语法解析器。具体步骤见图：
 
 <figure style="margin:0 auto;width:620px">
     <img src="/images/lex_yacc.jpg"/>
@@ -255,156 +335,6 @@ subroutines 部分用于定义c函数等。</p>
 <p><a href="http://epaperpress.com/lexandyacc/index.html">http://epaperpress.com/lexandyacc/index.html</a>
 <br />
 <a href="http://tldp.org/HOWTO/Lex-YACC-HOWTO-1.html">http://tldp.org/HOWTO/Lex-YACC-HOWTO-1.html</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-08-27T00:00:00+08:00"><a href="/php-sapi/">August 27, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/php-sapi/" rel="bookmark" title="理解php内核中SAPI的作用" itemprop="url">理解php内核中SAPI的作用</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>SAPI: Server Application Programming Interface 服务器端应用编程端口。先看一张php模块图。
-<figure style="margin:0 auto;width:400px">
-    <img src="/images/sapi.jpg"/>
-</figure></p>
-
-<p>从图中可以看出，各种应用都是通过对应的SAPI与php进行交互的，SAPI相当于一个接口，使得php的核心实现不用关心各个应用交互的细节。虽然通过Web服务器和命令行程序执行脚本看起来很不一样，实际上它们的工作流程是一样的。</p>
-
-<hr>
-
-<p>在php的源代码sapi目录下有多种sapi的具体实现，比如cgi、cli、apache、fpm等。SAPI中最重要的一个数据结构就是<code>_sapi_module_struct</code>，定义在/main/SAPI.h中。</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">struct</span> <span class="n">_sapi_module_struct</span> <span class="p">{</span>
-    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>       <span class="c1">//应用层的名称，比如cgi，apache等</span>
-    <span class="kt">char</span> <span class="o">*</span><span class="n">pretty_name</span><span class="p">;</span>     <span class="c1">//应用层更易读的名字</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">startup</span><span class="p">)(</span><span class="k">struct</span> <span class="n">_sapi_module_struct</span> <span class="o">*</span><span class="n">sapi_module</span><span class="p">);</span>    <span class="c1">//startup 函数指针, 当一个应用要调用PHP的时候，这个函数会被调用</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">shutdown</span><span class="p">)(</span><span class="k">struct</span> <span class="n">_sapi_module_struct</span> <span class="o">*</span><span class="n">sapi_module</span><span class="p">);</span>     <span class="c1">// shutdown 函数指针，</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">activate</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>    <span class="c1">//active 函数指针，PHP会在每个request的时候，处理一些初始化，资源分配的事务。这部分就是activate字段要定义的</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">deactivate</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>    <span class="c1">//deactivate函数指针，这个是对应与activate的函数，顾名思义，它会提供一个handler, 用来处理收尾工作</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">ub_write</span><span class="p">)(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">str_length</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>    <span class="c1">//这个hanlder告诉了php如何输出数据，比如cgi和fpm模式下输出数据方式肯定不一样</span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">flush</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="n">server_context</span><span class="p">);</span>    <span class="c1">//这个是提供给php的刷新缓存的函数指针</span>
-    <span class="k">struct</span> <span class="n">stat</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">get_stat</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>    <span class="c1">//这部分用来让php可以验证一个要执行脚本文件的state，从而判断文件是否据有执行权限等等</span>
-    <span class="kt">char</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">getenv</span><span class="p">)(</span><span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">name_len</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>     <span class="c1">//为Zend提供了一个根据name来查找环境变量的接口</span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">sapi_error</span><span class="p">)(</span><span class="kt">int</span> <span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">error_msg</span><span class="p">,</span> <span class="p">...);</span>    <span class="c1">//错误处理函数指针</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">header_handler</span><span class="p">)(</span><span class="n">sapi_header_struct</span> <span class="o">*</span><span class="n">sapi_header</span><span class="p">,</span> <span class="n">sapi_header_op_enum</span> <span class="n">op</span><span class="p">,</span> <span class="n">sapi_headers_struct</span> <span class="o">*</span><span class="n">sapi_headers</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>    <span class="c1">// 这个函数会在我们调用PHP的header()函数的时候被调用</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">send_headers</span><span class="p">)(</span><span class="n">sapi_headers_struct</span> <span class="o">*</span><span class="n">sapi_headers</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>  <span class="c1">//这个函数会在要真正发送header的时候被调用，一般来说，就是当有任何的输出要发送之前</span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">send_header</span><span class="p">)(</span><span class="n">sapi_header_struct</span> <span class="o">*</span><span class="n">sapi_header</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">server_context</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>  <span class="c1">//单独发送每一个header的函数指针</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">read_post</span><span class="p">)(</span><span class="kt">char</span> <span class="o">*</span><span class="n">buffer</span><span class="p">,</span> <span class="n">uint</span> <span class="n">count_bytes</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>   <span class="c1">//这个句函数指针明了如何获取POST的数据</span>
-    <span class="kt">char</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">read_cookies</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>  <span class="c1">//这个句函数指针明了如何获取COOKIE的数据</span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">register_server_variables</span><span class="p">)(</span><span class="n">zval</span> <span class="o">*</span><span class="n">track_vars_array</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>    <span class="c1">//这个函数给了一个接口，用以给$_SERVER变量中添加变量 </span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">log_message</span><span class="p">)(</span><span class="kt">char</span> <span class="o">*</span><span class="n">message</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>    <span class="c1">//用来输出错误信息的函数指针</span>
-    <span class="kt">double</span> <span class="p">(</span><span class="o">*</span><span class="n">get_request_time</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>   <span class="c1">//获得请求时间的函数指针</span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">terminate_process</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span> 
-    <span class="kt">char</span> <span class="o">*</span><span class="n">php_ini_path_override</span><span class="p">;</span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">block_interruptions</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">unblock_interruptions</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">default_post_reader</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>
-    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">treat_data</span><span class="p">)(</span><span class="kt">int</span> <span class="n">arg</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">,</span> <span class="n">zval</span> <span class="o">*</span><span class="n">destArray</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
-    <span class="kt">char</span> <span class="o">*</span><span class="n">executable_location</span><span class="p">;</span>
-    <span class="kt">int</span> <span class="n">php_ini_ignore</span><span class="p">;</span>
-    <span class="kt">int</span> <span class="n">php_ini_ignore_cwd</span><span class="p">;</span> <span class="cm">/* don&#39;t look for php.ini in the current directory */</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">get_fd</span><span class="p">)(</span><span class="kt">int</span> <span class="o">*</span><span class="n">fd</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">force_http_10</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">get_target_uid</span><span class="p">)(</span><span class="kt">uid_t</span> <span class="o">*</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
-    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">get_target_gid</span><span class="p">)(</span><span class="kt">gid_t</span> <span class="o">*</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
-    <span class="kt">unsigned</span> <span class="nf">int</span> <span class="p">(</span><span class="o">*</span><span class="n">input_filter</span><span class="p">)(</span><span class="kt">int</span> <span class="n">arg</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">var</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">val</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">val_len</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">new_val_len</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
-   <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">ini_defaults</span><span class="p">)(</span><span class="n">HashTable</span> <span class="o">*</span><span class="n">configuration_hash</span><span class="p">);</span>
-   <span class="kt">int</span> <span class="n">phpinfo_as_text</span><span class="p">;</span>
-   <span class="kt">char</span> <span class="o">*</span><span class="n">ini_entries</span><span class="p">;</span>
-   <span class="k">const</span> <span class="n">zend_function_entry</span> <span class="o">*</span><span class="n">additional_functions</span><span class="p">;</span>
-   <span class="kt">unsigned</span> <span class="nf">int</span> <span class="p">(</span><span class="o">*</span><span class="n">input_filter_init</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>
-<span class="p">};</span></code></pre></div>
-
-<p>不同的SAPI就是用不同的参数实例化_sapi_module_struct来实习的，下面我们分别简单分析一些cgi SAPI和cli SAPI的源代码，力求对SAPI有些更深入的理解。</p>
-
-<hr>
-
-<h3 id="1-cgi模式">1.cgi模式</h3>
-
-<p>cgi模式下，<em>sapi_module_struct的实例定义在cgi</em>main.c中。</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="n">sapi_module_struct</span> <span class="n">cgi_sapi_module</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">&quot;cgi-fcgi&quot;</span><span class="p">,</span>                     <span class="cm">/* name */</span>
-    <span class="s">&quot;CGI/FastCGI&quot;</span><span class="p">,</span>                  <span class="cm">/* pretty name */</span>
-    <span class="n">php_cgi_startup</span><span class="p">,</span>                <span class="cm">/* startup */</span>
-    <span class="n">php_module_shutdown_wrapper</span><span class="p">,</span>    <span class="cm">/* shutdown */</span>
-    <span class="n">sapi_cgi_activate</span><span class="p">,</span>              <span class="cm">/* activate */</span>
-    <span class="n">sapi_cgi_deactivate</span><span class="p">,</span>            <span class="cm">/* deactivate */</span>
-    <span class="n">sapi_cgi_ub_write</span><span class="p">,</span>              <span class="cm">/* unbuffered write */</span>
-    <span class="n">sapi_cgi_flush</span><span class="p">,</span>                 <span class="cm">/* flush */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* get uid */</span>
-    <span class="n">sapi_cgi_getenv</span><span class="p">,</span>                <span class="cm">/* getenv */</span>
-    <span class="n">php_error</span><span class="p">,</span>                      <span class="cm">/* error handler */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* header handler */</span>
-    <span class="n">sapi_cgi_send_headers</span><span class="p">,</span>          <span class="cm">/* send headers handler */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* send header handler */</span>
-    <span class="n">sapi_cgi_read_post</span><span class="p">,</span>             <span class="cm">/* read POST data */</span>
-    <span class="n">sapi_cgi_read_cookies</span><span class="p">,</span>          <span class="cm">/* read Cookies */</span>
-    <span class="n">sapi_cgi_register_variables</span><span class="p">,</span>    <span class="cm">/* register server variables */</span>
-    <span class="n">sapi_cgi_log_message</span><span class="p">,</span>           <span class="cm">/* Log message */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* Get request time */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* Child terminate */</span>
-    <span class="n">STANDARD_SAPI_MODULE_PROPERTIES</span>
-<span class="p">};</span></code></pre></div>
-
-<p>下面分析 <code>char *(*read_cookies)(TSRMLS_D)</code> 在cgi模式下的实现:sapi_cgi_read_cookies。其中sapi_cgi_read_cookies的源码片段如下：</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">char</span> <span class="o">*</span><span class="nf">sapi_cgi_read_cookies</span><span class="p">(</span><span class="n">TSRMLS_D</span><span class="p">)</span>
-<span class="p">{</span>
-    <span class="k">return</span> <span class="n">getenv</span><span class="p">(</span><span class="s">&quot;HTTP_COOKIE&quot;</span><span class="p">);</span>
-<span class="p">}</span></code></pre></div>
-
-<p>可以看到，cgi模式下的<code>char *(*read_cookies)(TSRMLS_D)</code>最终为从环境变量中读取HTTP_COOKIE。</p>
-
-<h3 id="2-cli-模式">2.cli 模式</h3>
-
-<p>cgi模式下，<em>sapi_module_struct的实例定义在php</em>cli.c</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="n">sapi_module_struct</span> <span class="n">cli_sapi_module</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="s">&quot;cli&quot;</span><span class="p">,</span>                          <span class="cm">/* name */</span>
-    <span class="s">&quot;Command Line Interface&quot;</span><span class="p">,</span>       <span class="cm">/* pretty name */</span>
-    <span class="n">php_cli_startup</span><span class="p">,</span>                <span class="cm">/* startup */</span>
-    <span class="n">php_module_shutdown_wrapper</span><span class="p">,</span>    <span class="cm">/* shutdown */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* activate */</span>
-    <span class="n">sapi_cli_deactivate</span><span class="p">,</span>            <span class="cm">/* deactivate */</span>
-    <span class="n">sapi_cli_ub_write</span><span class="p">,</span>              <span class="cm">/* unbuffered write */</span>
-    <span class="n">sapi_cli_flush</span><span class="p">,</span>                 <span class="cm">/* flush */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* get uid */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* getenv */</span>
-    <span class="n">php_error</span><span class="p">,</span>                      <span class="cm">/* error handler */</span>
-    <span class="n">sapi_cli_header_handler</span><span class="p">,</span>        <span class="cm">/* header handler */</span>
-    <span class="n">sapi_cli_send_headers</span><span class="p">,</span>          <span class="cm">/* send headers handler */</span>
-    <span class="n">sapi_cli_send_header</span><span class="p">,</span>           <span class="cm">/* send header handler */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* read POST data */</span>
-    <span class="n">sapi_cli_read_cookies</span><span class="p">,</span>          <span class="cm">/* read Cookies */</span>
-    <span class="n">sapi_cli_register_variables</span><span class="p">,</span>    <span class="cm">/* register server variables */</span>
-    <span class="n">sapi_cli_log_message</span><span class="p">,</span>           <span class="cm">/* Log message */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* Get request time */</span>
-    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* Child terminate */</span>
-    <span class="n">STANDARD_SAPI_MODULE_PROPERTIES</span>
-<span class="p">};</span></code></pre></div>
-
-<p>下面分析 <code>char *(*read_cookies)(TSRMLS_D)</code> 在cli模式下的实现:sapi_cli_read_cookies。其中sapi_cli_read_cookies的源码片段如下：</p>
-
-<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">char</span><span class="o">*</span> <span class="nf">sapi_cli_read_cookies</span><span class="p">(</span><span class="n">TSRMLS_D</span><span class="p">)</span> 
-<span class="p">{</span>
-    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
-<span class="p">}</span></code></pre></div>
-
-<p>可以看到，cgi模式下的<code>char *(*read_cookies)(TSRMLS_D)</code>最终为直接返回NULL，因为cli模式下不存在用户cookies信息。</p>
-
-<hr>
-
-<p>通过上面的cgi和cli模式下read_cookies的不同实现，可以看出sapi确实对下层php屏蔽了交互细节，当下层php核心要读取用户cookies时，只需要通过sapi_module_struct-&gt;read_cookies，而不需要关注上层应用的交互细节。</p>
-
-<p>that right! 这就是SAPI的作用。</p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->

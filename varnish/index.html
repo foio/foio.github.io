@@ -133,19 +133,19 @@ rel="stylesheet" type="text/css" -->
 
 <p>本文将简单介绍ubuntu server下安装和配置varnish的方法。</p>
 
-<h2 id="安装varnish">安装varnish</h2>
+<h2 id="varnish">安装varnish</h2>
 
 <p>使用ubuntu软件包管理工具安装varnish。</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">apt-get install varnish
+<div class="highlight"><pre><code class="language-" data-lang="">apt-get install varnish
 </code></pre></div>
-<h2 id="配置varnish">配置varnish</h2>
+<h2 id="varnish">配置varnish</h2>
 
 <h3 id="1-etc-default-varnish">1. /etc/default/varnish</h3>
-<div class="highlight"><pre><code class="language-text" data-lang="text">DAEMON_OPTS=&quot;-a :80 \                                             
+<div class="highlight"><pre><code class="language-" data-lang="">DAEMON_OPTS="-a :80 \                                             
              -T localhost:6082 \
              -f /etc/varnish/default.vcl \
              -S /etc/varnish/secret \
-             -s malloc,100m&quot;
+             -s malloc,100m"
 </code></pre></div>
 <p>各个字段的含义如下：</p>
 
@@ -157,20 +157,21 @@ rel="stylesheet" type="text/css" -->
 </blockquote>
 
 <h3 id="2-etc-varnish-default-vcl">2.  /etc/varnish/default.vcl</h3>
-<div class="highlight"><pre><code class="language-text" data-lang="text">backend default {
-    .host = &quot;127.0.0.1&quot;;
-    .port = &quot;8080&quot;;
+<div class="highlight"><pre><code class="language-" data-lang="">backend default {
+    .host = "127.0.0.1";
+    .port = "8080";
 }
 </code></pre></div>
 <p>backend default定义默认的后端服务器的ip和端口，也即nginx监听的端口。当然vcl可以定义各种复杂的转发策略，这个超出了本文的范围。配置好后可以重新启动varnish了</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">/etc/init.d/varnish restart
+<div class="highlight"><pre><code class="language-" data-lang="">/etc/init.d/varnish restart
  * Stopping HTTP accelerator varnishd      [ok]
  * Starting HTTP accelerator varnishd      [ok]
+
 </code></pre></div>
-<h2 id="测试varnish">测试varnish</h2>
+<h2 id="varnish">测试varnish</h2>
 
 <p>配置好varnish后，浏览站点，发现HTTP Response头中多了:</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">X-Varnish   1666066465 1666066458
+<div class="highlight"><pre><code class="language-" data-lang="">X-Varnish   1666066465 1666066458
 </code></pre></div>
 <p>上面的头信息表示varnish正常工作了。我们也可以使用varnish提供的命令行工具<code>varnishstat</code>分析varnish的缓存状态,可以使用<code>varnishlog</code>查看varnish的和客户端以及后端的通信信息。</p>
 
@@ -206,20 +207,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/mysql-master-slave/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

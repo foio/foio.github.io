@@ -123,10 +123,10 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-content">
       <p>作为一个前端工程师，我们都知道页面的速度对产品业务的发展至关重要，在日常工作中我们除了完成业务逻辑之外，也在持续的优化前端页面的速度。但我们往往从加载速度和渲染速度这两个方面着手，而忽略了感知速度的提升，本文我们就来探讨一下如何从感知速度着手提升前端页面的感知速度。</p>
 
-<h2 id="1-ui预览">1.UI预览</h2>
+<h2 id="1-ui">1.UI预览</h2>
 
 <p>对于常见的前后端分离项目，一般的工作流程是：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">1. 页面JS请求后端接口
+<div class="highlight"><pre><code class="language-" data-lang="">1. 页面JS请求后端接口
 2. 后端接口返回JSON数据
 3. 前端模板引擎根据JSON数据和预设模板输出最终的HTML片段
 4. 前端模板引擎将HTML片段插入DOM中，浏览器重新局部渲染，显示最终结果
@@ -142,11 +142,11 @@ facebook在信息流加载完成之前，也会给出UI预览：
     <img src="/images/facebook-interface-preview.png" alt="facebook-interface-preview">
 </figure></p>
 
-<h2 id="2-ui预览的实现方式">2.UI预览的实现方式</h2>
+<h2 id="2-ui">2.UI预览的实现方式</h2>
 
 <p>UI预览的实现方式主要有两种，一种就是伪UI预览，另一种是真实UI预览。</p>
 
-<h3 id="1-伪ui预览">(1).伪UI预览</h3>
+<h3 id="1-ui">(1).伪UI预览</h3>
 
 <p>伪UI预览的应用场景较为有限，需要提前人工写好需要预览的UI的布局和样式，因此其只能适用于UI较为简单的场景。facbook的每一条feed的布局都非常相似，它使用的就是伪UI预览，在真实feed加载完成之前，先显示UI预览，当真实feed加载完成后，隐藏UI预览，显示真实feed内容。比如下图是一条feed的UI预览：</p>
 
@@ -154,10 +154,10 @@ facebook在信息流加载完成之前，也会给出UI预览：
     <img src="/images/facebook-feed-preview.jpg" alt="facebook-feed-preview">
 </figure>
 
-<h3 id="2-真实ui预览">(2).真实UI预览</h3>
+<h3 id="2-ui">(2).真实UI预览</h3>
 
 <p>真实UI预览实现起来较为复杂，但是其适用场景较为也更为广泛。一种实现真实UI预览的方案是，通过真实测试数据生成真实UI预览，当然这里对测试数据有一定的要求：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">(1)文本用空格代替
+<div class="highlight"><pre><code class="language-" data-lang="">(1)文本用空格代替
 (2)图像用默认图像代替
 </code></pre></div>
 <p>真实UI预览的生成可以通过构建工具完成，比如grunt、gulp、fis等。当真实数据获取成功时，即可隐藏UI预览，显示真实用户页面。</p>
@@ -204,20 +204,20 @@ facebook在信息流加载完成之前，也会给出UI预览：
           <a href="/html5-application-cache/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/mvvm-overview/" title="如何实现一个MVVM框架">如何实现一个MVVM框架</a></h4>
-            <span>Published on February 24, 2016</span>
+            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
+            <span>Published on April 10, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

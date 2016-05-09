@@ -123,12 +123,12 @@ rel="stylesheet" type="text/css" -->
     <div class="entry-content">
       <p>提到网页加载速度优化，大家都会想到静态资源上CDN，CSS和JS文件合并，图片合并成雪碧图等常用手段；但是在某些特殊情况下这些常用方法也无法达到理想的效果。比如，在国际化场景下，很多国家还停留在2G网络阶段，无论如何优化，都无法避免过慢的网络请求。最近一直在做国际化(主要是印尼和泰国)背景下的webview性能优化，也算有一些经验。由于我们的产品是面向android用户的，而android手机对H5支持很好，因此我们主要是应用H5的新特性。</p>
 
-<h3 id="1-h5的menifest缓存的局限">1.H5的menifest缓存的局限</h3>
+<h3 id="1-h5-menifest">1.H5的menifest缓存的局限</h3>
 
 <p>H5的menifest缓存机制是大家经常提起的方法，这是一种使用起来很简单的机制，其基本原理就是：当menifest文件有更新时，就会更新整个应用，否则就不会请求网络而是使用本地缓存的资源。但是我们使用起来却有不少问题：比如即使menifest文件发生变化，应用也不能及时的更新。对于menifest机制我们的结论是：menifest可以用于缓存基本不发生变化的文件(比如基本样式表base.css,javascript类库jquery.js等)，<code>对于业务代码一定不要使用menifest缓存，否则可能导致业务代码无法更新</code>。</p>
 
 <p>新浪微博中大量的使用了menifest缓存机制，但是他们也只缓存了类库和基本样式表，而没有缓存业务代码。这是一个例子 <a href="http://card.weibo.com/article/h5/s#cid=1001603928694585472076">http://card.weibo.com/article/h5/s#cid=1001603928694585472076</a>，其menifest文件如下：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">CACHE MANIFEST
+<div class="highlight"><pre><code class="language-" data-lang="">CACHE MANIFEST
 # v = 8f708b371de7949de35b8cec4dac678b
 CACHE:
 # CSS and CSS resource image
@@ -165,44 +165,46 @@ http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/d0/z2_org.gif
 
 NETWORK:
 *
+
 </code></pre></div>
-<h3 id="2-使用localstorage缓存js和css文件">2.使用localstorage缓存js和css文件</h3>
+<h3 id="2-localstorage-js-css">2.使用localstorage缓存js和css文件</h3>
 
 <p>localstorage设计之初是为了缓存应用数据的，关于是否应该使用它缓存js和css文件，知乎上有一篇讨论：
 <a href="https://www.zhihu.com/question/28467444">静态资源（JS/CSS）存储在localStorage有什么缺点？为什么没有被广泛应用？</a>。其中得票最多的基本上概况了localstorage的适用场景以及优缺点：</p>
-<div class="highlight"><pre><code class="language-text" data-lang="text">PC上因为localstorage兼容性不好，而且网速较快，因此实用价值不大
+<div class="highlight"><pre><code class="language-" data-lang="">PC上因为localstorage兼容性不好，而且网速较快，因此实用价值不大
 移动端单页面应用(webapp)，因为localstorage兼容性好，网速慢，所以值得尝试
 localstorage的兼容性问题
+
 </code></pre></div>
 <p>UC的前端团队推出了基于localstorage存储前端静态资源的<a href="http://scrat.io/#!/index">Scrat-webapp模块化开发体系</a>，而且基于这个模块化体系开发了很多项目：<a href="http://tv.uc.cn/mobile/4.8.3/index.html?uc_param_str=frdnsnpfvecplabtbmntnwpvsslibieisinipr#!/index">神马视频</a>、<a href="http://nba.uc.cn/?uc_param_str=dnfrvecpntsspimiei#!/index">NBA直播</a>。大家可以通过chrome的开发者工具查看localstorage的使用情况。</p>
 
 <p>基于以上的行业经验，我们也选用了localstorage作为自己的前端资源缓存，并实现了自己的基于localstorage的静态资源加载器，其实现原理可以参考我的博客:<a href="http://foio.github.io/javascript-async/">在网页中异步加载javascript</a>
 的XHR Eval方法。具体代码如下：</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">;(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">global</span><span class="p">)</span> <span class="p">{</span>
-    <span class="s1">&#39;use strict&#39;</span><span class="p">;</span>
+    <span class="s1">'use strict'</span><span class="p">;</span>
 
     <span class="c1">//检查文件类型</span>
-    <span class="kd">var</span> <span class="nx">TYPE_RE</span> <span class="o">=</span> <span class="sr">/\.(js|css)(?=[?&amp;,]|$)/i</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">TYPE_RE</span> <span class="o">=</span> <span class="sr">/</span><span class="se">\.(</span><span class="sr">js|css</span><span class="se">)(?=[</span><span class="sr">?&amp;,</span><span class="se">]</span><span class="sr">|$</span><span class="se">)</span><span class="sr">/i</span><span class="p">;</span>
     <span class="kd">function</span> <span class="nx">fileType</span><span class="p">(</span><span class="nx">str</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">ext</span> <span class="o">=</span> <span class="s1">&#39;js&#39;</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">ext</span> <span class="o">=</span> <span class="s1">'js'</span><span class="p">;</span>
         <span class="nx">str</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="nx">TYPE_RE</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">m</span><span class="p">,</span> <span class="nx">$1</span><span class="p">)</span> <span class="p">{</span>
             <span class="nx">ext</span> <span class="o">=</span> <span class="nx">$1</span><span class="p">;</span>
         <span class="p">});</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">ext</span> <span class="o">!==</span> <span class="s1">&#39;js&#39;</span> <span class="o">&amp;&amp;</span> <span class="nx">ext</span> <span class="o">!==</span> <span class="s1">&#39;css&#39;</span><span class="p">)</span> <span class="nx">ext</span> <span class="o">=</span> <span class="s1">&#39;unknown&#39;</span><span class="p">;</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">ext</span> <span class="o">!==</span> <span class="s1">'js'</span> <span class="o">&amp;&amp;</span> <span class="nx">ext</span> <span class="o">!==</span> <span class="s1">'css'</span><span class="p">)</span> <span class="nx">ext</span> <span class="o">=</span> <span class="s1">'unknown'</span><span class="p">;</span>
         <span class="k">return</span> <span class="nx">ext</span><span class="p">;</span>
     <span class="p">}</span>
 
     <span class="c1">//将js片段插入dom结构</span>
     <span class="kd">function</span> <span class="nx">evalGlobal</span><span class="p">(</span><span class="nx">strScript</span><span class="p">){</span>
-        <span class="kd">var</span> <span class="nx">scriptEl</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span> <span class="p">(</span><span class="s2">&quot;script&quot;</span><span class="p">);</span>
-        <span class="nx">scriptEl</span><span class="p">.</span><span class="nx">type</span><span class="o">=</span> <span class="s2">&quot;text/javascript&quot;</span><span class="p">;</span>
+        <span class="kd">var</span> <span class="nx">scriptEl</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span> <span class="p">(</span><span class="s2">"script"</span><span class="p">);</span>
+        <span class="nx">scriptEl</span><span class="p">.</span><span class="nx">type</span><span class="o">=</span> <span class="s2">"text/javascript"</span><span class="p">;</span>
         <span class="nx">scriptEl</span><span class="p">.</span><span class="nx">text</span><span class="o">=</span> <span class="nx">strScript</span><span class="p">;</span>
-        <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="s2">&quot;head&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">].</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">scriptEl</span><span class="p">)</span> <span class="p">;</span>
+        <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="s2">"head"</span><span class="p">)[</span><span class="mi">0</span><span class="p">].</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">scriptEl</span><span class="p">)</span> <span class="p">;</span>
     <span class="p">}</span>
 
     <span class="c1">//将css片段插入dom结构</span>
     <span class="kd">function</span> <span class="nx">createCss</span><span class="p">(</span><span class="nx">strCss</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">styleEl</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s1">&#39;style&#39;</span><span class="p">);</span>
+        <span class="kd">var</span> <span class="nx">styleEl</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s1">'style'</span><span class="p">);</span>
         <span class="nb">document</span><span class="p">.</span><span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">styleEl</span><span class="p">);</span>
         <span class="nx">styleEl</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">createTextNode</span><span class="p">(</span><span class="nx">strCss</span><span class="p">));</span>
     <span class="p">}</span>
@@ -210,10 +212,10 @@ localstorage的兼容性问题
     <span class="c1">// 在全局作用域执行js或插入style node</span>
     <span class="kd">function</span> <span class="nx">defineCode</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="nx">str</span><span class="p">)</span> <span class="p">{</span>
         <span class="kd">var</span> <span class="nx">type</span> <span class="o">=</span> <span class="nx">fileType</span><span class="p">(</span><span class="nx">url</span><span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">type</span> <span class="o">===</span> <span class="s2">&quot;js&quot;</span><span class="p">){</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">type</span> <span class="o">===</span> <span class="s2">"js"</span><span class="p">){</span>
             <span class="c1">//with(window)eval(str);</span>
             <span class="nx">evalGlobal</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span>
-        <span class="p">}</span><span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nx">type</span> <span class="o">===</span> <span class="s2">&quot;css&quot;</span><span class="p">){</span>
+        <span class="p">}</span><span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nx">type</span> <span class="o">===</span> <span class="s2">"css"</span><span class="p">){</span>
             <span class="nx">createCss</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span>
         <span class="p">}</span>
     <span class="p">}</span>
@@ -231,10 +233,10 @@ localstorage的兼容性问题
     <span class="c1">// 通过AJAX请求读取js和css文件内容，使用队列控制js的执行顺序</span>
     <span class="kd">var</span> <span class="nx">rawQ</span> <span class="o">=</span> <span class="p">[];</span>
     <span class="kd">var</span> <span class="nx">monkeyLoader</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="nx">loadInjection</span><span class="o">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">onload</span><span class="p">,</span><span class="nx">bOrder</span><span class="p">){</span>
+        <span class="na">loadInjection</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">onload</span><span class="p">,</span><span class="nx">bOrder</span><span class="p">){</span>
             <span class="kd">var</span> <span class="nx">iQ</span> <span class="o">=</span> <span class="nx">rawQ</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
             <span class="k">if</span><span class="p">(</span><span class="nx">bOrder</span><span class="p">){</span>
-                <span class="kd">var</span> <span class="nx">qScript</span> <span class="o">=</span> <span class="p">{</span><span class="nx">key</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">response</span><span class="o">:</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">onload</span><span class="o">:</span> <span class="nx">onload</span><span class="p">,</span> <span class="nx">done</span><span class="o">:</span> <span class="kc">false</span><span class="p">};</span>
+                <span class="kd">var</span> <span class="nx">qScript</span> <span class="o">=</span> <span class="p">{</span><span class="na">key</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">response</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">onload</span><span class="p">:</span> <span class="nx">onload</span><span class="p">,</span> <span class="na">done</span><span class="p">:</span> <span class="kc">false</span><span class="p">};</span>
                 <span class="nx">rawQ</span><span class="p">[</span><span class="nx">iQ</span><span class="p">]</span> <span class="o">=</span> <span class="nx">qScript</span><span class="p">;</span>
             <span class="p">}</span>
             <span class="c1">//有localstorage 缓存</span>
@@ -252,7 +254,7 @@ localstorage的兼容性问题
                 <span class="p">}</span>
             <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
                 <span class="kd">var</span> <span class="nx">xhrObj</span> <span class="o">=</span> <span class="nx">monkeyLoader</span><span class="p">.</span><span class="nx">getXHROject</span><span class="p">();</span>
-                <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s1">&#39;GET&#39;</span><span class="p">,</span> <span class="nx">url</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
+                <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="nx">url</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
                 <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
                 <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
                     <span class="k">if</span><span class="p">(</span><span class="nx">xhrObj</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="mi">4</span><span class="p">){</span>
@@ -274,7 +276,7 @@ localstorage的兼容性问题
             <span class="p">}</span>
         <span class="p">},</span>
 
-        <span class="nx">injectScripts</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="na">injectScripts</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
             <span class="kd">var</span> <span class="nx">len</span> <span class="o">=</span> <span class="nx">rawQ</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
             <span class="c1">//按顺序执行队列中的脚本</span>
             <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">len</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
@@ -283,7 +285,7 @@ localstorage的兼容性问题
                 <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">done</span><span class="p">){</span>
                     <span class="c1">//没有加载完成</span>
                     <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">response</span><span class="p">){</span>
-                        <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">&quot;raw code lost or not load!&quot;</span><span class="p">);</span>
+                        <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">"raw code lost or not load!"</span><span class="p">);</span>
                         <span class="c1">//停止，等待加载完成, 由于脚本是按顺序添加到队列的，因此这里保证了脚本的执行顺序</span>
                         <span class="k">break</span><span class="p">;</span>
                     <span class="p">}</span><span class="k">else</span><span class="p">{</span><span class="c1">//已经加载完成了</span>
@@ -298,7 +300,7 @@ localstorage的兼容性问题
             <span class="p">}</span>
         <span class="p">},</span>
 
-        <span class="nx">getXHROject</span><span class="o">:</span> <span class="kd">function</span><span class="p">(){</span>
+        <span class="na">getXHROject</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
             <span class="c1">//创建XMLHttpRequest对象</span>
             <span class="kd">var</span> <span class="nx">xmlhttp</span><span class="p">;</span>
             <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">XMLHttpRequest</span><span class="p">)</span>
@@ -307,7 +309,7 @@ localstorage的兼容性问题
                     <span class="nx">xmlhttp</span><span class="o">=</span><span class="k">new</span> <span class="nx">XMLHttpRequest</span><span class="p">();</span>
                 <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
                     <span class="c1">// code for IE6, IE5</span>
-                    <span class="nx">xmlhttp</span><span class="o">=</span><span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">&quot;Microsoft.XMLHTTP&quot;</span><span class="p">);</span>
+                    <span class="nx">xmlhttp</span><span class="o">=</span><span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">"Microsoft.XMLHTTP"</span><span class="p">);</span>
                 <span class="p">}</span>
                 <span class="k">return</span> <span class="nx">xmlhttp</span><span class="p">;</span>
         <span class="p">}</span>
@@ -319,12 +321,12 @@ localstorage的兼容性问题
 <span class="p">})(</span><span class="k">this</span><span class="p">);</span>
 </code></pre></div>
 <p>在页面中我们可以使用monkeyLoader加载自己的静态资源</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">monkeyLoader</span><span class="p">(</span><span class="s1">&#39;a.js&#39;</span><span class="p">,</span><span class="nx">callbackA</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
-<span class="nx">monkeyLoader</span><span class="p">(</span><span class="s1">&#39;b.js&#39;</span><span class="p">,</span><span class="nx">callbackB</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">monkeyLoader</span><span class="p">(</span><span class="s1">'a.js'</span><span class="p">,</span><span class="nx">callbackA</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
+<span class="nx">monkeyLoader</span><span class="p">(</span><span class="s1">'b.js'</span><span class="p">,</span><span class="nx">callbackB</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
 </code></pre></div>
 <p>其中monkeyLoader的三个参数分别是：资源文件路径、资源加载完成后的回调函数、以及资源是否需要有序。</p>
 
-<h3 id="3-基于fis3的localstorage集成解决方案">3.基于fis3的localstorage集成解决方案</h3>
+<h3 id="3-fis3-localstorage">3.基于fis3的localstorage集成解决方案</h3>
 
 <p><a href="http://fis.baidu.com/">FIS3</a>作为一个优秀的前端工程化解决方案，其在业界的影响无处不在。作为狼厂的一员，我们在项目中也大量使用FIS3，下面我们讨论一下如何将localstorage集成到FIS3的编译流程中。</p>
 
@@ -333,7 +335,7 @@ localstorage的兼容性问题
         <span class="kd">var</span> <span class="nx">pkgList</span> <span class="o">=</span> <span class="p">[];</span>
         <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">idx</span> <span class="k">in</span> <span class="nx">resourceList</span><span class="p">){</span>
             <span class="kd">var</span> <span class="nx">resourceItem</span> <span class="o">=</span> <span class="nx">resourceList</span><span class="p">[</span><span class="nx">idx</span><span class="p">];</span>
-            <span class="kd">var</span> <span class="nx">pakItem</span> <span class="o">=</span> <span class="nx">resourceMap</span><span class="p">[</span><span class="s1">&#39;pkg&#39;</span><span class="p">][</span><span class="nx">resourceMap</span><span class="p">[</span><span class="s1">&#39;res&#39;</span><span class="p">][</span><span class="nx">resourceItem</span><span class="p">][</span><span class="s1">&#39;pkg&#39;</span><span class="p">]][</span><span class="s1">&#39;uri&#39;</span><span class="p">];</span>
+            <span class="kd">var</span> <span class="nx">pakItem</span> <span class="o">=</span> <span class="nx">resourceMap</span><span class="p">[</span><span class="s1">'pkg'</span><span class="p">][</span><span class="nx">resourceMap</span><span class="p">[</span><span class="s1">'res'</span><span class="p">][</span><span class="nx">resourceItem</span><span class="p">][</span><span class="s1">'pkg'</span><span class="p">]][</span><span class="s1">'uri'</span><span class="p">];</span>
             <span class="nx">pkgList</span><span class="p">[</span><span class="nx">pakItem</span><span class="p">]</span> <span class="o">=</span>  <span class="mi">1</span><span class="p">;</span>
         <span class="p">}</span>
         <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">pkgIdx</span> <span class="k">in</span> <span class="nx">pkgList</span><span class="p">){</span>
@@ -341,21 +343,23 @@ localstorage的兼容性问题
         <span class="p">}</span>
 
     <span class="p">}</span>
+
 </code></pre></div>
 <p>而使用方法也很简单：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">__inline</span><span class="p">(</span><span class="s1">&#39;../js/lib/monkeyLoader.js&#39;</span><span class="p">);</span>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">__inline</span><span class="p">(</span><span class="s1">'../js/lib/monkeyLoader.js'</span><span class="p">);</span>
 <span class="nx">fisMonkeyLoader</span><span class="p">(</span><span class="nx">__RESOURCE_MAP__</span><span class="p">,[</span>
-    <span class="s1">&#39;css/animate.css&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;css/app.css&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;js/lib/zepto-1.1.3.min.js&#39;</span><span class="p">,</span>
-    <span class="s1">&#39;js/app/app.js&#39;</span><span class="p">,</span>
+    <span class="s1">'css/animate.css'</span><span class="p">,</span>
+    <span class="s1">'css/app.css'</span><span class="p">,</span>
+    <span class="s1">'js/lib/zepto-1.1.3.min.js'</span><span class="p">,</span>
+    <span class="s1">'js/app/app.js'</span><span class="p">,</span>
 <span class="p">]);</span>
+
 </code></pre></div>
 <p>fisMonkeyLoader根据<strong>RESOURCE_MAP</strong>找到原始资源对应的经过工程化处理以后的资源，并通过monkeyLoader进行加载。</p>
 
 <p>也许你已经注意到了，使用localstorage只能加载同域的js和css文件，因为我们没办法通过js代码读取其他域下的静态资源的内容。而且localstorage有大小限制，一般情况下每个域名下最多使用5M的本地存储空间，因此我们务必要处理超出大小限制是的异常情况，各个浏览器抛出的异常不太一致，<a href="http://crocodillon.com/blog/always-catch-localstorage-security-and-quota-exceeded-errors">这里给出了一个跨浏览器的异常检测方案</a></p>
 
-<h3 id="4-通过预加载解决首次加载过慢问题">4.通过预加载解决首次加载过慢问题</h3>
+<h3 id="4">4.通过预加载解决首次加载过慢问题</h3>
 
 <p>针对目前常见的hybrid架构，我们可以通过让native客户端预加载webview从而提升首次速度。我们的实现是：客户端在启动时打开一个1px大小(用户不可见)的webview用于提前加载某些重要的页面，而这些页面通过上文中的localstorage机制存储了几乎全部js和css静态资源，从而得到webview秒开的体验。</p>
 
@@ -391,20 +395,20 @@ localstorage的兼容性问题
           <a href="/navigation-timing/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h3>
-          <p>高性能动画,animation,最佳实践,will-change, <a href="/animation-performace/">Continue reading</a></p>
+          <h3><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h3>
+          <p>使用MEAN进行现代化WEB开发 <a href="/mean-web/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
-            <span>Published on April 20, 2016</span>
+            <h4><a href="/animation-performace/" title="前端高性能动画最佳实践">前端高性能动画最佳实践</a></h4>
+            <span>Published on April 30, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/html5-application-cache/" title="深入理解HTML5离线缓存机制">深入理解HTML5离线缓存机制</a></h4>
-            <span>Published on April 10, 2016</span>
+            <h4><a href="/ui-preview/" title="使用UI预览提升页面感知速度">使用UI预览提升页面感知速度</a></h4>
+            <span>Published on April 20, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
