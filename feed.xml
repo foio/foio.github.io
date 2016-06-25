@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2016-05-10T00:14:29+08:00</updated>
+<updated>2016-06-25T16:38:37+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -2057,7 +2057,7 @@ largecode: code/with/slashes.
 
 &lt;p&gt;为了组织RquireJS需要哪些数据结构呢？看起来无从下手，我们可以对问题进行拆分。&lt;/p&gt;
 
-&lt;h4 id=&quot;&gt;&lt;1&gt;.模块放在哪里，如何标记模块的加载状态？&lt;/h4&gt;
+&lt;h4 id=&quot;1&quot;&gt;[1].模块放在哪里，如何标记模块的加载状态？&lt;/h4&gt;
 
 &lt;p&gt;moudules存储了所有已经开始加载的模块，包括加载状态信息、依赖模块信息、模块的回调函数、以及回调函数callback返回的结果。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;//by foio.github.io&lt;/span&gt;
@@ -2071,8 +2071,9 @@ largecode: code/with/slashes.
     &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;   
     &lt;span class=&quot;p&quot;&gt;...&lt;/span&gt; 
 &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h4 id=&quot;id&quot;&gt;&lt;2&gt;.正在加载但是还没有加载完成的模块id列表&lt;/h4&gt;
+&lt;h4 id=&quot;2-id&quot;&gt;[2].正在加载但是还没有加载完成的模块id列表&lt;/h4&gt;
 
 &lt;p&gt;每个脚本加载完成事件onload触发时，都需要检查loading队列，确认哪些模块的依赖已经加载完成，是否可以执行&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;//by foio.github.io&lt;/span&gt;
@@ -2334,11 +2335,11 @@ td, table {
 
 &lt;p&gt;当外部脚本按常规方式加载时，它会阻塞行内脚本的执行，可以保证顺序。但是脚本通过上述的几种方式异步加载时，就无法保证行内脚本和异步脚本之间的顺序。下面就讲解一下保证行内脚本和外部脚本保证执行顺序的技术。&lt;/p&gt;
 
-&lt;h5 id=&quot;&gt;&lt;1&gt;.硬编码回调&lt;/h5&gt;
+&lt;h5 id=&quot;1&quot;&gt;[1].硬编码回调&lt;/h5&gt;
 
 &lt;p&gt;如果web开发者能够控制外部脚本，可以在外部脚本回调行内脚本。&lt;/p&gt;
 
-&lt;h5 id=&quot;onlode&quot;&gt;&lt;2&gt;onlode事件&lt;/h5&gt;
+&lt;h5 id=&quot;2-onlode&quot;&gt;[2]onlode事件&lt;/h5&gt;
 
 &lt;p&gt;添加script dom节点时，监听加载事件，当脚本成功加载时调用callback(外部脚本)函数。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;//行内函数&lt;/span&gt;
@@ -2370,7 +2371,7 @@ td, table {
 &lt;span class=&quot;nx&quot;&gt;loadScript&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;a.js&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;callback&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
 &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/script&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h5 id=&quot;&gt;&lt;2&gt;定时器&lt;/h5&gt;
+&lt;h5 id=&quot;3&quot;&gt;[3]定时器&lt;/h5&gt;
 
 &lt;p&gt;通过定时检查外部脚本的相应变量是否定义，可以判断外部脚本是否加载并执行成功。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;script&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;src&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;MyJs.js&quot;&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/script&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
@@ -2391,7 +2392,7 @@ td, table {
 
 &lt;h4 id=&quot;2&quot;&gt;(2)保证多个外部脚本之间的执行顺序&lt;/h4&gt;
 
-&lt;h5 id=&quot;&gt;&lt;1&gt;. 同域中的脚本&lt;/h5&gt;
+&lt;h5 id=&quot;1&quot;&gt;[1]. 同域中的脚本&lt;/h5&gt;
 
 &lt;p&gt;对于同域中的多个外部脚本，可以使用XHR的方式加载脚本，并通过一个队列来控制脚本的执行顺序。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;script&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt;
@@ -2456,7 +2457,7 @@ td, table {
     &lt;span class=&quot;nx&quot;&gt;ScriptLoader&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;Script&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;loadScriptXhrInjection&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;C.js&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;InitC&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;&lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
 &lt;span class=&quot;o&quot;&gt;&amp;lt;&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/script&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;&amp;gt;
 &lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;h5 id=&quot;&gt;&lt;2&gt;对于不同域的脚本&lt;/h5&gt;
+&lt;h5 id=&quot;2&quot;&gt;[2]对于不同域的脚本&lt;/h5&gt;
 
 &lt;p&gt;script dom element 可以异步脚本脚本，不阻塞其他资源，并且在firefox和opera可以保证执行顺序；而document write script 可以异步加载脚本，会阻塞其他资源，在所有浏览器都可以保证执行顺序。因此我们可以根据浏览器选择以上两种方案来控制
 不同域的脚本的执行顺序。&lt;/p&gt;

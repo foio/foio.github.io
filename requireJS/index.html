@@ -208,7 +208,7 @@ rel="stylesheet" type="text/css" -->
 
 <p>为了组织RquireJS需要哪些数据结构呢？看起来无从下手，我们可以对问题进行拆分。</p>
 
-<h4 id="><1>.模块放在哪里，如何标记模块的加载状态？</h4>
+<h4 id="1">[1].模块放在哪里，如何标记模块的加载状态？</h4>
 
 <p>moudules存储了所有已经开始加载的模块，包括加载状态信息、依赖模块信息、模块的回调函数、以及回调函数callback返回的结果。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
@@ -222,8 +222,9 @@ rel="stylesheet" type="text/css" -->
     <span class="p">}</span>   
     <span class="p">...</span> 
 <span class="p">}</span>
+
 </code></pre></div>
-<h4 id="id"><2>.正在加载但是还没有加载完成的模块id列表</h4>
+<h4 id="2-id">[2].正在加载但是还没有加载完成的模块id列表</h4>
 
 <p>每个脚本加载完成事件onload触发时，都需要检查loading队列，确认哪些模块的依赖已经加载完成，是否可以执行</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>

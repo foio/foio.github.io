@@ -214,7 +214,7 @@ rel="stylesheet" type="text/css" -->
 
 <p>为了组织RquireJS需要哪些数据结构呢？看起来无从下手，我们可以对问题进行拆分。</p>
 
-<h4 id="><1>.模块放在哪里，如何标记模块的加载状态？</h4>
+<h4 id="1">[1].模块放在哪里，如何标记模块的加载状态？</h4>
 
 <p>moudules存储了所有已经开始加载的模块，包括加载状态信息、依赖模块信息、模块的回调函数、以及回调函数callback返回的结果。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
@@ -228,8 +228,9 @@ rel="stylesheet" type="text/css" -->
     <span class="p">}</span>   
     <span class="p">...</span> 
 <span class="p">}</span>
+
 </code></pre></div>
-<h4 id="id"><2>.正在加载但是还没有加载完成的模块id列表</h4>
+<h4 id="2-id">[2].正在加载但是还没有加载完成的模块id列表</h4>
 
 <p>每个脚本加载完成事件onload触发时，都需要检查loading队列，确认哪些模块的依赖已经加载完成，是否可以执行</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//by foio.github.io</span>
@@ -489,11 +490,11 @@ td, table {
 
 <p>当外部脚本按常规方式加载时，它会阻塞行内脚本的执行，可以保证顺序。但是脚本通过上述的几种方式异步加载时，就无法保证行内脚本和异步脚本之间的顺序。下面就讲解一下保证行内脚本和外部脚本保证执行顺序的技术。</p>
 
-<h5 id="><1>.硬编码回调</h5>
+<h5 id="1">[1].硬编码回调</h5>
 
 <p>如果web开发者能够控制外部脚本，可以在外部脚本回调行内脚本。</p>
 
-<h5 id="onlode"><2>onlode事件</h5>
+<h5 id="2-onlode">[2]onlode事件</h5>
 
 <p>添加script dom节点时，监听加载事件，当脚本成功加载时调用callback(外部脚本)函数。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//行内函数</span>
@@ -525,7 +526,7 @@ td, table {
 <span class="nx">loadScript</span><span class="p">(</span><span class="s1">'a.js'</span><span class="p">,</span><span class="nx">callback</span><span class="p">);</span>
 <span class="o">&lt;</span><span class="sr">/script</span><span class="err">&gt;
 </span></code></pre></div>
-<h5 id="><2>定时器</h5>
+<h5 id="3">[3]定时器</h5>
 
 <p>通过定时检查外部脚本的相应变量是否定义，可以判断外部脚本是否加载并执行成功。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">src</span><span class="o">=</span><span class="s2">"MyJs.js"</span><span class="o">&gt;&lt;</span><span class="sr">/script</span><span class="err">&gt;
@@ -546,7 +547,7 @@ td, table {
 
 <h4 id="2">(2)保证多个外部脚本之间的执行顺序</h4>
 
-<h5 id="><1>. 同域中的脚本</h5>
+<h5 id="1">[1]. 同域中的脚本</h5>
 
 <p>对于同域中的多个外部脚本，可以使用XHR的方式加载脚本，并通过一个队列来控制脚本的执行顺序。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span><span class="o">&gt;</span>
@@ -611,7 +612,7 @@ td, table {
     <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">loadScriptXhrInjection</span><span class="p">(</span><span class="s1">'C.js'</span><span class="p">,</span><span class="nx">InitC</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
 <span class="o">&lt;</span><span class="sr">/script</span><span class="err">&gt;
 </span></code></pre></div>
-<h5 id="><2>对于不同域的脚本</h5>
+<h5 id="2">[2]对于不同域的脚本</h5>
 
 <p>script dom element 可以异步脚本脚本，不阻塞其他资源，并且在firefox和opera可以保证执行顺序；而document write script 可以异步加载脚本，会阻塞其他资源，在所有浏览器都可以保证执行顺序。因此我们可以根据浏览器选择以上两种方案来控制
 不同域的脚本的执行顺序。</p>
