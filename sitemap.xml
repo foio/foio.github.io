@@ -141,7 +141,15 @@
         <loc>/page27/</loc>
     </url>
     
+    <url>
+        <loc>/page28/</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/redux-state-manage/</loc>
+    </url>
     
     <url>
         <loc>/mean-web/</loc>
