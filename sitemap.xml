@@ -148,6 +148,10 @@
 
     
     <url>
+        <loc>/node-memory/</loc>
+    </url>
+    
+    <url>
         <loc>/redux-state-manage/</loc>
     </url>
     

@@ -119,6 +119,73 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-13T00:00:00+08:00"><a href="/cache-negotiate/">July 13, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/cache-negotiate/" rel="bookmark" title="浏览器与服务器的缓存协商" itemprop="url">浏览器与服务器的缓存协商</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <blockquote>
+<p>当我们通过浏览器打开一个web页时，浏览器会将下载到的html，图片，js，css等缓存到本地。一旦浏览器向web服务器再次请求同样的内容时，便直接可以从本地获取。这种缓存策略是由浏览器和web服务器协商达成的，这就是http中的“<strong>缓存协商</strong>”</p>
+</blockquote>
+
+<p>缓存协商的几种方式</p>
+
+<h3 id="1-last-modified">1. Last-Modified</h3>
+
+<p>服务器在http响应头插入Last-Modified信息：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">Last-Modified:Sun, 13 Jul 2014 07:58:28 GMT
+</code></pre></div>
+<p>浏览器收到后，当再次请求同一页面时会带上如下头信息：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">If-Modified-Since:Sun, 13 Jul 2014 07:58:28 GMT
+</code></pre></div>
+<p>而此时服务器响应变成：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">HTTP/1.1 304 Not Modified
+</code></pre></div>
+<p>这表示浏览器将使用本地缓存。</p>
+
+<h3 id="2-etag">2. ETag</h3>
+
+<p>Etag是HTTP/1.1A支持的另一种缓存协商方法，它采用一串编码来标记标记内容，当Etag没有变化时，内容一定没有变化。
+Etag首先由web服务器生成，比如lighttpd会给一个静态文件生成ETag。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">ETag: "1963686687"
+</code></pre></div>
+<p>浏览器获得这个Etag后，在下次请求同一页面时会在HTTP头中附加以下信息来向服务器询问内容是否发生变化。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">If-None-Match: "1963686687"
+</code></pre></div>
+<p>这时服务器重新计算这个Etag值，并与HTTP头中的附加信息进行比较，如果相同的返回：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">HTTP/1.1 304 Not Modified
+</code></pre></div>
+<p>这表示浏览器可以使用本地缓存。</p>
+
+<h3 id="3-expires">3. Expires</h3>
+
+<p>无论是Last-Modified还是ETag模式下，当浏览器需要使用内容是，都要首先询问服务器以确定当前缓存是否可用，待服务器返回304时，浏览器才可以放心的使用本地缓存。而Expires就是为了完全消灭浏览器到服务器的请求的。</p>
+
+<p>Expires告诉浏览器该内容何时过期，暗示在该内容过期之前不需要询问服务器。Expires的格式类似于Last-Modified，它指定了内容过期的绝对时间。比如：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">Expires:Sun, 07 Jul 2024 03:22:19 GMT
+</code></pre></div>
+<h3 id="4-cache-control">4. Cache-Control</h3>
+
+<p>到目前为止还有一个问题，通过Expires指定的过期时间是web服务器的时间，但是如果用户本地时间和服务器时间不一致的话，就会影响到本地缓存有效期检查。为此HTTP/1.1中还有一个Cache-Control。</p>
+
+<p>Cache-Control的格式如下：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">Cache-Control: max-age=3600
+</code></pre></div>
+<p>其中max-age指定了缓存过期的相对时间，单位是秒。</p>
+
+<blockquote>
+<p>当HTTP头中同时有Expires和Cache-Control时，浏览器会优先考虑Cache-Control。</p>
+</blockquote>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-07-10T00:00:00+08:00"><a href="/javascript-variable/">July 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -147,57 +214,6 @@ rel="stylesheet" type="text/css" -->
 <p>输出local很容易理解，应用局部作用域的变量覆盖了全局作用域。但是输出undefined就有点奇怪了？</p>
 
 <p>这是由于函数作用域的特性导致的，局部变量在整个函数体中始终有定义，也就是说，在整个函数体中局部变量遮挡了全局变量，但是只有程序执行到var语句时局部变量才会被赋值。因此，上述过程等价于将函数内的变量的声明“提前”到函数体顶部，而变量的初始化仍然保留在原来位置，也就做“声明提前”。因为php也只有全局作用域和函数局部作用域，因此php的表现和javascript是一致的。</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-07-03T00:00:00+08:00"><a href="/scrum/">July 03, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/scrum/" rel="bookmark" title="scrum,增量的价值交互" itemprop="url">scrum,增量的价值交互</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <blockquote>
-<p>敏捷软件开发又称敏捷开发，是一种从1990年代开始逐渐引起广泛关注的一些新型软件开发方 法，是一种应对快速变化的需求的一种软件开发能力。它们的具体名称、理念、过程、术语都不尽相同，相对于“非敏捷”，更强调程序员团队与业务专家之间的紧密协作、面对面的沟通（认为比书面的文档更有效）、频繁交付新的软件版本、紧凑而自我组织型的团队、能够很好地适应需求变化的代码编写和团队组织方法，也 更注重软件开发中人的作用。</p>
-</blockquote>
-
-<p>下面分别分析敏捷开发与传统的瀑布开发方式的不同。</p>
-
-<h4 id="1">1.瀑布式开发流程：</h4>
-
-<figure>
-    <img src="/images/waterfull.png"/>
-    <figcaption>传统的瀑布式开发流程</figcaption>
-</figure>
-
-<p>瀑布式开发流程特征如下：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1.基于阶段(文档)
-前一个阶段的输出就是下一个阶段的输入，文档是个阶段衔接的唯一信息。管理人员喜欢瀑布模型的原因是把文档理解为开发的速度，可以方便地界定不同阶段的里程碑，由此量化团队工作效率。
-2.基于一次性需求和前期设计
-没有迭代与反馈。瀑布模型对反馈没有涉及，所以对变化的客户需求非常不容易适应。瀑布就意味着没有回头路。 
-</code></pre></div>
-<p>近几年各大公司开始刮起了敏捷风。敏捷软件开发是一个开发软件的管理新模式，用来替代以文件驱动开发的瀑布开发模式。
-敏捷开发宣言：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">个体的交互    高于   流程与工具
-工作的软件    高于   详尽的文档
-客户的合作    高于   合同谈判
-响应变化      高于   遵循计划
-</code></pre></div>
-<p>敏捷开发要素:</p>
-<div class="highlight"><pre><code class="language-" data-lang="">三个角色：Scrum master(SM),Product Owner(PM),Team(RD,QA,FE)
-四个仪式：迭代计划会，每日站立会，Show Case，迭代回顾会
-三个工作：产品backlog，迭代backlog，燃尽图
-</code></pre></div>
-<p>从一张图基本可以理解scrum流程。
-<figure>
-    <img src="/images/scrum.png"/>
-    <figcaption>scrum示意图</figcaption>
-</figure></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->

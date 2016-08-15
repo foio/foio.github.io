@@ -4,13 +4,256 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2016-07-26T22:57:18+08:00</updated>
+<updated>2016-08-15T13:57:37+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
   <uri>/</uri>
   <email>syszhpe@gmail.com</email>
 </author>
+
+
+<entry>
+  <title type="html"><![CDATA[node内存基础知识]]></title>
+ <link rel="alternate" type="text/html" href="/node-memory/" />
+  <id>/node-memory</id>
+  <updated>2016-08-15T00:00:00-00:00</updated>
+  <published>2016-08-15T00:00:00+08:00</published>
+  
+  <author>
+    <name>foio</name>
+    <uri></uri>
+    <email>syszhpe@gmail.com</email>
+  </author>
+  <content type="html">&lt;style type=&quot;text/css&quot;&gt;
+td, table {
+   border: solid gray 1px;
+   padding: 10px;
+}
+table{
+   margin: 0 auto;
+}
+&lt;/style&gt;
+
+&lt;p&gt;开始之前，先来个段子，博君一笑:&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;虽然go成为了世界上最并发的语言，但是， 这并不妨碍php成为世界上最好的语言，也不妨碍java成为世界上最有模式的语言，更不会妨碍c++成为21 天就能学会了的语言...但是JavaScript终将统治世界,而V8将成为世界的基石!&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;h2 id=&quot;1-node&quot;&gt;1. node内存分配基础&lt;/h2&gt;
+
+&lt;p&gt;在V8中所有的JavaScript对象都是通过堆来分配的。为了提高垃圾回收的效率，V8将堆分为新生代和老生代两个部分，其中新生代为存活时间较短的对象(需要经常进行垃圾回收)，而老生代为存活时间较长的对象(垃圾回收的频率较低)。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/v8-memory.png&quot; alt=&quot;Alt text&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;新生代和老生代的默认内存限制在启动的时候就确定了，没办法根据应用使用内存情况自动扩充，当应用分配过多内存时，就会引起OOM(Out Of Memory，内存溢出)进程错误。64位系统和32位系统的内存限制不同，分别如下：&lt;/p&gt;
+
+&lt;table&gt;&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;类型&lt;/th&gt;
+&lt;th style=&quot;text-align: center&quot;&gt;64位系统&lt;/th&gt;
+&lt;th style=&quot;text-align: right&quot;&gt;32位系统&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;新生代&lt;/td&gt;
+&lt;td style=&quot;text-align: center&quot;&gt;32MB x 2&lt;/td&gt;
+&lt;td style=&quot;text-align: right&quot;&gt;16MB x 2&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;老生代&lt;/td&gt;
+&lt;td style=&quot;text-align: center&quot;&gt;1400MB&lt;/td&gt;
+&lt;td style=&quot;text-align: right&quot;&gt;700MB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;实际可用内存&lt;/td&gt;
+&lt;td style=&quot;text-align: center&quot;&gt;1432MB&lt;/td&gt;
+&lt;td style=&quot;text-align: right&quot;&gt;716MB&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;p&gt;在node启动时，通过&lt;code&gt;--max-new-space-size&lt;/code&gt;和&lt;code&gt;--max-old-space-size&lt;/code&gt;可分别设置新生代和老生代的默认内存限制。V8为什么要对内存做如此限制呢？最终的原因还是V8的垃圾回收机制所限制的，在较大的内存上进行垃圾回收是很耗时地。下面我们就来了解一下V8的垃圾回收机制。&lt;/p&gt;
+
+&lt;h2 id=&quot;2-node&quot;&gt;2. node垃圾回收原理&lt;/h2&gt;
+
+&lt;h3 id=&quot;2-1&quot;&gt;2.1 常用垃圾回收基本算法&lt;/h3&gt;
+
+&lt;p&gt;垃圾回收机制有多种，但最常用的就是以下几种：&lt;/p&gt;
+
+&lt;table&gt;&lt;thead&gt;
+&lt;tr&gt;
+&lt;th&gt;类型&lt;/th&gt;
+&lt;th&gt;方法&lt;/th&gt;
+&lt;th style=&quot;text-align: center&quot;&gt;是否停止程序&lt;/th&gt;
+&lt;/tr&gt;
+&lt;/thead&gt;&lt;tbody&gt;
+&lt;tr&gt;
+&lt;td&gt;引用计数(Reference Counting)&lt;/td&gt;
+&lt;td&gt;每个对象配置一个计数器即可,每当引用它的对象被删除时，就将其引用数减1，当其引用计数为0时，即可清除&lt;/td&gt;
+&lt;td style=&quot;text-align: center&quot;&gt;否&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;标记-清除(Mark-Sweep)&lt;/td&gt;
+&lt;td&gt;标记阶段标记活对象，清除阶段清除未被标记的对象&lt;/td&gt;
+&lt;td style=&quot;text-align: center&quot;&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;停止-复制(Stop-Copy)&lt;/td&gt;
+&lt;td&gt;内存分为两块，并将正在使用的内存中的存活对象复制到未被使用的内存块中，之后，清除正在使用的内存块中的所有对象，交换两个内存的角色&lt;/td&gt;
+&lt;td style=&quot;text-align: center&quot;&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;标记-压缩(Mark-Compact)&lt;/td&gt;
+&lt;td&gt;对所有可达对象做一次标记，将所有的存活对象压缩到内存的一端，以减少内存碎片&lt;/td&gt;
+&lt;td style=&quot;text-align: center&quot;&gt;是&lt;/td&gt;
+&lt;/tr&gt;
+&lt;tr&gt;
+&lt;td&gt;增量算法(Incremental Collecting)&lt;/td&gt;
+&lt;td&gt;每次，垃圾收集线程只收集一小片区域的内存空间，接着切换到应用程序线程。依次反复，直到垃圾收集完成。&lt;/td&gt;
+&lt;td style=&quot;text-align: center&quot;&gt;否&lt;/td&gt;
+&lt;/tr&gt;
+&lt;/tbody&gt;&lt;/table&gt;
+
+&lt;h3 id=&quot;2-2-v8&quot;&gt;2.2 V8的分代垃圾回收&lt;/h3&gt;
+
+&lt;p&gt;上面提到过，V8将内存分为新生代和老生代，新生代中对象存活时间较短，老生代中对象存活时间较长。为了最大程度的提升垃圾回收效率，V8使用了一种综合性的方法，其在新生代和老生代中分别使用上文提到的不同的基本垃圾回收算法。&lt;/p&gt;
+
+&lt;h4 id=&quot;1-scavenge&quot;&gt;[1] 新生代垃圾回收算法Scavenge&lt;/h4&gt;
+
+&lt;p&gt;在新生代中，由于内存较小(64位系统为64MB)且存活对象较少，V8采取了一种以空间换时间的方案，即停止-复制算法 (Stop-Copy)。它将新生代分为两个半区域(semi-space)，分别称为from空间和to空间。一次垃圾回收分为两步：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;(1) 将from空间中的活对象复制到to空间
+(2) 切换from和to空间
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;V8将新生代中的一次垃圾回收过程，称为Scavenge。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/scavenge.png&quot; alt=&quot;Alt text&quot;&gt;&lt;/p&gt;
+
+&lt;h4 id=&quot;2&quot;&gt;[2] 老生代垃圾回收算法&lt;/h4&gt;
+
+&lt;p&gt;老生代的内存空间较大且存活对象较多，因此其垃圾回收算法也就没有新生代那么简单了。为此V8使用了标记-清除算法 (Mark-Sweep)进行垃圾回收，并使用标记-压缩算法 (Mark-Compact)整理内存碎片，提高内存的利用率。老生代的垃圾回收算法步骤如下：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;(1).对老生代进行第一遍扫描，标记存活的对象
+(2).对老生代进行第二次扫描，清除未被标记的对象
+(3).将存活对象往内存的一端移动
+(4).清除掉存活对象边界外的内存
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;img src=&quot;/images/full-gc.png&quot; alt=&quot;Alt text&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;从上面的表格可以看出，停止-复制(Stop-Copy)、标记-清除(Mark-Sweep)和标记-压缩(Mark-Compact)都需要停止应用逻辑，我们将之称为stop-the-world。但因为新生代内存较小且存活对象较少，即便stop-the-world，对应用的性能影响也不大；而老生代的内存很大，stop-the-world就不能接受了，为此V8引入了增量标记。增量标记使得应用逻辑和垃圾回收交替运行，减少了垃圾回收对应用逻辑的干扰。&lt;/p&gt;
+
+&lt;h3 id=&quot;2-3&quot;&gt;2.3 分代垃圾回收的代价&lt;/h3&gt;
+
+&lt;p&gt;在讨论新生代中的垃圾回收算法Scavenge时，我们忽略了许多细节。&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;真的仅仅扫描新生代的内存空间，就能确定新生代的活动对象吗？
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;当然不是，老生代的对象也可能引用新生代的对象啊。如果每次运行Scavenge算法时，都要扫描老生代空间的话，这种操作带来的性能损耗就完全抵消了分代式垃圾回收所带来的性能提升。为此&lt;code&gt;V8使用写屏障技术&lt;/code&gt;解决了这个问题：&lt;/p&gt;
+
+&lt;blockquote&gt;
+&lt;p&gt;V8使用一个列表(我们称之为CrossRefList)记录所有老生代对象指向新生代的情况，当有老生代中的对象出现指向新生代对象的指针时，便记录下来这样的跨区指向。由于这种记录行为总是发生在写操作时，因此被称为写屏障。&lt;/p&gt;
+&lt;/blockquote&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/cross-ref-list.png&quot; alt=&quot;Alt text&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;每个写操作都要经历这样一关，性能上必然有损失，这是分代垃圾回收的代价之一。通过使用写屏障技术，我们在对新生代进行垃圾回收时，只需要扫描新生代From空间和CrossRefList列表就可以确定活动对象了。&lt;/p&gt;
+
+&lt;h2 id=&quot;3&quot;&gt;3.垃圾回收监控&lt;/h2&gt;
+
+&lt;p&gt;理解了垃圾回收的基本原理以后，我们来看一看如何监控node的垃圾回收情况。查看垃圾回收方式的最方便的方法是通过在启动时使用--trace-gc参数：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;node --trace-gc app.js
+1254 ms: Scavenge 413.1 (460.9) -&amp;gt; 413.1 (460.9) MB, 0.5 
+        / 0 ms (+ 3.0 ms in 14 steps since last GC)
+1258 ms: Mark-sweep 413.5 (461.9) -&amp;gt; 412.6 (461.9) MB, 1.0 
+        / 0 ms (+ 255.0 ms in 2050 steps since start of marking, biggest step 1.0 ms)
+         [GC interrupt] [GC in old space requested]
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;从控制台日志中可以轻易的看出node的垃圾回收动作，包括新生代垃圾回收(Scavenge)和老生代垃圾回收(Mark-sweep)。&lt;/p&gt;
+
+&lt;p&gt;而一种更加程序化的方式是使用&lt;a href=&quot;https://www.npmjs.com/package/memwatch-next&quot;&gt;memwatch-next&lt;/a&gt;模块，该模块在node每一次进行全量垃圾(full-gc,包括标记-清除和标记-压缩)回收时触发相应的事件：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;memwatch&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;memwatch-next&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;memwatch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;on&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;stats&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stats&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt; 
+    &lt;span class=&quot;nx&quot;&gt;console&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;log&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stats&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;上述代码监控每一次全量垃圾回收动作，并打印出相应垃圾回收统计信息：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+  &lt;span class=&quot;s2&quot;&gt;&quot;num_full_gc&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;            &lt;span class=&quot;c1&quot;&gt;//目前为止进行全量GC的次数&lt;/span&gt;
+  &lt;span class=&quot;s2&quot;&gt;&quot;num_inc_gc&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;18&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;             &lt;span class=&quot;c1&quot;&gt;//目前为止进行增量GC的次数&lt;/span&gt;
+  &lt;span class=&quot;s2&quot;&gt;&quot;heap_compactions&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;8&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;        &lt;span class=&quot;c1&quot;&gt;//目前为止进行的内存压缩的次数&lt;/span&gt;
+  &lt;span class=&quot;s2&quot;&gt;&quot;usage_trend&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;             &lt;span class=&quot;c1&quot;&gt;//内存增长趋势，如果一直大于0，则可能有内存泄露&lt;/span&gt;
+  &lt;span class=&quot;s2&quot;&gt;&quot;estimated_base&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2592568&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;    
+  &lt;span class=&quot;s2&quot;&gt;&quot;current_base&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2592568&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;s2&quot;&gt;&quot;min&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2499912&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt;
+  &lt;span class=&quot;s2&quot;&gt;&quot;max&quot;&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;2592568&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;                 
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;h2 id=&quot;4&quot;&gt;4.内存泄露定位&lt;/h2&gt;
+
+&lt;p&gt;使用上文提到的垃圾回收监控方法，我们可以知道程序是否有内存泄露，那么具体在什么地方有内存泄露呢？我们需要借助于新的工具。&lt;a href=&quot;https://github.com/bnoordhuis/node-heapdump&quot;&gt;node-heapdump&lt;/a&gt;提供了v8的堆内存快照抓取工具。&lt;/p&gt;
+
+&lt;h3 id=&quot;4-1&quot;&gt;4.1 抓取对内存镜像&lt;/h3&gt;
+
+&lt;p&gt;我们可以在程序中直接通过它提供的函数抓取内存快照：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;heapdump&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;require&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;heapdump&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;heapdump&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;writeSnapshot&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;&#39;/tmp/&#39;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;Date&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;now&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;&#39;.heapsnapshot&#39;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;在linux下，我们还可以通过向node进程发送信号来抓取内存快照：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;kill -USR2 pid
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;有了内存快照后，我们就可以借助chrome的Profile工具，具体的分析内存泄露发生在什么地方了。&lt;/p&gt;
+
+&lt;h3 id=&quot;4-2&quot;&gt;4.2 三次快照法&lt;/h3&gt;
+
+&lt;p&gt;利用chrome的Profile工具分析内存泄露的经典方法是&lt;code&gt;三次快照法&lt;/code&gt;，我们需要首选准备3个内存快照文件：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;(1) 第一次获取正常情况下内存快照
+(2) 第二次获取发生内存泄露时的内存快照
+(3) 第三次获取继续发生内存泄露时的内存快照
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;三次快照要求第一次必须在没有出现内存泄露时，是为了过滤一些无用的信息，使得分析结果可读性更强。&lt;/p&gt;
+
+&lt;h2 id=&quot;5-case&quot;&gt;5.常见的内存泄露case&lt;/h2&gt;
+
+&lt;p&gt;了解了node内存的基本原理后，我们一起来看一看常见的内存泄露case。&lt;/p&gt;
+
+&lt;p&gt;5.1 使用对象作为缓存&lt;/p&gt;
+
+&lt;p&gt;使用javascript键值对作为缓存，我们几乎必然要承担内存泄露的风险，因为严格意义的缓存有完善的过期策略，而普通的javascript对象显然不具备这个功能：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cache&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{};&lt;/span&gt;
+&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;getFromCache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;cache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]){&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;cache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;new&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;CacheItem&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cache&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;key&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;];&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;上述cache里缓存的item永远得不到释放，尽管没有任何引用。那么如果我们确实需要使用缓存呢？有两种方案：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;(1) 使用外部缓存服务，比如memcahe
+(2) 使用es6的WeakMap作为程序内缓存数据结构
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;&lt;a href=&quot;https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap&quot;&gt;WeakMap&lt;/a&gt;是ES6标准中新引入的一种类似字典的数据结构，和普通字典数据结构不同的是，当WeakMap中key没有其他引用，并且value也没有除key之外的引用时，value可以被垃圾回收，这是一种程序内缓存的理想选择。&lt;/p&gt;
+
+&lt;hr&gt;
+
+&lt;p&gt;参考文章：
+&lt;a href=&quot;https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/&quot;&gt;https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://www.zhihu.com/question/20018826&quot;&gt;https://www.zhihu.com/question/20018826&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/caoxudong/oracle_jrockit_the_definitive_guide/blob/master/chap3/3.3.md&quot;&gt;https://github.com/caoxudong/oracle_jrockit_the_definitive_guide/blob/master/chap3/3.3.md&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://newhtml.net/v8-garbage-collection/&quot;&gt;http://newhtml.net/v8-garbage-collection/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;http://taobaofed.org/blog/2016/04/15/how-to-find-memory-leak/&quot;&gt;http://taobaofed.org/blog/2016/04/15/how-to-find-memory-leak/&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap&quot;&gt;https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap&lt;/a&gt;&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/promises-aplus/promises-spec/issues/179&quot;&gt;https://github.com/promises-aplus/promises-spec/issues/179&lt;/a&gt;&lt;/p&gt;
+
+  &lt;p&gt;&lt;a href=&quot;/node-memory/&quot;&gt;node内存基础知识&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on August 15, 2016.&lt;/p&gt;</content>
+</entry>
 
 
 <entry>
@@ -3682,124 +3925,6 @@ fn2 says:foobar
 &lt;p&gt;&lt;a href=&quot;https://api.jquery.com/jQuery.Callbacks/&quot;&gt;jQuery的callback方法文档&lt;/a&gt;&lt;/p&gt;
 
   &lt;p&gt;&lt;a href=&quot;/jquery-callback/&quot;&gt;jQuery的回调模块实现原理&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on April 12, 2015.&lt;/p&gt;</content>
-</entry>
-
-
-<entry>
-  <title type="html"><![CDATA[jQuery的ready事件实现原理]]></title>
- <link rel="alternate" type="text/html" href="/jquery-ready-load/" />
-  <id>/jquery-ready-load</id>
-  <updated>2015-03-13T00:00:00-00:00</updated>
-  <published>2015-03-13T00:00:00+08:00</published>
-  
-  <author>
-    <name>foio</name>
-    <uri></uri>
-    <email>syszhpe@gmail.com</email>
-  </author>
-  <content type="html">&lt;p&gt;大家在面试的过程中，经常会被问到一个问题：ready与load那一个先执行，那一个后执行？答案是ready先执行，load后执行。&lt;/p&gt;
-
-&lt;p&gt;DOM文档加载的步骤：
-要想理解为什么ready先执行，load后执行就要先了解下DOM文档加载的步骤：&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;(1) 解析HTML结构。
-(2) 加载外部脚本和样式表文件。
-(3) 解析并执行脚本代码。
-(4) 构造HTML DOM模型。//ready
-(5) 加载图片等外部文件。
-(6) 页面加载完毕。//load&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;从上面的描述中大家应该已经理解了吧，ready在第（4）步完成之后就执行了，但是load要在第（6）步完成之后才执行。&lt;/p&gt;
-
-&lt;p&gt;所以有如下结论：&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;ready与load的区别就在于资源文件的加载，ready构建了基本的DOM结构，所以对于代码来说应该越快加载越好。在一个高速浏览的时代，没人愿意等待答案。假如一个网站页面加载超过4秒，不好意思，你1/4的用户将面临着流失，所以对于框架来说用户体验是至关重要的，我们应该越早处理DOM越好，我们不需要等到图片资源都加载后才去处理框架的加载，图片资源过多load事件就会迟迟不会触发。&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;我们经常使如下jQuery语句,用于在页面dom结构刚刚加载完成时,执行代码.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;//普通方式&lt;/span&gt;
-&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ready&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;//your code here&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;//简写方式&lt;/span&gt;
-&lt;span class=&quot;nx&quot;&gt;$&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(){&lt;/span&gt;
-    &lt;span class=&quot;c1&quot;&gt;//your code here&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;那么jquery的ready函数是如何实现的呢? 它时如何保证ready在load之前执行的呢?&lt;/p&gt;
-
-&lt;h3 id=&quot;1-domcontentloaded&quot;&gt;1. 现代浏览器通过DOMContentLoaded事件实现&lt;/h3&gt;
-
-&lt;p&gt;当HTML文档下载并解析完成以后，就会在document对象上触发DOMContentLoaded事件。这时，仅仅完成了HTML文档的解析（整张页面的DOM生成），所有外部资源（样式表、脚本、iframe等等）可能还没有下载结束。也就是说，这个事件比load事件，发生时间早得多。&lt;/p&gt;
-
-&lt;p&gt;因此可以通过如下方式实现jQuery的ready函数.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;addEventListener&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;DOMContentLoaded&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;event&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;c1&quot;&gt;//your code here&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;但是对于IE8以及以下的浏览器,世界就没有那么友好了. &lt;/p&gt;
-
-&lt;h3 id=&quot;2-readystatechange&quot;&gt;2. 低版本浏览器通过readystatechange事件实现?&lt;/h3&gt;
-
-&lt;p&gt;写过AJAX原生代码的童鞋都知道, readystatechange用于表示XMLHttpRequest的状态发生改变,当readyState=2时表示AJAX执行成功. readystatechange也会在dom状态发生变化时触发.&lt;/p&gt;
-
-&lt;p&gt;因此可以通过如下方式实现jQuery的ready函数.&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;onreadystatechange&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-  &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;readyState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;interactive&quot;&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;readyState&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;complete&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;nx&quot;&gt;initApplication&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-  &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;但是readyState为interactive时, DOM结构并没有稳定, 此时依然会有脚本修改DOM元素,导致执行事件太早. readyState为complete时, 图片已经加载完毕, 所以complete虽然在window.onload前执行, 导致执行事件太晚.
-让我们看看jQuery的源码时如何实现的.&lt;/p&gt;
-
-&lt;h3 id=&quot;3-jquery-ready&quot;&gt;3. jQuery在低版本浏览器上是如何实现ready方法的&lt;/h3&gt;
-
-&lt;p&gt;jQuery源码中使用了Diego Perini 在 2007 年的时候报告的一种检测 IE 是否加载完成的方式的方法. 该方法通过使用 doScroll 方法调用，可以看下这哥们的&lt;a href=&quot;http://javascript.nwbox.com/IEContentLoaded/&quot;&gt;博客&lt;/a&gt;。&lt;/p&gt;
-
-&lt;p&gt;原理就是对于 IE 在非 iframe 内时，只有不断地通过能否执行 doScroll 判断 DOM 是否加载完毕。在上述中间隔 50 毫秒尝试去执行 doScroll，注意，由于页面没有加载完成的时候，调用 doScroll 会导致异常，所以使用了 try -catch 来捕获异常。&lt;/p&gt;
-
-&lt;figure class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;// 用于保证事件在onload之前执行&lt;/span&gt;
-&lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;attachEvent&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;s2&quot;&gt;&quot;onreadystatechange&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;completed&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-&lt;span class=&quot;c1&quot;&gt;// 如果是IE且不是iframe就通过不停的检查doScroll来判断dom结构是否ready&lt;/span&gt;
-&lt;span class=&quot;kd&quot;&gt;var&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;window&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;frameElement&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;==&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;null&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nb&quot;&gt;document&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;documentElement&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{}&lt;/span&gt;
-&lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;amp;&amp;amp;&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;doScroll&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kd&quot;&gt;function&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;doScrollCheck&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;()&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;!&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;jQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;isReady&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;&lt;span class=&quot;c1&quot;&gt;//ready方法没有执行过&lt;/span&gt;
-            &lt;span class=&quot;k&quot;&gt;try&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;c1&quot;&gt;// 检查是否可以向左scroll滑动,当dom结构还没有解析完成时会抛出异常&lt;/span&gt;
-                &lt;span class=&quot;nx&quot;&gt;top&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;doScroll&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s2&quot;&gt;&quot;left&quot;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt; &lt;span class=&quot;k&quot;&gt;catch&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;e&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
-                &lt;span class=&quot;c1&quot;&gt;//递归调用,直到当dom结构解析完成&lt;/span&gt;
-                &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;setTimeout&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;doScrollCheck&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;50&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
-            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-            &lt;span class=&quot;c1&quot;&gt;//没有发现异常,表示dom结构解析完成,删除之前绑定的onreadystatechange事件&lt;/span&gt;
-            &lt;span class=&quot;nx&quot;&gt;detach&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-
-            &lt;span class=&quot;c1&quot;&gt;//执行jQuery的ready方法&lt;/span&gt;
-            &lt;span class=&quot;nx&quot;&gt;jQuery&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;ready&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
-        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
-    &lt;span class=&quot;p&quot;&gt;})();&lt;/span&gt;
-&lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;/code&gt;&lt;/pre&gt;&lt;/figure&gt;
-
-&lt;p&gt;当然,通过检查doScroll的方法也不是完美的, 这种实现的jQuery的ready方法执行时,readyState可能为interactive, 也可能为complete.  也即没法保证dom加载完成后立刻执行, 但是一定会在DOM结构稳定后, 且图片加载完毕前执行.&lt;/p&gt;
-
-&lt;hr&gt;
-
-&lt;p&gt;参考文档&lt;/p&gt;
-
-&lt;p&gt;&lt;a href=&quot;https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState&quot;&gt;MDN里面关于Document.readyState的文档&lt;/a&gt;, &lt;a href=&quot;http://www.cnblogs.com/zhangziqiu/archive/2011/06/27/domready.html&quot;&gt;一篇关于dom ready的博客&lt;/a&gt;&lt;/p&gt;
-
-  &lt;p&gt;&lt;a href=&quot;/jquery-ready-load/&quot;&gt;jQuery的ready事件实现原理&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on March 13, 2015.&lt;/p&gt;</content>
 </entry>
 
 </feed>
