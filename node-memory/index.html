@@ -331,10 +331,78 @@ table{
 </code></pre></div>
 <p><a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">WeakMap</a>是ES6标准中新引入的一种类似字典的数据结构，和普通字典数据结构不同的是，当WeakMap中key没有其他引用，并且value也没有除key之外的引用时，value可以被垃圾回收，这是一种程序内缓存的理想选择。</p>
 
+<h2 id="6">6.堆外内存</h2>
+
+<p>在node中，我们不可避免的需要操作大内存，而堆内内存大小的限制显然无法满足我们的要求。为此，node通过内置的全局Buffer模块提供堆外的内存使用方法。Buffer是一个C++与Javascript结合的模块，其内存分配策略，也非常值得我们研究。我们知道大部分Javascript对象所使用的内存都是很小的，如果每一次都向操作系统申请，就必须频繁地进行系统调用；为了解决这个问题，node使用C++层面申请一大块内存，然后按需分配给Javascript的策略；也就是*nix系统常用的slab内存分配策略，这是一种典型的对时间和空间的折衷算法(time/space trade-off)。</p>
+
+<p>slab是一块提前申请好地固定大小的内存，一个slab有三种状态：full、partial、empty。node层面提供了一个SlowBuffer类，封装C++的api，用于申请真实的物理内存，可以简单地将一个slab理解为一个SlowBuffer对象。node中维护着一个名为pool的指针，它指向当前slab(SlowBuffer对象)。向系统申请slab的过程可用如下伪代码表示：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">pool</span><span class="p">;</span>
+<span class="kd">function</span> <span class="nx">allocateSlab</span><span class="p">(){</span>
+    <span class="nx">pool</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SlowBuffer</span><span class="p">();</span>
+    <span class="nx">pool</span><span class="p">.</span><span class="nx">used</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="6-1-lt-4kb">6.1 小内存(&lt;4kB)的分配</h3>
+
+<p>一个slab的大小为8KB(Buffer.poolSize)，node中通过Buffer.poolSize定义。当我们需要创建一个长度小于4kB的Buffer对象时，会首先判断当前slab的剩余空间是否足够，如果剩余空间足够，则在当前slab上为Buffer对象分配内存，否则创建一个新的slab块，并在新的slab上为Buffer对象分配内存。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">pool</span> <span class="o">||</span> <span class="nx">pool</span><span class="p">.</span><span class="nx">lengh</span> <span class="o">-</span> <span class="nx">pool</span><span class="p">.</span><span class="nx">used</span> <span class="o">&lt;</span> <span class="k">this</span><span class="p">.</span><span class="nx">length</span><span class="p">){</span>
+    <span class="nx">allocateSlab</span><span class="p">();</span> <span class="c1">//向系统申请新的slab</span>
+    <span class="nx">allocateBuffer</span><span class="p">();</span> <span class="c1">//给buffer对象分配内存</span>
+<span class="p">}</span><span class="k">else</span><span class="p">{</span>
+    <span class="nx">allocateBuffer</span><span class="p">();</span> <span class="c1">//给buffer对象分配内存</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>从当前slab上为Buffer分配内存的算法也很容易理解，只需要将Buffer指向slab的某段内存，并调整pool的length和used等属性：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">function allocateBuffer(){
+    this.parent = pool; //buffer的parent属性指向当前slab
+    this.offset = pool.used; //buffer的offset属性指向当前slab可用内存段的开始位置
+    pool.used += this.length; //调整buffer的已使用空间
+}
+</code></pre></div>
+<p>由此可见，一个slab(SlowBuffer对象)可供多个小内存的Buffer共用：</p>
+
+<p><img src="/images/slow-buffer.png" alt="Alt text"></p>
+
+<p>在写本文时，node官方已经不建议使用<code>new Buffer()</code>创建buffer对象了，官方提供了更新的<code>Buffer.alloc()</code>和<code>Buffer.allocUnsafe()</code>。其中<code>Buffer.alloc()</code>在创建Buffer对象时会对内存进行初始化，并且不会使用slab策略；而<code>Buffer.allocUnsafe()</code>则是使用slab算法分配一块未初始化的内存，因此其性能要比<code>Buffer.alloc()</code>高很多。因此我们应该使用<code>Buffer.allocUnsafe()</code>替换来的<code>new Buffer()</code>。</p>
+
+<h3 id="6-2-gt-4kb">6.2 大内存(&gt;4kB)的分配</h3>
+
+<p>对于大于4KB的Buffer对象，其大小甚至可能超过一个slab的大小，系统就无法使用固定大小的slab分配算法了。值得注意的是，node对单个Buffer大小是有上限的(buffer.kMaxLength)，在32系统上其上限接近1GB(2<sup>30-1)，而在64位系统上其上限则接近2GB(2<sup>31-1)。</sup></sup></p>
+
+<h3 id="6-3-slab">6.3  slab算法的代价</h3>
+
+<p>鱼与熊掌不可兼得，上文中提到slab算法一种时间和空间的折衷算法。为了提高内存的分配速度，该算法可能导致内存碎片：当一个slab上的剩余空间不足于容纳新申请的Buffer的大小，或者新申请Buffer大于等于4kb(Buffer.poolSize)时，就需要创建新的slab，原来slab上剩余的空间就浪费了。我们写个小程序证明一下我们的猜想:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">size</span><span class="p">){</span>
+    <span class="kd">var</span> <span class="nx">itt</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">store</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="kd">var</span> <span class="nx">rss</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">memoryUsage</span><span class="p">().</span><span class="nx">rss</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">tmpMem</span><span class="p">;</span>
+    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span><span class="mi">0</span> <span class="p">;</span><span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">itt</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
+        <span class="nx">store</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="k">new</span> <span class="nx">Buffer</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+        <span class="nx">tmp</span> <span class="o">=</span> <span class="nx">Buffer</span><span class="p">(</span><span class="nx">size</span><span class="p">);</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">i</span><span class="o">/</span><span class="mi">1000</span><span class="p">){</span>
+            <span class="nx">global</span><span class="p">.</span><span class="nx">gc</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="kd">var</span> <span class="nx">nr</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">memoryUsage</span><span class="p">().</span><span class="nx">rss</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">((((</span><span class="nx">nr</span> <span class="o">-</span> <span class="nx">rss</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1024</span> <span class="o">/</span> <span class="mi">1024</span><span class="p">).</span><span class="nx">toFixed</span><span class="p">(</span><span class="mi">2</span><span class="p">)));</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>上述程序，在一万次循环中申请了一个1字节的全局缓存，并申请了size大小的临时缓存(其引用会在循环中被垃圾回收)。我们分别给<code>testBufferSlab</code>传递两个特殊的参数：<code>Buffer.poolSize</code>和<code>Buffer.poolSize/2-1</code>，并观察结果时，奇怪的现象发生了(<em>申请较大的Buffer时竟然消耗更少的内存</em>)：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">Buffer</span><span class="p">.</span><span class="nx">poolSize</span><span class="p">);</span>
+<span class="nx">node</span> <span class="o">--</span><span class="nx">expose</span><span class="o">-</span><span class="nx">gc</span> <span class="nx">test</span><span class="p">.</span><span class="nx">js</span>
+<span class="nl">output</span><span class="p">:</span> <span class="mf">54.78</span>
+</code></pre></div><div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">Buffer</span><span class="p">.</span><span class="nx">poolSize</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="nx">node</span> <span class="o">--</span><span class="nx">expose</span><span class="o">-</span><span class="nx">gc</span> <span class="nx">test</span><span class="p">.</span><span class="nx">js</span>
+<span class="nl">output</span><span class="p">:</span> <span class="mf">5.2</span>
+</code></pre></div>
+<p>究其原因就是：当新申请的Buffer的小于4Kb时(Buffer.poolSize/2)，会使用slab算法，即便当前Buffer块已经没有引用了，只要其对应slab上还有其他Buffer指向时，整个slab内存就无法释放，这样就会造成内存碎片。</p>
+
 <hr>
 
-<p>参考文章：
-<a href="https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/">https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/</a></p>
+<p>参考文章：</p>
+
+<p><a href="https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/">https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/</a></p>
 
 <p><a href="https://www.zhihu.com/question/20018826">https://www.zhihu.com/question/20018826</a></p>
 
@@ -347,6 +415,14 @@ table{
 <p><a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap</a></p>
 
 <p><a href="https://github.com/promises-aplus/promises-spec/issues/179">https://github.com/promises-aplus/promises-spec/issues/179</a></p>
+
+<p><a href="https://www.ibm.com/developerworks/cn/linux/l-linux-slab-allocator/">https://www.ibm.com/developerworks/cn/linux/l-linux-slab-allocator/</a></p>
+
+<p><a href="https://nodejs.org/api/buffer.html">https://nodejs.org/api/buffer.html</a></p>
+
+<p><a href="http://stackoverflow.com/questions/14009048/what-makes-node-js-slowbuffers-slow">http://stackoverflow.com/questions/14009048/what-makes-node-js-slowbuffers-slow</a></p>
+
+<p><a href="https://github.com/nodejs/node-v0.x-archive/issues/4525">https://github.com/nodejs/node-v0.x-archive/issues/4525</a></p>
 
       <footer class="entry-meta">
         <span class="entry-tags"><a href="/tags/#node memory" title="Pages tagged node memory" class="tag">node memory</a></span>
