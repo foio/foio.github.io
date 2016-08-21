@@ -397,10 +397,10 @@ table{
 <p>上述程序，在一万次循环中申请了一个1字节的全局缓存，并申请了size大小的临时缓存(其引用会在循环中被垃圾回收)。我们分别给<code>testBufferSlab</code>传递两个特殊的参数：<code>Buffer.poolSize</code>和<code>Buffer.poolSize/2-1</code>，并观察结果时，奇怪的现象发生了(<em>申请较大的Buffer时竟然消耗更少的内存</em>)：</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">Buffer</span><span class="p">.</span><span class="nx">poolSize</span><span class="p">);</span>
 <span class="nx">node</span> <span class="o">--</span><span class="nx">expose</span><span class="o">-</span><span class="nx">gc</span> <span class="nx">test</span><span class="p">.</span><span class="nx">js</span>
-<span class="nl">output</span><span class="p">:</span> <span class="mf">54.78</span>
+<span class="nl">output</span><span class="p">:</span> <span class="mf">5.2</span>
 </code></pre></div><div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">Buffer</span><span class="p">.</span><span class="nx">poolSize</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
 <span class="nx">node</span> <span class="o">--</span><span class="nx">expose</span><span class="o">-</span><span class="nx">gc</span> <span class="nx">test</span><span class="p">.</span><span class="nx">js</span>
-<span class="nl">output</span><span class="p">:</span> <span class="mf">5.2</span>
+<span class="nl">output</span><span class="p">:</span> <span class="mf">54.78</span>
 </code></pre></div>
 <p>究其原因就是：当新申请的Buffer的小于4Kb时(Buffer.poolSize/2)，会使用slab算法，即便当前Buffer块已经没有引用了，只要其对应slab上还有其他Buffer指向时，整个slab内存就无法释放，这样就会造成内存碎片。</p>
 
