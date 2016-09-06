@@ -78,7 +78,7 @@ rel="stylesheet" type="text/css" -->
 				<li>
 					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
 					<h4>foio</h4>
-					<p>软件工程师/腾讯(深圳)</p>
+					<p>Baidu Software Engineer</p>
 				</li>
                 <!--<li><a href="/about/">Learn More</a></li>-->
 				<li>
@@ -169,54 +169,6 @@ td, table {
 3. 如果既不使用 async 也不使用 defer：在浏览器继续解析页面之前，立即读取并执行脚本
 </code></pre></div>
 <p>async=&quot;async&quot;不会阻塞其他资源，但是无法保证脚本的执行顺序。defer=&quot;defer&quot;阻塞其他资源的加载，并且可以保证脚本的执行顺序，但是要到页面解析完成后才开始执行脚本。</p>
-
-<p>总结如下:</p>
-
-<table><thead>
-<tr>
-<th>并行性</th>
-<th style="text-align: left">异步性</th>
-<th style="text-align: left">顺序性</th>
-<th style="text-align: left">其他限制</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>script src</td>
-<td style="text-align: left">脚本并行下载，阻塞其他资源</td>
-<td style="text-align: left">浏览器保证执行顺序</td>
-<td style="text-align: left">无</td>
-</tr>
-<tr>
-<td>XHR Eval</td>
-<td style="text-align: left">脚本并行下载，不阻塞其他资源</td>
-<td style="text-align: left">浏览器不保证执行顺序</td>
-<td style="text-align: left">要求同域</td>
-</tr>
-<tr>
-<td>script dom element</td>
-<td style="text-align: left">脚本并行下载，阻塞其他资源</td>
-<td style="text-align: left">浏览器不保证执行顺序</td>
-<td style="text-align: left">无</td>
-</tr>
-<tr>
-<td>document write script tag</td>
-<td style="text-align: left">脚本并行下载，阻塞其他资源</td>
-<td style="text-align: left">浏览器保证执行顺序</td>
-<td style="text-align: left">无</td>
-</tr>
-<tr>
-<td>defer</td>
-<td style="text-align: left">脚本并行下载，不阻塞其他资源，脚本推迟到页面解析完成后执行</td>
-<td style="text-align: left">浏览器保证执行顺序</td>
-<td style="text-align: left">要求脚本不改变dom结构</td>
-</tr>
-<tr>
-<td>async</td>
-<td style="text-align: left">脚本并行下载，不阻塞其他资源</td>
-<td style="text-align: left">需要业务逻辑自己保证顺序</td>
-<td style="text-align: left">无</td>
-</tr>
-</tbody></table>
 
 <p>这么多种异步加载javascript脚本的方式，各有利弊，接下来研究一下如何控制脚本之间执行的顺序。</p>
 
@@ -422,20 +374,20 @@ td, table {
           <a href="/jquery-event-research/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/node-memory/" title="node内存基础知识">node内存基础知识</a></h3>
-          <p>node内存基础知识,node垃圾回收,node内存泄漏 <a href="/node-memory/">Continue reading</a></p>
+          <h3><a href="/react-redux-performance-boost/" title="react+redux渲染性能优化原理">react+redux渲染性能优化原理</a></h3>
+          <p>react渲染性能优化,redux渲染性能优化 <a href="/react-redux-performance-boost/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/redux-state-manage/" title="redux,一种页面状态管理的优雅方案">redux,一种页面状态管理的优雅方案</a></h4>
-            <span>Published on July 01, 2016</span>
+            <h4><a href="/node-memory/" title="node内存基础知识">node内存基础知识</a></h4>
+            <span>Published on August 15, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h4>
-            <span>Published on May 01, 2016</span>
+            <h4><a href="/redux-state-manage/" title="redux,一种页面状态管理的优雅方案">redux,一种页面状态管理的优雅方案</a></h4>
+            <span>Published on July 01, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

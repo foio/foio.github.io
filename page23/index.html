@@ -74,7 +74,7 @@ rel="stylesheet" type="text/css" -->
 				<li>
 					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
 					<h4>foio</h4>
-					<p>软件工程师/腾讯(深圳)</p>
+					<p>Baidu Software Engineer</p>
 				</li>
                 <!--<li><a href="/about/">Learn More</a></li>-->
 				<li>
@@ -116,6 +116,41 @@ rel="stylesheet" type="text/css" -->
 
 <div id="main" role="main">
   
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-10T00:00:00+08:00"><a href="/javascript-variable/">July 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/javascript-variable/" rel="bookmark" title="javascript的声明提前" itemprop="url">javascript的声明提前</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <blockquote>
+<p>众所周知，javascript有全局作用域和函数局部作用域(没有c，c++，java等强类型语言中的块作用域)。那下面一段代码的结果是什么呢？</p>
+</blockquote>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">scope</span> <span class="o">=</span> <span class="s2">"global"</span><span class="p">;</span>
+<span class="kd">function</span> <span class="nx">f</span><span class="p">(){</span>
+  <span class="nx">alter</span><span class="p">(</span><span class="nx">scope</span><span class="p">);</span>
+  
+  <span class="nx">alter</span><span class="p">(</span><span class="nx">scope</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nx">f</span><span class="p">();</span></code></pre></figure>
+
+<p>这段代码的执行结果为：</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kc">undefined</span>
+<span class="nx">local</span></code></pre></figure>
+
+<p>输出local很容易理解，应用局部作用域的变量覆盖了全局作用域。但是输出undefined就有点奇怪了？</p>
+
+<p>这是由于函数作用域的特性导致的，局部变量在整个函数体中始终有定义，也就是说，在整个函数体中局部变量遮挡了全局变量，但是只有程序执行到var语句时局部变量才会被赋值。因此，上述过程等价于将函数内的变量的声明“提前”到函数体顶部，而变量的初始化仍然保留在原来位置，也就做“声明提前”。因为php也只有全局作用域和函数局部作用域，因此php的表现和javascript是一致的。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
 <article class="hentry">
   <header>
     <div class="entry-meta">
@@ -163,44 +198,6 @@ rel="stylesheet" type="text/css" -->
     <img src="/images/scrum.png"/>
     <figcaption>scrum示意图</figcaption>
 </figure></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-06-15T00:00:00+08:00"><a href="/nginx-phpfpm/">June 15, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/nginx-phpfpm/" rel="bookmark" title="nginx和php-fpm日志配置" itemprop="url">nginx和php-fpm日志配置</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>配置好nginx和php后发现php-error一直没有日志。google了一下终于搞定了，主要对php-fpm.conf和php.ini做出如下修改:</p>
-
-<h4 id="1-php-fpm-conf">1.修改php-fpm.conf</h4>
-
-<p>修改php-fpm.conf也可能是pool.d下的www.conf的worker进程配置，将错误信息输出。默认情况下worker进程的错误日志会重定向到/dev/null</p>
-<div class="highlight"><pre><code class="language-" data-lang="">; Redirect worker stdout and stderr into main error log. If not set, stdout and
-; stderr will be redirected to /dev/null according to FastCGI specs.
-; Note: on highloaded environement, this can cause some delay in the page
-; process time (several ms).
-; Default Value: no
-catch_workers_output = yes
-</code></pre></div>
-<h4 id="2-php-ini">2.修改php.ini中配置</h4>
-
-<p>修改php.ini中配置，不让php将error信息输出到网页，而是输出到文件系统</p>
-<div class="highlight"><pre><code class="language-" data-lang="">display_errors Off
-log_errors On
-error_log /var/log/php/php_errors.log
-</code></pre></div>
-<p>现在就应该配置完成了，但是要注意php-fpm的worker进程要有日志文件的写权限。查看一下php-fpm worker进程的owner.</p>
-<div class="highlight"><pre><code class="language-" data-lang="">ps aux    |    grep php-fpm
-</code></pre></div>
-<p>比如我的系统，php-fpm master进程的owner为root，php-fpm worer进程的owner为www-data，对我而言只需要目录/var/log/php/的owner和group为www-data即可。</p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -378,6 +375,12 @@ error_log /var/log/php/php_errors.log
       <li>
         
           <a href="/page28">28</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page29">29</a>
         
       </li>
     

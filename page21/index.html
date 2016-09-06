@@ -74,7 +74,7 @@ rel="stylesheet" type="text/css" -->
 				<li>
 					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
 					<h4>foio</h4>
-					<p>软件工程师/腾讯(深圳)</p>
+					<p>Baidu Software Engineer</p>
 				</li>
                 <!--<li><a href="/about/">Learn More</a></li>-->
 				<li>
@@ -116,6 +116,30 @@ rel="stylesheet" type="text/css" -->
 
 <div id="main" role="main">
   
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-14T00:00:00+08:00"><a href="/kpusher/">July 14, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/kpusher/" rel="bookmark" title="kpusher,推送网页到kindle" itemprop="url">kpusher,推送网页到kindle</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>上网时经常会发现精彩的内容，但是有没有时间阅读，这种情况下，我习惯将文章推送到kindle，稍后有时间时再细读。用了很多浏览器插件，从&quot;push to kindle&quot;到&quot;send to kindle&quot;，发现这些插件在GFW内都有些水土不服，巨慢无比。</p>
+
+<p>最近用周末时间，写了一个功能类似的插件<a href="http://kpusher.xuanhao360.com/">kpusher</a>，firefox和chrome都有。</p>
+
+<p>工作原理如下：</p>
+
+<blockquote>
+<p>将当前网页地址发送到服务器，服务器抓取当前网页内容并格式化，生成电子书，然后推送到kindle邮箱，kindle邮箱需要简单的配置一下，这个玩kindle的人都懂，用起来很方便，更重要的是快，快，快。推荐一下，这个也支持多看系统的哦。</p>
+</blockquote>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
 <article class="hentry">
   <header>
     <div class="entry-meta">
@@ -215,82 +239,6 @@ rel="stylesheet" type="text/css" -->
 <strong>希腊人是如何避免东方宗教迷雾</strong></p>
 
 <p>　　经过奥尔弗斯，希腊宗教似乎是正将进入东方宗教所已达到的同样阶段；而且若不是由于科学的兴起，我们很难看出有什么东西能够阻止这种趋势。通常都说由于希腊人没有祭司阶级，所以使他们得免于东方式的宗教；然而这是倒果为因的说法。祭司阶级并不制造教条，虽然一旦有了教条之后，他们是要保存教条的；东方民族在他们发展的早期阶段，也没有上述意义的祭司阶级。挽救了希腊的并不是由于没有一个祭司阶级，而是由于有科学的学派存在。正是由于科学的存在，希腊对人把初期的神话迷信渐渐变成有意义的人生哲学和宗教。</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-07-13T00:00:00+08:00"><a href="/javascript-delegate/">July 13, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/javascript-delegate/" rel="bookmark" title="javascript事件委托机制对比" itemprop="url">javascript事件委托机制对比</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>随着DOM结构的复杂化和Ajax等动态脚本技术的运用，事件委托自然浮出了水面。jQuery为绑定和委托事件提供了.bind()、.live()和.delegate()方法。本文在讨论这几个方法内部实现的基础上，展示它们的优劣势及适用场合。</p>
-
-<hr>
-
-<h2 id="1">1.两个问题</h2>
-
-<h3 id="1">(1).元素过多时的性能问题</h3>
-
-<p>假设有一个多行多列的表格，我们想让用户单击每个单元格都能看到与其中内容相关的更多信息（比如，通过提示条）。为此，可以为每个单元格都绑定click事件：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“</span><span class="nx">info_table</span> <span class="nx">td</span><span class="err">”</span><span class="p">).</span><span class="nx">bind</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span>
-</code></pre></div>
-<p>问题是，如果表格中要绑定单击事件的有10列500行，那么查找和遍历5000个单元格会导致脚本执行速度明显变慢，而保存5000个td元素和相应的事件处理程序也会占用大量内存。</p>
-
-<h3 id="2">(2).动态添加元素的无法直接绑定事件</h3>
-
-<p>假设一个动态翻页的表格，每一次翻页都是重新插入的表格。通过给第一页添加事件，对后续通过js异步加载的页面没有作用。</p>
-
-<hr>
-
-<h3 id="3">(3)基本解决方法</h3>
-
-<p>事件委托可以解决上述两个问题。具体到代码上，只要用jQuery1.3新增的.live()方法代替.bind()方法即可：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span> <span class="nx">td</span><span class="err">”</span><span class="p">).</span><span class="nx">live</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span>
-</code></pre></div>
-<p>这里的.live()方法会把click事件绑定到$(document)对象，而且只需要给$(document)绑定一次，就能够处理后续动态加载表格。在接收到任何事件时，$(document)对象都会检查事件类型和事件目标，如果是click事件且事件目标是td，那么就执行委托给它的处理程序。</p>
-
-<hr>
-
-<h3 id="4">(4).基本方法的问题</h3>
-
-<p>到目前为止，一切似乎很完美。可惜，事实并非如此。因为.live()方法并不完美，它有如下几个主要缺点：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1. $()函数会找到当前页面中的所有td元素并创建jQuery对象，但在确认事件目标时却不用这个td元素集合，而是使用选择符表达式与event.target或其祖先元素进行比较，因而生成这个jQuery对象会造成不必要的开销；收集td元素并创建jQuery对象，但实际操作的却是$(document)对象，令人费解。
-2. 默认把事件绑定到$(document)元素，如果DOM嵌套结构很深，事件冒泡通过大量祖先元素会导致性能损失；
-3. 只能放在直接选择的元素后面，不能在连缀的DOM遍历方法后面使用，即$(“#info_table td”).live…可以，但$(“#info_table”).find(“td”).live…不行；
-</code></pre></div>
-<p>jQuery从1.4开始支持在使用.live()方法时配合使用一个上下文参数：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">)[</span><span class="mi">0</span><span class="p">]).</span><span class="nx">live</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span>
-</code></pre></div>
-<p>这样，“受托方”就从默认的$(document)变成了$(“#info_table”)[0]，节省了冒泡的旅程。不过，与.live()共同使用的上下文参数必须是一个单独的DOM元素，所以这里指定上下文对象时使用的是$(“#info_table”)[0]，即使用数组的索引操作符来取得的一个DOM元素。</p>
-
-<p>如前所述，为了突破单一.bind()方法的局限性，实现事件委托，jQuery1.3引入了.live()方法。后来，为解决“事件传播链”过长的问题，jQuery 1.4又支持为.live()方法指定上下文对象。而为了解决无谓生成元素集合的问题，jQuery 1.4.2干脆直接引入了一个新方法.delegate()。</p>
-
-<hr>
-
-<h3 id="5">(5).更好的解决办法</h3>
-
-<p>使用.delegate()，前面的例子可以这样写：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">).</span><span class="nx">delegate</span><span class="p">(</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="err">”</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span>
-</code></pre></div>
-<p>使用.delegate()有如下优点：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1. 直接将目标元素选择符（”td”）、事件（”click”）及处理程序与“受拖方”$(“#info_table”)绑定，不额外收集元素、事件传播路径缩短、语义明确；
-2. 支持在连缀的DOM遍历方法后面调用，即支持$(“table”).find(“#info”).delegate…，支持精确控制；
-</code></pre></div>
-<p>在jQuery1.7中 .delegate()已被.on()取代,.on与.delegate主要区别在参数顺序。使用.on前面的例子可以这样写：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">).</span><span class="nx">on</span><span class="p">(</span><span class="err">”</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO;});</span>
-</code></pre></div>
-<p>可见，.delegate()与.on()方法是一个相对完美的解决方案。但在DOM结构简单的情况下，也可以使用.live()。</p>
-
-<blockquote>
-<p>提示：使用事件委托时，如果注册到目标元素上的其他事件处理程序使用.stopPropagation()阻止了事件传播，那么事件委托就会失效。</p>
-</blockquote>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -468,6 +416,12 @@ rel="stylesheet" type="text/css" -->
       <li>
         
           <a href="/page28">28</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page29">29</a>
         
       </li>
     

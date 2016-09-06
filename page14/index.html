@@ -74,7 +74,7 @@ rel="stylesheet" type="text/css" -->
 				<li>
 					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
 					<h4>foio</h4>
-					<p>软件工程师/腾讯(深圳)</p>
+					<p>Baidu Software Engineer</p>
 				</li>
                 <!--<li><a href="/about/">Learn More</a></li>-->
 				<li>
@@ -116,6 +116,44 @@ rel="stylesheet" type="text/css" -->
 
 <div id="main" role="main">
   
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-10-07T00:00:00+08:00"><a href="/solr-ik/">October 07, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/solr-ik/" rel="bookmark" title="solr4.7配置中文分词器IKAnalyzer踩到的坑" itemprop="url">solr4.7配置中文分词器IKAnalyzer踩到的坑</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>在为solr4.10配置ik-analyzer中文分词器时我参考<a href="http://www.solrcn.com/?tag=ik%E5%88%86%E8%AF%8D%E5%99%A8">这篇文章</a>，
+schema.xml中配置如下：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">&lt;fieldType name="text_ik" class="solr.TextField"
+sortMissingLast="true" omitNorms="true"&gt;
+    &lt;analyzer type="index" isMaxWordLength="false" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
+    &lt;analyzer type="query" isMaxWordLength="true" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
+&lt;/fieldType&gt;
+</code></pre></div>
+<p>但是同样的配置在solr4.7上却无法出现了奇怪的现象。首先在solr4.7的Analyse面板中，中文是可以正确分词的。如下图：
+<figure style="margin:0 auto;width:620px">
+    <img src="/images/solr_ik.jpg"/>
+</figure></p>
+
+<p>但是使用solr4.7搜索时，却只能搜索出完全匹配的结构。查了网络上的很多资料，才发现问题出在fieldType的autogeneratephrasequeries属性上。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">autoGeneratePhraseQueries=true|false (in schema version 1.4 and later this now defaults to false)
+</code></pre></div>
+<p>这个属性只能用于文本域。如果在查询文本分析时产生了多个词元，比如 Wi-Fi 分词为 Wi 和 Fi ，当 autoGeneratePhraseQueries 被设置为true时，这两个词元就构造了一个词组查询，即“ WiFi ”，所以索引中“ WiFi ”必须相邻才能被查询到；而autoGeneratePhraseQueries被设置成false时，他们只是两个不同的搜索词，它们没有位置上的关系。schema的版本小于1.4时，autoGeneratePhraseQueries默认为true，所以我们需要将autoGeneratePhraseQueries设置为false。</p>
+
+<p>所以solr4.7下正确的配置应该是</p>
+<div class="highlight"><pre><code class="language-" data-lang="">&lt;fieldType name="text_ik" class="solr.TextField" sortMissingLast="true"  omitNorms="true" autoGeneratePhraseQueries="false"&gt;
+    &lt;analyzer type="index" isMaxWordLength="false" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
+    &lt;analyzer type="query" isMaxWordLength="true" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
+&lt;/fieldType&gt;
+</code></pre></div>
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
 <article class="hentry">
   <header>
     <div class="entry-meta">
@@ -263,120 +301,6 @@ rel="stylesheet" type="text/css" -->
 <p>php用户定义函数，无论是否有返回值，其对应的op_array都会有RETURN操作码，而RETURN操作码就是负责释放堆栈的。具体的实现在zend_vm_execute.h文件的<code>zend_leave_helper_SPEC</code>函数中,。</p>
 
 <figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">zend_vm_stack_free</span><span class="p">(</span><span class="n">execute_data</span> <span class="n">TSRMLS_CC</span><span class="p">);</span></code></pre></figure>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-10-04T00:00:00+08:00"><a href="/docker-tutorial/">October 04, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/docker-tutorial/" rel="bookmark" title="docker初探" itemprop="url">docker初探</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>Docker 是一个开源的应用容器引擎，让开发者可以打包他们的应用以及依赖环境到一个可移植的容器中，然后发布到任何流行的 Linux 机器上。接下来我首先简单的解释一下docker的原理，然后了解一下docker镜像的构建基本操作，最后演示如何运行docker镜像。</p>
-
-<hr>
-
-<h3 id="1">1.原理篇</h3>
-
-<p>Docker可以把应用程序和它所依赖的从操作系统到软件包的环境打包成一个镜像文件。听起来好像一个典型的虚拟机，但是Docker要比虚拟机轻量的多。那么，Docker和一个完全的虚拟机有何区别？Docker是如何做到提供一个完整的文件系统，独立的网络环境等等这些功能，同时还没有如此庞大？</p>
-
-<p>一个功能完整的虚拟机要在宿主机器上重新运行一个Guest Os已达到隔离环境的作用，在Docker的哲学里，这是严重的资源浪费。下图基本上描述了Docker容器和虚拟机的区别。</p>
-
-<p><img src="http://infoqstatic.com/resource/articles/docker-core-technology-preview/zh/resources/0731013.jpg" alt="enter image description here"></p>
-
-<p>Docker核心是一个操作系统级虚拟化方法, 理解起来可能并不像VM那样直观。我们从虚拟化方法的四个方面：隔离性、资源限制性、便携性、安全性来详细介绍Docker的技术细节。</p>
-
-<h4 id="1">(1).隔离性</h4>
-
-<p>传统的vm用一个操作系统实现隔离性，而Docker基于LXC(linux container)实现隔离性。LXC是通过kernel namespace实现隔离性的。简单说就是同一个linux操作系统中可以存在多个不同的命名空间(容器)，不同namesapce中可以存在相同的pid、net、ipc、mnt、uts等。</p>
-
-<h4 id="2">(2).资源限制性</h4>
-
-<p>Docker通过使用cgroups 实现了对资源的配额和度量。 cgroups 的使用非常简单，可实现对单个进程(容器)的资源控制。groups可以限制blkio、cpu、cpuacct、cpuset、devices、freezer、memory、net_cls、ns九大子系统的资源</p>
-
-<h4 id="3">(3).便携性</h4>
-
-<p>Docker通过使用AUFS (AnotherUnionFS)实现便携性。AUFS(AnotherUnionFS) 是一种 Union FS, 简单来说就是支持将不同目录挂载到同一个虚拟文件系统下(unite several directories into a single virtual filesystem)的文件系统,  AUFS 里有一个类似分层的概念, 通过将一个 readonly 的 branch 和一个 writeable 的 branch 联合在一起，就可以实现对 readonly 权限的 branch 进行增量的进行修改(不影响 readonly 部分的)。</p>
-
-<p>在Docker利用 union mount 的方式将一个 readwrite 文件系统挂载在 readonly 的rootfs之上，并且允许再次将下层的 FS(file system) 设定为readonly 并且向上叠加, 这样一组readonly和一个writeable的结构构成一个container的运行时态, 每一个FS被称作一个FS层。如下图:</p>
-
-<p><img src="http://infoqstatic.com/resource/articles/docker-core-technology-preview/zh/resources/0731016.png" alt="enter image description here"></p>
-
-<h4 id="4">(4).安全性</h4>
-
-<p>关于安全性相关文章请参考<a href="http://docs.docker.com/articles/security/">Docker官方文档</a>。</p>
-
-<hr>
-
-<h3 id="2">2.构建镜像</h3>
-
-<p>Docker需要linux kernel 3.8以上，安装过程非常简单，在此不再赘述，详细步骤参考<a href="http://docs.docker.com/installation/ubuntulinux/">官方安装文档</a>。</p>
-
-<p>在Docker中开发者可以打包他们的应用以及依赖环境到一镜像中，并可以在任意docke容器中运行这个镜像。在docker的<a href="https://registry.hub.docker.com/">官方register</a>中，有各种操作系统的镜像，我们可以基于这些镜像构建自己的镜像。构建镜像的有两种方法。</p>
-
-<h4 id="1-dockerfile">(1).通过Dockerfile创建镜像</h4>
-
-<p>Dockerfile基本上是自解释的，从一个基础镜像开始，通过RUN命令在基本镜像上安装环境，然后通过CMD命令指定镜像启动的命令。下面的Dockerfile从ubuntu14.04镜像开始，安装并配置好sshd服务。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">FROM     ubuntu:14.04
-MAINTAINER Thatcher R. Peskens "thatcher@dotcloud.com"
-RUN apt-get update &amp;&amp; apt-get install -y openssh-server
-RUN mkdir /var/run/sshd
-RUN echo 'root:screencast' | chpasswd
-RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
-
-EXPOSE 22
-CMD ["/usr/sbin/sshd", "-D"]
-</code></pre></div>
-<p>编辑好Dockerfile后，可以通过docker build命令生成image。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">sudo docker build -t test_sshd .
-</code></pre></div>
-<p>然后可以通过如下命令查看刚才生成的镜像。运行image的命令请参考docker<a href="http://docs.docker.com/reference/commandline/cli/">官方文档</a>。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">sudo docker images
-</code></pre></div>
-<h4 id="2-commit">(2).通过commit创建镜像</h4>
-
-<p>我们可以先以交互的方式启动一个操作系统镜像，然后在其中做各种修改，最后通过commit命令提交。具体步骤如下：
-首先通过交互的方式启动一个镜像，这样会进入镜像操作系统shell中：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">sudo docker run -t -i utuntu
-</code></pre></div>
-<p>然后在镜像操作系统中做各种修改，退出镜像操作系统。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">root@040acbb6c8c:/# exit
-</code></pre></div>
-<p>记下镜像标志：040acbb6c8c，最后通过commit命令提交刚才所做的修改。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">sudo docker commit -m 'your commit message' -a 'your author info' 040acbb6c8c your-image-name
-</code></pre></div>
-<p>这样一个新的image就生成了。通过以下命令就可以查看刚才生成的镜像了。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">sudo docker images
-</code></pre></div>
-<hr>
-
-<h3 id="3">3.运行镜像</h3>
-
-<p>镜像的运行还是比较简单的，比如如下命令运行ubuntu镜像并用echo输出hello world。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">sudo docker run ubuntu echo 'hello world'
-</code></pre></div>
-<p>这条命令使用ubuntu镜像，如果本地docker镜像库中没有ubuntu镜像，会首先从docker的官方register中下载ubuntu镜像。echo输出完成后，改镜像就执行完成并退出了。</p>
-
-<p>如何让一个镜像在docker容器中长期运行呢？比如如下命令启动一个带有sshd服务的镜像，并长期运行。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">sudo docker run -d ubuntu-sshd /bin/bash -c ‘sshd -D’
-</code></pre></div>
-<p>两个方面保证了该镜像在容器中长期运行，第一是run命令的-d参数，表示容器以detach的方式运行；第二是镜像初始化脚本中sshd的-D参数，-D参数表示sshd以非daemonized，非detach的方式运行。镜像运行后，可以通过</p>
-<div class="highlight"><pre><code class="language-" data-lang="">sudo docker ps
-</code></pre></div>
-<p>查看运行的容器实例。并通过</p>
-<div class="highlight"><pre><code class="language-" data-lang="">sudo docker inspect
-</code></pre></div>
-<p>查看容器的ip地址等信息。docker运行image相关的参数有很多，包括容器和宿主机器之间的端口映射等参数，本文都没有涉及，请参考官方手册。</p>
-
-<hr>
-
-<p>关于docker的虚拟化相关讨论问题可参考<a href="http://www.geekbus.cn/docker-core-technology-preview/">这篇文章</a>。</br></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -554,6 +478,12 @@ CMD ["/usr/sbin/sshd", "-D"]
       <li>
         
           <a href="/page28">28</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page29">29</a>
         
       </li>
     

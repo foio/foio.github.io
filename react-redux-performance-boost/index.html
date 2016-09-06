@@ -1,0 +1,405 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>react+redux渲染性能优化原理 &#8211; 积木村の研究所</title>
+<meta name="description" content="react渲染性能优化,redux渲染性能优化">
+<meta name="keywords" content="node memory">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="react+redux渲染性能优化原理">
+<meta property="og:description" content="react渲染性能优化,redux渲染性能优化">
+<meta property="og:url" content="/react-redux-performance-boost/">
+<meta property="og:site_name" content="积木村の研究所">
+
+
+
+
+
+<link rel="canonical" href="/react-redux-performance-boost/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/react-redux-performance-boost/" rel="bookmark" title="react+redux渲染性能优化原理">react+redux渲染性能优化原理</a></h1>
+        
+        <h2>September 04, 2016</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <style type="text/css">
+td, table {
+   border: solid gray 1px;
+   padding: 10px;
+}
+table{
+   margin: 0 auto;
+}
+</style>
+
+<blockquote>
+<p>React基本上成了前端的必备技能，redux更是对react的锦上添花。我在<a href="http://foio.github.io/redux-state-manage/">“redux,一种页面状态管理的优雅方案”</a>一文中介绍了react与redux结合的基本方法和高级技巧。</p>
+</blockquote>
+
+<p>大家都知道，react的一个痛点就是非父子关系的组件之间的通信，其官方文档对此也并不避讳：</p>
+
+<blockquote>
+<p>For communication between two components that don&#39;t have a parent-child relationship, you can set up your own global event system. Subscribe to events in componentDidMount(), unsubscribe in componentWillUnmount(), and call setState() when you receive an event. </p>
+</blockquote>
+
+<p>而redux就可以视为其中的“global event system”，使用redux可以使得我们的react应用有更加清晰的架构。</p>
+
+<p>本文我们来探讨，基于react和redux架构的前端应用，如何进行渲染性能优化。<code>对于小型react前端应用，最好的优化就是不优化</code>因为React本身就是通过比较虚拟DOM的差异，从而对真实DOM进行最小化操作，小型React应用的虚拟DOM结构简单，虚拟DOM比较的耗时可以忽略不计。而对于复杂的前端项目，我们所指的渲染性能优化，实际上是指，<code>在不需要更新DOM时，如何避免虚拟DOM的比较</code>。</p>
+
+<h3 id="1-react">1. react组件的生命周期</h3>
+
+<p>工欲善其事，必先利其器。理解react的组件的生命周期是优化其渲染性能的必备前提。我们可以将react组件的生命周期分为3个大循环：挂载到DOM、更新DOM、从DOM中卸载。React对三个大循环中每一步都暴露出钩子函数，使得我们可以细粒度地控制组件的生命周期。</p>
+
+<h4 id="1-dom">(1)挂载到DOM</h4>
+
+<p>组件首次插入到DOM时，会经历从属性和状态初始化到DOM渲染等基本流程，可以通过下图描述：</p>
+
+<figure style="width:300px;margin: 0 auto;">
+        <img src="/images/react-component-mount.png" alt="render flow">
+</figure>
+
+<p>必须注意的是，挂载到DOM流程在组件的整个生命周期只有一次，也就是组件第一次插入DOM文档流时。在挂载到DOM流程中的每一步也有相应的限制：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">getDefaultProps()和getInitialState()中不能获取和设置组件的state。
+render()方法中不能设置组件的state。
+</code></pre></div>
+<h4 id="2-dom">(2)更新DOM</h4>
+
+<p>组件挂载到DOM后，一旦其props和state有更新，就会进入更新DOM流程。同样我们也可以通过一张图清晰的描述该流程的各个步骤：</p>
+
+<figure style="width:300px;margin: 0 auto;">
+        <img src="/images/react-component-update.png" alt="render flow">
+</figure>
+
+<p>componentWillReceiveProps()提供了该流程中更新state的最后时机，后续的其他函数都不能再更新组件的state了。<code>我们尤其需要注意的是shouldComponentUpdate函数，它的结果直接影响该组件是不是需要进行虚拟DOM比较</code>，我们对组件渲染性能优化的基本思路就是：在非必要的时候将shouldComponentUpdate返回值设置为false，从而终止更新DOM流程中的后续步骤。</p>
+
+<h4 id="3-dom">(3)从DOM中卸载</h4>
+
+<p>从DOM中卸载的流程比较简单，React只暴漏出<code>componentWillUnmount</code>，该函数使得我们可以在DOM卸载的最后时机对其进行干预。</p>
+
+<h3 id="2-react">2. react组件渲染性能监控</h3>
+
+<p>在进行性能优化前，我们先来了解如何对React组件渲染性能进行监控。React官方提供了<a href="https://facebook.github.io/react/docs/perf.html">Performance Tools</a>，其使用起来也很简单，通过Perf.start启动一次性能分析，并通过Perf.stop结束一次性能分析。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">import</span> <span class="nx">Perf</span> <span class="nx">from</span> <span class="s1">'react-addons-perf'</span>
+<span class="nx">Perf</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span>
+<span class="p">....</span><span class="nx">your</span> <span class="nx">react</span> <span class="nx">code</span>
+<span class="nx">Perf</span><span class="p">.</span><span class="nx">stop</span><span class="p">();</span>
+</code></pre></div>
+<p>调用Perf.stop后，我们就可以通过Perf提供的API来获取本次性能分析的数据指标。其中最有用的API是<code>Perf.printWasted()</code>，其结果给出你在哪些组件上进行了无意义的(没有引起真实DOM的改变)虚拟DOM比较，比如如下结果表明我们在TodoItem组件上浪费了4ms进行无意义的虚拟DOM比较，我们可以从这里入手，进行性能优化。</p>
+
+<p><img src="/images/react-perf-wasted.png" alt="Alt text"></p>
+
+<p>而<code>Perf.printInclusive()</code>的结果则给出渲染各个组件的总体时间，通过它的结果我们可以找出哪个组件是页面渲染的性能瓶颈。</p>
+
+<p><img src="/images/react-perf-include.png" alt="Alt text"></p>
+
+<p>和<code>Perf.printInclusive()</code>相似的API还有<code>Perf.printExclusive()</code>，只是其结果是组件渲染的独占时间，即不包括花费于加载组件的时间： 处理 props, getInitialState, 调用 componentWillMount 及 componentDidMount, 等等。</p>
+
+<h3 id="3">3. 性能优化基本原理</h3>
+
+<p>使用上一小节的性能分析工具，我们可以轻易的定位出哪些组件是页面的性能瓶颈、哪些组件进行了无意义的虚拟DOM比较，本小节我们能探讨如何对基于react和redux架构的前端应用进行性能优化。强烈的建议你参考我的另一篇博文:<a href="http://foio.github.io/redux-state-manage/">redux,一种页面状态管理的优雅方案</a>，以便更好的理解本小节。</p>
+
+<h4 id="3-1-react">3.1 常规React组件性能优化</h4>
+
+<p>通过上文的React更新DOM流程，我们知道React提供了<code>shouldComponentUpdate</code>函数，它的结果直接影响组件是不是需要进行虚拟DOM比较以及后续的真实DOM渲染。而<code>shouldComponentUpdate</code>函数的默认返回值为true，这暗示着React总是会进行虚拟DOM比较，无论真实DOM是否需要重新渲染。我们可以通过根据自己的业务特性，重载<code>shouldComponentUpdate</code>，只在确认真实DOM需要改变时，再返回true。一般的做法是比较组件的props和state是否真的发生变化，如果发生变化则返回true，否则返回false。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">return</span> <span class="o">!</span><span class="nx">isDeepEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span><span class="nx">nextProps</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isDeepEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span><span class="nx">nextState</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div>
+<p>进行深度比较(isDeepEqual)来确定props和state是否发生变化是最常见的做法，其是否有性能问题呢？如果一个容器型组件有很多的子节点，而子节点又有其他子节点，对这种复杂的嵌套对象进行深度比较(isDeepEqual)是很耗时的，甚至会抵消由避免虚拟DOM比较所带来的性能收益。React官方推荐使用<a href="https://facebook.github.io/react/docs/advanced-performance.html">immutable的组件状态</a>，以便更高效的实现shouldComponentUpdate函数。</p>
+
+<p>immutable的状态有何优势呢？假设我们要修改一个列表中，某个列表项的状态，使用非immutable的方式：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">item</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">id</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+    <span class="na">text</span><span class="p">:</span><span class="s1">'todo1'</span><span class="p">,</span>
+    <span class="na">status</span><span class="p">:</span><span class="s1">'doing'</span>
+<span class="p">}</span>
+<span class="kd">var</span> <span class="nx">oldTodoList</span> <span class="o">=</span> <span class="p">[</span><span class="nx">item1</span><span class="p">,</span><span class="nx">item2</span><span class="p">,....,</span><span class="nx">itemn</span><span class="p">];</span>
+<span class="nx">oldTodoList</span><span class="p">[</span><span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">status</span> <span class="o">=</span> <span class="s1">'done'</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">newTodoList</span> <span class="o">=</span> <span class="nx">oldTotoList</span><span class="p">;</span>
+</code></pre></div>
+<p>当我们需要确认oldTodoList和newTodoList的数据是否相同时，只能遍历列表(复杂度为O(n))，依次比较:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">oldTodoList</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">isItemEqual</span><span class="p">(</span><span class="nx">oldTodoList</span><span class="p">[</span><span class="nx">i</span><span class="p">],</span><span class="nx">newTodoList</span><span class="p">[</span><span class="nx">i</span><span class="p">])){</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</code></pre></div>
+<p>而如果使用immutable的方式：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">newTotoList</span> <span class="o">=</span> <span class="nx">oldTodoList</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">){</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">id</span> <span class="o">==</span> <span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">){</span>
+        <span class="k">return</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">assign</span><span class="p">({},</span><span class="nx">item</span><span class="p">,{</span><span class="na">status</span><span class="p">:</span><span class="s1">'done'</span><span class="p">})</span>
+    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+        <span class="k">return</span> <span class="nx">item</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>因为每一次变动，都会创建新的对象，因此比较oldTodoList和newTodoList是否有变化时，只需要比较其对象引用即可(复杂度O(1))：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">return</span> <span class="nx">oldTodoList</span> <span class="o">==</span> <span class="nx">newTodoList</span><span class="p">;</span>
+</code></pre></div>
+<p><code>我们优化的方向就是将</code>shouldComponentUpdate<code>中所有的props和state的比较算法复杂度降到最低</code>，而浅层对比(isShallowEqual)就是复杂度最低的对象比较算法:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">return</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span><span class="nx">nextProps</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span><span class="nx">nextState</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div>
+<p>当组件的prop设state都是immutable时，<code>shouldComponentUpdate</code>的实现就非常简单了，我们可以直接使用facebook官方提供了<code>PureRenderMixin</code>，它就是对组件的props和state进行浅层比较的。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">PureRenderMixin</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'react-addons-pure-render-mixin'</span><span class="p">);</span>
+<span class="nx">React</span><span class="p">.</span><span class="nx">createClass</span><span class="p">({</span>
+  <span class="na">mixins</span><span class="p">:</span> <span class="p">[</span><span class="nx">PureRenderMixin</span><span class="p">],</span>
+
+  <span class="na">render</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">className</span><span class="p">}</span><span class="o">&gt;</span><span class="nx">foo</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">;
+</span>  <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>自己实现immutable化，还是很有挑战的，我们可以借助于第三方库<a href="https://facebook.github.io/immutable-js/">ImmutableJS</a>，它是一个重型库，适合于大型复杂项目；如果你的项目复杂度不是很高，可以使用<a href="https://github.com/rtfeldman/seamless-immutable">seamless-immutable</a>，它是一个更轻量级的库，基于ES5的新特性Object.freeze来避免对象的修改，因此其只能兼容实现ES5标准的浏览器。</p>
+
+<h4 id="3-2-redux">3.2 理解Redux状态传播路径</h4>
+
+<p>Redux使用一个对象存储整个应用的状态(<code>global state</code>)，当<code>global state</code>发生变化时，状态是如何传递的呢？这个问题的答案对我们理解基于redux的react应用的渲染性能优化至关重要。</p>
+
+<p>Redux将React组件分为容器型组件和展示型组件。容器型组件一般通过connet函数生成，它订阅了全局状态的变化，通过mapStateToProps函数，我们可以对全局状态进行过滤，只返回该容器型组件关注的局部状态：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">mapStateToProps</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span><span class="na">todos</span><span class="p">:</span> <span class="nx">state</span><span class="p">.</span><span class="nx">todos</span><span class="p">};</span>
+<span class="p">}</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">mapStateToProps</span><span class="p">)(</span><span class="nx">TodoApp</span><span class="p">);</span>
+</code></pre></div>
+<p><code>每一次全局状态变化都会调用所有容器型组件的mapStateToProps方法</code>，该方法返回一个常规的Javascript对象，并将其合并到容器型组件的props上。</p>
+
+<p>而展示型组件不直接从<code>global state</code>获取数据，其数据来源于父组件。当容器型组件对应<code>global state</code>有变化时，它会将变化传播到其所有的子组件(一般为展示型组件)。简单来说容器型组件与展示型组件是父子关系：</p>
+
+<table><thead>
+<tr>
+<th style="text-align: left">组件类型</th>
+<th style="text-align: center">数据来源</th>
+<th style="text-align: center">变化通知</th>
+</tr>
+</thead><tbody>
+<tr>
+<td style="text-align: left">展示型组件</td>
+<td style="text-align: center">父组件</td>
+<td style="text-align: center">父组件通知</td>
+</tr>
+<tr>
+<td style="text-align: left">容器型组件</td>
+<td style="text-align: center">全局状态</td>
+<td style="text-align: center">监听全局状态</td>
+</tr>
+</tbody></table>
+
+<p>组件的状态传递路径，可以用一个树形结构描述：</p>
+
+<p><img src="/images/redux-component-tree.png" alt="Alt text"></p>
+
+<h4 id="3-3-redux">3.3 理解Redux的基本规范</h4>
+
+<p>Redux官方对容器型组件和全局状态树有两个基本的假设，违背这些假设将使得Redux的默认性能优化无法起作用：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">1. 容器型组件必须为Pure Component，即组件只依赖于state和props
+2. 全局状态树(global state)的任何变动都是immutable的
+</code></pre></div>
+<blockquote>
+<p>这种规范是有理由的：上文中我们提到过，每一次全局状态发生变化，所有的容器型组件都会得到通知，而各个容器型组件需要通过shouldComponentUpdate函数来确实自己关注的局部状态是否发生变化、自身是否需要重新渲染，默认情况下，React组件的shouldComponentUpdate总返回true，这里貌似有一个严重的性能问题：全局状态的任何变动都会使页面中的所有组件进入<code>更新DOM</code>的流程</p>
+</blockquote>
+
+<p>幸运的是，用Redux官方API函数connect生成的容器型组件，默认会提供一个shouldComponentUpdate函数，其中对props和state进行了浅层比较`。如果我们不遵从Redux的immutable状态的规范和Pure Component规范，则容器型组件默认的shouldComponentUpdate函数就是无效的了。</p>
+
+<p>在遵从Redux的immutable状态规范的情况下，当一个容器型组件的默认shouldComponentUpdate函数返回true时，则表明其对应的局部状态发生变化，需要将状态传播到各个子组件，相应的所有子组件也都会进行虚拟DOM比较，以确定是否需要重新渲染。如下图所示，<code>容器型组件#1</code>的状态发生变化后，所有的子组件都会进行虚拟DOM比较：</p>
+
+<p><img src="/images/redux-performance-loose.png" alt="Alt text"></p>
+
+<p><code>由于展示型组件对全局状态没有感知，我们就可以使用React的常规方法对展示型进行渲染性能优化了</code>。使用小节3.1中所提到的<code>常规React组件性能优化</code>方案，对每一个展示型组件实现shouldComponentUpdate函数：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">return</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span><span class="nx">nextProps</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span><span class="nx">nextState</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div>
+<p>我们就可以避免展示型组件多余的虚拟DOM比较。比如当只有<code>展示型组件#1.1</code>需要重新渲染时，其他同级别的组件不会进行虚拟DOM比较。比如当只有<code>展示型组件#1.1</code>需要重新渲染时，其他同级别的组件不会进行虚拟DOM比较了</p>
+
+<p><img src="/images/redux-performance-best.png" alt="Alt text"></p>
+
+<p>综上所述: 在容器型组件层面，Redux为我们提供了默认的性能优化方案；在展示型组件层面，我们可以使用常规React组件性能优化方案。</p>
+
+<hr>
+
+<p>参考文献：</p>
+
+<p><a href="https://facebook.github.io/react/docs/component-specs.html">https://facebook.github.io/react/docs/component-specs.html</a></p>
+
+<p><a href="https://facebook.github.io/react/docs/perf.html">https://facebook.github.io/react/docs/perf.html</a></p>
+
+<p><a href="http://benchling.engineering/performance-engineering-with-react/">http://benchling.engineering/performance-engineering-with-react/</a></p>
+
+<p><a href="http://jlongster.com/Using-Immutable-Data-Structures-in-JavaScript">http://jlongster.com/Using-Immutable-Data-Structures-in-JavaScript</a></p>
+
+<p><a href="https://github.com/rtfeldman/seamless-immutable">https://github.com/rtfeldman/seamless-immutable</a></p>
+
+<p><a href="https://facebook.github.io/react/docs/pure-render-mixin.html">https://facebook.github.io/react/docs/pure-render-mixin.html</a></p>
+
+<p><a href="https://facebook.github.io/react/docs/advanced-performance.html">https://facebook.github.io/react/docs/advanced-performance.html</a></p>
+
+<p><a href="https://www.toptal.com/react/react-redux-and-immutablejs">https://www.toptal.com/react/react-redux-and-immutablejs</a></p>
+
+<p><a href="https://facebook.github.io/react/docs/advanced-performance.html">https://facebook.github.io/react/docs/advanced-performance.html</a></p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#node memory" title="Pages tagged node memory" class="tag">node memory</a></span>
+        <span><a href="/react-redux-performance-boost/" rel="bookmark" title="react+redux渲染性能优化原理">react+redux渲染性能优化原理</a> was published on <span class="entry-date date published updated"><time datetime="2016-09-04T00:00:00+08:00">September 04, 2016</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2016-09-04">09/04/2016</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+
+    
+	        
+
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/node-memory/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/node-memory/" title="node内存基础知识">node内存基础知识</a></h3>
+          <p>node内存基础知识,node垃圾回收,node内存泄漏 <a href="/node-memory/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/redux-state-manage/" title="redux,一种页面状态管理的优雅方案">redux,一种页面状态管理的优雅方案</a></h4>
+            <span>Published on July 01, 2016</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h4>
+            <span>Published on May 01, 2016</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-79866739-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+	        
+</body>
+</html>

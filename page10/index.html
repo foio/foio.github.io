@@ -74,7 +74,7 @@ rel="stylesheet" type="text/css" -->
 				<li>
 					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
 					<h4>foio</h4>
-					<p>软件工程师/腾讯(深圳)</p>
+					<p>Baidu Software Engineer</p>
 				</li>
                 <!--<li><a href="/about/">Learn More</a></li>-->
 				<li>
@@ -116,6 +116,163 @@ rel="stylesheet" type="text/css" -->
 
 <div id="main" role="main">
   
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-08-26T00:00:00+08:00"><a href="/sizzle-research/">August 26, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/sizzle-research/" rel="bookmark" title="sizzle引擎研究" itemprop="url">sizzle引擎研究</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>什么是sizzle？下面时官方的一段解释。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">A pure-javascript CSS selector engine
+× Standalone(no dependencies)
+× Competitive performance
+× Only 4kB with gzipped
+× Easy to use
+× Css3 support
+× Bla bla ……
+</code></pre></div>
+<p>其实说白了，sizzle就是一个很给力的选择器解析引擎。</p>
+
+<p>我们为什么需要sizzle呢？其实对现代浏览器来说，document.querySelectorAll就可以解决一切。比如zeptoJs就是用querySelectorAll进行选择器解析的，因为移动端所有浏览器都支撑querySelectorAll。但是对于低版本的IE(&lt;=8)浏览器，不仅不支持querySelectorAll，连getElementById都有bug，因此自己用浏览器原生API解析选择器简直难上加难。好在sizzle引擎帮我们处理了一切。知其然，更要知其所以然。下面让我们看看sizzle引擎内部时如何实现的。</p>
+
+<p>sizzle解析器的主要有以下几个工作步骤。</p>
+
+<figure>
+        <img src="/images/sizzle-step.jpg"/>
+</figure>
+
+<p>接下来我们就依次解析。为了简单，我们在接下来的文章中都使用选择器<code>div input[name=ttt]</code>作为例子。</p>
+
+<h3 id="1">1.词法分析</h3>
+
+<hr>
+
+<p>词法分析是指我们将文本代码解析为一个个记号(token)，以便后续语法分析使用。</p>
+
+<h4 id="1-sizzle-token">(1) sizzle的token种类</h4>
+
+<p>css选择器的词法分析相对较为简单，不用通过lex等专业工具，简单的正则表达式就搞定了。下面依次是用于切分分组，层级关系，以及单个元素的正则表达式。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">分组(,):/^[\x20\t\r\n\f]*,[\x20\t\r\n\f]*/
+
+层级关系( &gt;+~):/^[\x20\t\r\n\f]*([&gt;+~]|[\x20\t\r\n\f])[\x20\t\r\n\f]*/
+
+单个元素处理:
+        var characterEncoding = "(?:\\\\.|[\\w-]|[^\\x00-\\xa0])+"
+        var ID = new RegExp("^#(" + characterEncoding + ")")
+        var TAG = new RegExp( "^(" + characterEncoding.replace( "w", "w*" ) + ")" )
+        var Class = new RegExp( "^\\.(" + characterEncoding + ")" )
+</code></pre></div>
+<h4 id="2-token">(2)从左到右扫描生产token集合</h4>
+
+<p>用正则表达式切分出token的过程，如下代码所示。基本原理就是从左到右扫描，用正则切分。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//分组</span>
+  <span class="kd">var</span> <span class="nx">rcomma</span> <span class="o">=</span> <span class="sr">/^</span><span class="se">[\x</span><span class="sr">20</span><span class="se">\t\r\n\f]</span><span class="sr">*,</span><span class="se">[\x</span><span class="sr">20</span><span class="se">\t\r\n\f]</span><span class="sr">*/</span><span class="p">;</span>
+  <span class="c1">//层级</span>
+  <span class="kd">var</span> <span class="nx">rcombinators</span> <span class="o">=</span>           
+ <span class="sr">/^</span><span class="se">[\x</span><span class="sr">20</span><span class="se">\t\r\n\f]</span><span class="sr">*</span><span class="se">([</span><span class="sr">&gt;+~</span><span class="se">]</span><span class="sr">|</span><span class="se">[\x</span><span class="sr">20</span><span class="se">\t\r\n\f])[\x</span><span class="sr">20</span><span class="se">\t\r\n\f]</span><span class="sr">*/</span>
+  <span class="c1">//选择器</span>
+  <span class="kd">var</span> <span class="nx">TAG</span> <span class="o">=</span> <span class="sr">/^</span><span class="se">((?:\\</span><span class="sr">.|</span><span class="se">[\w</span><span class="sr">*-</span><span class="se">]</span><span class="sr">|</span><span class="se">[^\x</span><span class="sr">00-</span><span class="se">\x</span><span class="sr">a0</span><span class="se">])</span><span class="sr">+</span><span class="se">)</span><span class="sr">/</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">matchExpr</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="na">CLASS</span><span class="p">:</span> <span class="sr">/^</span><span class="se">\.((?:\\</span><span class="sr">.|</span><span class="se">[\w</span><span class="sr">-</span><span class="se">]</span><span class="sr">|</span><span class="se">[^\x</span><span class="sr">00-</span><span class="se">\x</span><span class="sr">a0</span><span class="se">])</span><span class="sr">+</span><span class="se">)</span><span class="sr">/</span><span class="p">,</span>
+      <span class="na">TAG</span><span class="p">:</span> <span class="sr">/^</span><span class="se">((?:\\</span><span class="sr">.|</span><span class="se">[\w</span><span class="sr">*-</span><span class="se">]</span><span class="sr">|</span><span class="se">[^\x</span><span class="sr">00-</span><span class="se">\x</span><span class="sr">a0</span><span class="se">])</span><span class="sr">+</span><span class="se">)</span><span class="sr">/</span>
+  <span class="p">};</span>
+  <span class="c1">//扫描</span>
+  <span class="k">while</span> <span class="p">(</span><span class="nx">selector</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">//分组</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">match</span> <span class="o">=</span> <span class="nx">rcomma</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">selector</span><span class="p">))</span> <span class="p">{</span>
+          <span class="nx">selector</span> <span class="o">=</span> <span class="nx">selector</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">match</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">length</span><span class="p">)</span>
+          <span class="nx">groups</span><span class="p">.</span><span class="nx">push</span><span class="p">((</span><span class="nx">tokens</span> <span class="o">=</span> <span class="p">[]));</span>
+      <span class="p">}</span>
+      <span class="c1">//层级关系</span>
+      <span class="k">if</span> <span class="p">((</span><span class="nx">match</span> <span class="o">=</span> <span class="nx">rcombinators</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">selector</span><span class="p">)))</span> <span class="p">{</span>
+          <span class="nx">matched</span> <span class="o">=</span> <span class="nx">match</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
+          <span class="nx">tokens</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
+              <span class="na">value</span><span class="p">:</span> <span class="nx">matched</span><span class="p">,</span>
+              <span class="na">type</span><span class="p">:</span> <span class="nx">match</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">replace</span><span class="p">(</span><span class="nx">rtrim</span><span class="p">,</span> <span class="s2">" "</span><span class="p">)</span>
+          <span class="p">});</span>
+          <span class="nx">selector</span> <span class="o">=</span> <span class="nx">selector</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">matched</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="c1">//选择器</span>
+      <span class="k">for</span> <span class="p">(</span><span class="nx">type</span> <span class="k">in</span> <span class="nx">matchExpr</span><span class="p">)</span> <span class="p">{</span>
+          <span class="k">if</span> <span class="p">((</span><span class="nx">match</span> <span class="o">=</span> <span class="nx">matchExpr</span><span class="p">[</span><span class="nx">type</span><span class="p">].</span><span class="nx">exec</span><span class="p">(</span><span class="nx">selector</span><span class="p">)))</span> <span class="p">{</span>
+              <span class="nx">matched</span> <span class="o">=</span> <span class="nx">match</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
+              <span class="nx">tokens</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
+                  <span class="na">value</span><span class="p">:</span> <span class="nx">matched</span><span class="p">,</span>
+                  <span class="na">type</span><span class="p">:</span> <span class="nx">type</span><span class="p">,</span>
+                  <span class="na">matches</span><span class="p">:</span> <span class="nx">match</span>
+              <span class="p">});</span>
+              <span class="nx">selector</span> <span class="o">=</span> <span class="nx">selector</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">matched</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+          <span class="p">}</span>
+      <span class="p">}</span>
+  <span class="p">}</span>
+</code></pre></div>
+<p>最终生成的token集合如下:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span><span class="nl">matches</span><span class="p">:</span> <span class="p">[</span><span class="s2">"div"</span><span class="p">],</span><span class="nx">type</span><span class="err">:</span> <span class="s2">"TAG"</span><span class="p">,</span><span class="nx">value</span><span class="err">:</span> <span class="s2">"div“ }, 
+{matches:[“”], type: "</span> <span class="s2">", value: "</span> <span class="s2">"},
+{matches: ["</span><span class="nx">input</span><span class="s2">"], type: "</span><span class="nx">TAG</span><span class="s2">", value: "</span><span class="nx">input</span><span class="s2">"}, 
+{matches: ["</span><span class="nx">name</span><span class="s2">"], type: "</span><span class="nx">ATTR</span><span class="s2">", value: "</span><span class="p">[</span><span class="nx">name</span><span class="o">=</span><span class="nx">ttt</span><span class="p">]</span><span class="err">"</span><span class="p">}</span>
+</code></pre></div>
+<h3 id="2">2.过滤函数</h3>
+
+<hr>
+
+<p>过滤函数用于从浏览器dom模型中找到基本符合css选择器的种子集，sizzle针对每一种token都实现一个过滤函数，如下代码所示：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//各种类型的token的过滤器，全部返回闭包函数</span>
+<span class="nx">Expr</span><span class="p">.</span><span class="nx">filter</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">ATTR</span>   <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">operator</span><span class="p">,</span> <span class="nx">check</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">CHILD</span>  <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">type</span><span class="p">,</span> <span class="nx">what</span><span class="p">,</span> <span class="nx">argument</span><span class="p">,</span> <span class="nx">first</span><span class="p">,</span> <span class="nx">last</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">CLASS</span>  <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">className</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">ID</span>     <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">PSEUDO</span> <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">pseudo</span><span class="p">,</span> <span class="nx">argument</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">TAG</span>    <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nodeNameSelector</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="kd">function</span><span class="p">(</span><span class="nx">elem</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">nodeName</span> <span class="o">&amp;&amp;</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">nodeName</span><span class="p">.</span><span class="nx">toLowerCase</span><span class="p">()</span> <span class="o">===</span> <span class="nx">nodeNameSelector</span><span class="p">;</span>
+              <span class="p">};</span>
+     <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>通过部分过滤函数，我们可以初步得到符合条件的种子集合。如下图</p>
+
+<figure>
+        <img src="/images/sizzle-seed.png"/>
+</figure>
+
+<h3 id="3">3.编译函数</h3>
+
+<p>其实sizzle引擎最难的地方就在编译函数。为什么叫做编译呢？抽象的讲，把高级规则转换成底层实现就叫编译；比如高级语言到机器语言的过程就是编译。同样把抽象的css选择语法转变成具体的匹配函数的过程也是编译。
+<figure>
+        <img src="/images/sizzle-compile-step.png"/>
+</figure></p>
+
+<p>编译的过程还是比较复杂的，其实就是从左到右扫描css选择表达式，并使用与当前token对应的过滤函组合成最终的超级匹配函数。扫描编译的核心步骤是：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">(1)遇到关系token(+&gt; ~)则依次出栈并根据层级规则合并栈中函数
+(2)其他情况将当前token对应的处理函数压入栈中
+(3)选择器表达式结束后依次出栈并合并栈中函数
+</code></pre></div>
+<p>很难说清楚，高手常常说一图胜千言，我也把扫描编译css选择表达式<code>div [name=ttt]</code>的过程做成图，希望能够讲清楚。</p>
+
+<figure>
+        <img src="/images/sizzle-compile-process.png"/>
+</figure>
+
+<p>现在假设我们已经通过编译获得了最终的超级匹配函数。那么从种子集中找到结果集就比较简单了。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">for</span> <span class="nx">item</span> <span class="k">in</span> <span class="nx">seed</span>
+      <span class="k">if</span><span class="p">(</span><span class="nx">superMatcher</span><span class="p">(</span><span class="nx">item</span> <span class="p">)){</span>
+               <span class="nx">resultSet</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">item</span><span class="p">);</span>
+      <span class="p">}</span>
+<span class="k">return</span> <span class="nx">resultSet</span><span class="p">;</span>
+</code></pre></div>
+<hr>
+
+<p><a href="/download/sizzle-presentation.pptx">为了便于理解本文，请下载本文对应的ppt</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
 <article class="hentry">
   <header>
     <div class="entry-meta">
@@ -250,220 +407,6 @@ IE8以下版本的浏览器中造成内存泄露。</p>
 
 <p>参考文档
 <a href="http://javascript.info/tutorial/memory-leaks#ie-lt-8-dom-js-memory-leak">http://javascript.info/tutorial/memory-leaks#ie-lt-8-dom-js-memory-leak</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-04-12T00:00:00+08:00"><a href="/jquery-callback/">April 12, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/jquery-callback/" rel="bookmark" title="jQuery的回调模块实现原理" itemprop="url">jQuery的回调模块实现原理</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>jQuery的回调系统是jQuery的基本功能之一,用于支撑jQuery的<code>ajax()</code>方法的实现和对promise规范的实现。jQuery提供了<code>callback</code>方法用于实现各种复杂回调功能.</p>
-
-<h3 id="1">1.基本用法以及特殊参数</h3>
-
-<hr>
-
-<p>下面是使用callback最简单的例子,其中<code>callback</code> 函数没有任何参数,其中<code>add</code>,<code>fire</code>,<code>remove</code> 的含义通过方法名可以立刻知道.</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">callbacks</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">Callbacks</span><span class="p">();</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn1</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn2</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"bar!"</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">remove</span><span class="p">(</span> <span class="nx">fn2</span> <span class="p">);</span></code></pre></figure>
-
-<p>当然作为基础模块的回调功能这么简单,显然是无法支撑jQuery其他模块的.<code>callback</code>函数可以传入由空白分隔的多个flag,使得callback用不同的表现.常用的flag如下(多个flag可以同时使用)</p>
-<div class="highlight"><pre><code class="language-" data-lang="">once:确保回调列表的函数只能被触发一次.
-memory:当一个回调函数添加到回到列表时,立即使用上一次传递的历史参数(上次回调列表必须执行成功)调用回调函数.主要用于实现Deferred
-unique:确保一个回调函数只添加一次.
-stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表中后续的函数.
-</code></pre></div>
-<p>其中较难理解的flag是memory, 上个demo先:</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">callbacks</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">Callbacks</span><span class="p">(</span> <span class="s2">"memory"</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn1</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"foo"</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn2</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"bar"</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"foobar"</span> <span class="p">);</span>
- 
-<span class="cm">/*
-output:
-fn1 says:foo
-fn2 says:foo //这个输出是memory标记的作用
-fn1 says:bar
-fn2 says:bar
-fn1 says:foobar
-fn2 says:foobar
-*/</span></code></pre></figure>
-
-<h3 id="2-2-1-4">2.源码分析(版本2.1.4)</h3>
-
-<hr>
-
-<p>jQuery的callback函数的实现在源码的<code>3066~3288</code>行,源码的基本结构为:</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">jQuery</span><span class="p">.</span><span class="nx">Callbacks</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">//内部变量</span>
-    <span class="kd">var</span> <span class="c1">// 用于记录上次调用fire时的参数,用于memory回调列表</span>
-        <span class="nx">memory</span><span class="p">,</span>
-        <span class="c1">// 标记列表是否被触发过</span>
-        <span class="nx">fired</span><span class="p">,</span>
-        <span class="c1">// 标记列表是否正在触发</span>
-        <span class="nx">firing</span><span class="p">,</span>
-        <span class="c1">// 第一个回调函数</span>
-        <span class="nx">firingStart</span><span class="p">,</span>
-        <span class="c1">// 回调函数列表的长度</span>
-        <span class="nx">firingLength</span><span class="p">,</span>
-        <span class="c1">// 正在回调的函数在列表中的下标</span>
-        <span class="nx">firingIndex</span><span class="p">,</span>
-        <span class="c1">// 回调函数列表</span>
-        <span class="nx">list</span> <span class="o">=</span> <span class="p">[],</span>
-        <span class="c1">// 用于可用户回调的数据,当flag没有once时stack为false</span>
-        <span class="nx">stack</span> <span class="o">=</span> <span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">once</span> <span class="o">&amp;&amp;</span> <span class="p">[],</span>
-    <span class="c1">//参数转换</span>
-    <span class="nx">options</span> <span class="o">=</span> <span class="k">typeof</span> <span class="nx">options</span> <span class="o">===</span> <span class="s2">"string"</span> <span class="p">?</span>
-        <span class="p">(</span><span class="nx">optionsCache</span><span class="p">[</span><span class="nx">options</span><span class="p">]</span> <span class="o">||</span> <span class="nx">createOptions</span><span class="p">(</span><span class="nx">options</span><span class="p">))</span> <span class="p">:</span>
-        <span class="nx">jQuery</span><span class="p">.</span><span class="nx">extend</span><span class="p">({},</span> <span class="nx">options</span><span class="p">);</span>
-    <span class="c1">//方法实现</span>
-    <span class="nx">fire</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{}</span>
-    <span class="nx">self</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="na">add</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">remove</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">has</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">fn</span><span class="p">)</span> <span class="p">{},</span>
-        <span class="na">empty</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">disable</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">disabled</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">lock</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">locked</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">fireWith</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">context</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span> <span class="p">{},</span>
-        <span class="na">fire</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">fired</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{}</span>
-    <span class="p">};</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">;</span>
-<span class="p">};</span></code></pre></figure>
-
-<p>下面我们分别详细研究以下<code>fire,add,remove</code>等几个主要函数的实现.</p>
-
-<p>该函数主要是对函数回调列表进行遍历执行,但让要考虑stopOnFalse和memory标记的影响.</p>
-
-<h4 id="1-fire">(1)fire函数的实现</h4>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//self中fire只是简单的封装了下callback中的fire函数</span>
-<span class="nx">self</span><span class="p">.</span><span class="nx">fire</span><span class="err">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="c1">//讲self对象传递给callback.fire函数</span>
-    <span class="nx">self</span><span class="p">.</span><span class="nx">fireWith</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">callback</span><span class="p">.</span><span class="nx">fire</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">//如果callback工厂方法的参数中有memory标记,则记住本次调用fire的参数</span>
-    <span class="nx">memory</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">memory</span> <span class="o">&amp;&amp;</span> <span class="nx">data</span><span class="p">;</span>
-    <span class="nx">fired</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-    <span class="nx">firingIndex</span> <span class="o">=</span> <span class="nx">firingStart</span> <span class="o">||</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="nx">firingStart</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="nx">firingLength</span> <span class="o">=</span> <span class="nx">list</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-    <span class="nx">firing</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-    <span class="c1">//循环遍历回调函数列表</span>
-    <span class="k">for</span> <span class="p">(;</span> <span class="nx">list</span> <span class="o">&amp;&amp;</span> <span class="nx">firingIndex</span> <span class="o">&lt;</span> <span class="nx">firingLength</span><span class="p">;</span> <span class="nx">firingIndex</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//使用callback对象调用回调函数,请参阅代码3217~3220行,如果设置了stopOnFalse标记则在函数执行返回false时,不再调用回调列表中的后续函数</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">[</span><span class="nx">firingIndex</span><span class="p">].</span><span class="nx">apply</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">data</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">===</span> <span class="kc">false</span> <span class="o">&amp;&amp;</span> <span class="nx">options</span><span class="p">.</span><span class="nx">stopOnFalse</span><span class="p">)</span> <span class="p">{</span>
-            <span class="c1">//由于函数回调列表没有执行完成,阻止add方法使用memory参数调用新添加的函数</span>
-            <span class="nx">memory</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span> <span class="c1">// To prevent further calls using add</span>
-            <span class="k">break</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="c1">//执行完成,设置标记</span>
-    <span class="nx">firing</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">stack</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">stack</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">fire</span><span class="p">(</span><span class="nx">stack</span><span class="p">.</span><span class="nx">shift</span><span class="p">());</span>
-            <span class="p">}</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">memory</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">list</span> <span class="o">=</span> <span class="p">[];</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-            <span class="nx">self</span><span class="p">.</span><span class="nx">disable</span><span class="p">();</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span></code></pre></figure>
-
-<h4 id="2-add">(2)add函数的实现</h4>
-
-<p>add函数主要实现往回调列表中添加函数的功能,考虑了unique标记的影响,并实现了memory标记的功能.如果该回调列表正在在执行,则新加入的函数也会被调用.</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">add</span><span class="err">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//记录当前回调列表的长度</span>
-        <span class="kd">var</span> <span class="nx">start</span> <span class="o">=</span> <span class="nx">list</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-        <span class="c1">//用一个立即执行函数实现add的主要逻辑</span>
-        <span class="p">(</span><span class="kd">function</span> <span class="nx">add</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">{</span>  
-            <span class="c1">//遍历参数</span>
-            <span class="nx">jQuery</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">args</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span> <span class="nx">arg</span><span class="p">)</span> <span class="p">{</span>
-                <span class="kd">var</span> <span class="nx">type</span> <span class="o">=</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">type</span><span class="p">(</span><span class="nx">arg</span><span class="p">);</span>
-                <span class="c1">//添加函数</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">type</span> <span class="o">===</span> <span class="s2">"function"</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="c1">//如果有unique标记,且回调列表中已经存在该函数,则不添加</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">unique</span> <span class="o">||</span> <span class="o">!</span><span class="nx">self</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">arg</span><span class="p">))</span> <span class="p">{</span>
-                        <span class="nx">list</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">arg</span><span class="p">);</span>
-                    <span class="p">}</span>
-                <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">arg</span> <span class="o">&amp;&amp;</span> <span class="nx">arg</span><span class="p">.</span><span class="nx">length</span> <span class="o">&amp;&amp;</span> <span class="nx">type</span> <span class="o">!==</span> <span class="s2">"string"</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="c1">//如果函数时数组则使用递归</span>
-                    <span class="nx">add</span><span class="p">(</span><span class="nx">arg</span><span class="p">);</span>
-                <span class="p">}</span>
-            <span class="p">});</span>
-        <span class="p">})(</span><span class="nx">arguments</span><span class="p">);</span>
-        <span class="c1">//如果当前正在执行回调列表,则让本次执行包括新添加的函数</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">firing</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">firingLength</span> <span class="o">=</span> <span class="nx">list</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">memory</span><span class="p">)</span> <span class="p">{</span><span class="c1">//否则立即用上次fire的参数执行该回调函数</span>
-            <span class="nx">firingStart</span> <span class="o">=</span> <span class="nx">start</span><span class="p">;</span>
-            <span class="nx">fire</span><span class="p">(</span><span class="nx">memory</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
-<span class="p">}</span></code></pre></figure>
-
-<h4 id="3-remove">3.remove函数的实现</h4>
-
-<p>remove函数的实现相对较为简单,其实就是将函数从回调列表中移除,但同时要考虑对正在执行的回调列表的影响</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">remove</span><span class="err">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">jQuery</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">arguments</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span> <span class="nx">arg</span><span class="p">)</span> <span class="p">{</span>
-            <span class="kd">var</span> <span class="nx">index</span><span class="p">;</span>
-            <span class="c1">//移除回调列表中的函数,注意:while循环会将多个同样的函数全部移除</span>
-            <span class="k">while</span> <span class="p">((</span><span class="nx">index</span> <span class="o">=</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">inArray</span><span class="p">(</span><span class="nx">arg</span><span class="p">,</span> <span class="nx">list</span><span class="p">,</span> <span class="nx">index</span><span class="p">))</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-                <span class="c1">//删除下标为index的函数</span>
-                <span class="nx">list</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="nx">index</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
-                <span class="c1">//需要考虑移除函数对正在执行的回调函数列表的影响</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">firing</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="c1">//减小回调列表长度,防止数组越界</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="nx">index</span> <span class="o">&lt;=</span> <span class="nx">firingLength</span><span class="p">)</span> <span class="p">{</span>
-                        <span class="nx">firingLength</span><span class="o">--</span><span class="p">;</span>
-                    <span class="p">}</span>
-                    <span class="c1">//当前移除函数的下表在当前执行函数的下标之前,需要使当前执行下标减一</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="nx">index</span> <span class="o">&lt;=</span> <span class="nx">firingIndex</span><span class="p">)</span> <span class="p">{</span>
-                        <span class="nx">firingIndex</span><span class="o">--</span><span class="p">;</span>
-                    <span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">});</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
-<span class="p">},</span></code></pre></figure>
-
-<p>Ok,分析完这3个函数的源码后,我们应该能够完全明白jQuery时如何实现回调的,以及各个标记时如何起作用的.</p>
-
-<hr>
-
-<p><a href="https://api.jquery.com/jQuery.Callbacks/">jQuery的callback方法文档</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -641,6 +584,12 @@ fn2 says:foobar
       <li>
         
           <a href="/page28">28</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page29">29</a>
         
       </li>
     
