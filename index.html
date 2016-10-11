@@ -119,6 +119,157 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2016-10-11T00:00:00+08:00"><a href="/javascript-global-exceptions/">October 11, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/javascript-global-exceptions/" rel="bookmark" title="捕获页面中全局Javascript异常" itemprop="url">捕获页面中全局Javascript异常</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>一个流量巨大的前端页面面临的浏览器环境是非常复杂的，尤其是移动端页面(Android的碎片化所致)。面对如此多样的浏览器环境，常规的测试是无法完全覆盖的，我们需要一种页面脚本异常监控机制作为补充，保证能够发现前端页面脚本异常的原因。有很多种情况会导致Javascript抛出异常，包括网络失效、语法错误、运行时错误等。<code>我们希望在页面上有异常发生时，能够获得脚本错误的基本信息、文件url、行号</code>。接下来我们探讨几种实现方式。</p>
+
+<h3 id="1-window-onerror">1 使用window.onError</h3>
+
+<p>浏览器提供了全局的onError函数，我们可以使用它搜集页面上的错误</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">window</span><span class="p">.</span><span class="nx">onerror</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">,</span> <span class="nx">source</span><span class="p">,</span> <span class="nx">lineno</span><span class="p">,</span> <span class="nx">colno</span><span class="p">,</span> <span class="nx">error</span><span class="p">)</span> <span class="p">{</span> <span class="p">...</span> <span class="p">}</span>
+</code></pre></div>
+<p>其中mesage为异常基本信息，source为发生异常Javascript文件url，lineno为发生错误的行号，我们可以通过error.stack获取异常的堆栈信息。下面是chrome中通过window.onError捕获的错误例子：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">message</span><span class="err">:</span> <span class="nx">Uncaught</span> <span class="nx">ReferenceError</span><span class="err">:</span> <span class="nx">test</span> <span class="nx">is</span> <span class="nx">not</span> <span class="nx">defined</span>
+<span class="nl">source</span><span class="p">:</span>  <span class="nl">http</span><span class="p">:</span><span class="c1">//test.com/release/attach.js</span>
+<span class="nl">lineno</span><span class="p">:</span>  <span class="mi">16144</span>
+<span class="nl">colno</span><span class="p">:</span>   <span class="mi">6</span>
+<span class="nl">error</span><span class="p">:</span>   <span class="nl">ReferenceError</span><span class="p">:</span> <span class="nx">test</span> <span class="nx">is</span> <span class="nx">not</span> <span class="nx">defined</span>
+            <span class="nx">at</span> <span class="nx">http</span><span class="err">:</span><span class="c1">//test.com/release/attach.js:16144:6</span>
+            <span class="nx">at</span> <span class="nx">HTMLDocument</span><span class="p">.</span><span class="o">&lt;</span><span class="nx">anonymous</span><span class="o">&gt;</span> <span class="p">(</span><span class="nx">http</span><span class="err">:</span><span class="c1">//test.com/release/vendor.js:654:71)</span>
+</code></pre></div>
+<p>这种方式看似完美，其实有一个致命的问题。有些浏览器为了安全方面的考虑，对于不同域的Javascript文件，通过window.onError无法获取有效的错误信息。比如firefox的错误消息只有<code>Script error</code>，而且无法获得确切的行号，更没有错误堆栈信息：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">message</span><span class="err">:</span> <span class="nx">Script</span> <span class="nx">error</span><span class="p">.</span>
+<span class="nl">source</span><span class="p">:</span>  <span class="err">"</span><span class="nx">http</span><span class="err">:</span><span class="c1">//test.com/release/attach.js</span>
+<span class="nl">lineno</span><span class="p">:</span>  <span class="mi">0</span>
+<span class="nl">colno</span><span class="p">:</span>   <span class="mi">0</span>
+<span class="nl">error</span><span class="p">:</span>   <span class="kc">null</span>
+</code></pre></div>
+<p>为了使得浏览器针对window.onError的跨域保护失效, 我们可以在静态资源服务器或者CDN的HTTP头中加上如下允许跨域提示：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">Access</span><span class="o">-</span><span class="nx">Control</span><span class="o">-</span><span class="nx">Allow</span><span class="o">-</span><span class="nx">Origin</span><span class="err">:</span> <span class="o">*</span>
+</code></pre></div>
+<p>并在引用Javascript脚本是加上crossorigin属性:</p>
+<div class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;script </span><span class="na">crossorigin</span> <span class="na">src=</span><span class="s">""</span><span class="nt">&gt;&lt;/script&gt;</span>
+</code></pre></div>
+<p>完成上述两步后，我们就可以方便的使用window.onError进行全局异常捕获，并获取丰富的异常信息了。但是有时对于第三方的CDN，我们无法添加跨域相关的头信息，下面我们就讨论针这种情况的全局Javascript异常捕获方法。</p>
+
+<h3 id="2-ast-try-catch">2 使用AST为所有函数加上try catch</h3>
+
+<p>上文中提到了使用window.onError进行浏览器全局异常捕获，但是当我们无法添加跨域相关头信息时，window.onError就失效了。针对这种情况，我们可以对每一个函数添加try catch来捕获函数内的异常，但是一个大型项目的函数太多，对每一个函数都手动添加try catch无疑是一个巨大的工作量。本文我们借助AST（抽象语法树）技术，对源文件进行预处理，对每个函数自动的添加try catch。</p>
+
+<p>语法树是对源代码最精确的表示，通过遍历和操作语法树，我们能够精确的控制源代码。生成JavaScript的AST是一件非常复杂的工作，本文暂时不打算涉及，好在UglifyJS已经有了完整的实现。</p>
+
+<p>比如如下代码：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">test</span><span class="p">(){</span>
+   <span class="kd">var</span> <span class="nx">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+   <span class="kd">var</span> <span class="nx">b</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">a</span><span class="o">+</span><span class="nx">b</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>可以用语法树表示：</p>
+
+<p><img src="/images/simple-ast.png" alt="a ast demo"></p>
+
+<p>通过使用Uglify提供的操作AST(抽象语法树)的API，我们可以对每个函数添加try catch代码块，并在catch中捕获该函数的一切异常，下面是我的实现（请参考我的github：<a href="https://github.com/foio/try-catch-global.js">try-catch-global.js</a>）：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'fs'</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'lodash'</span><span class="p">);</span>
+<span class="kd">var</span> <span class="nx">UglifyJS</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'uglify-js'</span><span class="p">);</span>
+
+<span class="kd">var</span> <span class="nx">isASTFunctionNode</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">node</span> <span class="k">instanceof</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">AST_Defun</span> <span class="o">||</span> <span class="nx">node</span> <span class="k">instanceof</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">AST_Function</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">globalFuncTryCatch</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">inputCode</span><span class="p">,</span> <span class="nx">errorHandler</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">isFunction</span><span class="p">(</span><span class="nx">errorHandler</span><span class="p">)){</span>
+        <span class="k">throw</span> <span class="s1">'errorHandler should be a valid function'</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="kd">var</span> <span class="nx">errorHandlerSource</span> <span class="o">=</span> <span class="nx">errorHandler</span><span class="p">.</span><span class="nx">toString</span><span class="p">();</span>
+    <span class="kd">var</span> <span class="nx">errorHandlerAST</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="s1">'('</span> <span class="o">+</span> <span class="nx">errorHandlerSource</span> <span class="o">+</span> <span class="s1">')(error);'</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">tryCatchAST</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="s1">'try{}catch(error){}'</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">inputAST</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">inputCode</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">topFuncScope</span> <span class="o">=</span> <span class="p">[];</span>
+
+    <span class="c1">//将错误处理函数包裹进入catch中</span>
+    <span class="nx">tryCatchAST</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">bcatch</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nx">errorHandlerAST</span><span class="p">;</span>
+
+    <span class="c1">//搜集所有函数</span>
+    <span class="kd">var</span> <span class="nx">walker</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">TreeWalker</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">isASTFunctionNode</span><span class="p">(</span><span class="nx">node</span><span class="p">))</span> <span class="p">{</span>
+            <span class="nx">topFuncScope</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+    <span class="nx">inputAST</span><span class="p">.</span><span class="nx">walk</span><span class="p">(</span><span class="nx">walker</span><span class="p">);</span>
+
+    <span class="c1">//对函数进行变换, 添加try catch语句</span>
+    <span class="kd">var</span> <span class="nx">transfer</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">TreeTransformer</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span>
+        <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">isASTFunctionNode</span><span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nx">_</span><span class="p">.</span><span class="nx">includes</span><span class="p">(</span><span class="nx">topFuncScope</span><span class="p">,</span> <span class="nx">node</span><span class="p">))</span> <span class="p">{</span>
+                <span class="c1">//函数内部代码搜集</span>
+                <span class="kd">var</span> <span class="nx">stream</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">OutputStream</span><span class="p">();</span>
+                <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">print</span><span class="p">(</span><span class="nx">stream</span><span class="p">)</span>
+                <span class="p">}</span>
+                <span class="kd">var</span> <span class="nx">innerFuncCode</span> <span class="o">=</span> <span class="nx">stream</span><span class="p">.</span><span class="nx">toString</span><span class="p">();</span>
+
+                <span class="c1">//清除try catch中定义的多余语句</span>
+                <span class="nx">tryCatchAST</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">body</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">tryCatchAST</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">body</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+
+                <span class="c1">//用try catch包裹函数代码</span>
+                <span class="kd">var</span> <span class="nx">innerTyrCatchNode</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">innerFuncCode</span><span class="p">,</span> <span class="p">{</span><span class="na">toplevel</span><span class="p">:</span> <span class="nx">tryCatchAST</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]});</span>
+
+                <span class="c1">//获取函数壳</span>
+                <span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+
+                <span class="c1">//生成有try catch的函数</span>
+                <span class="k">return</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">innerTyrCatchNode</span><span class="p">.</span><span class="nx">print_to_string</span><span class="p">(),</span> <span class="p">{</span><span class="na">toplevel</span><span class="p">:</span> <span class="nx">node</span><span class="p">});</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="nx">inputAST</span><span class="p">.</span><span class="nx">transform</span><span class="p">(</span><span class="nx">transfer</span><span class="p">);</span>
+    <span class="kd">var</span> <span class="nx">outputCode</span> <span class="o">=</span> <span class="nx">inputAST</span><span class="p">.</span><span class="nx">print_to_string</span><span class="p">({</span><span class="na">beautify</span><span class="p">:</span> <span class="kc">true</span><span class="p">});</span>
+    <span class="k">return</span> <span class="nx">outputCode</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">globalFuncTryCatch</span> <span class="o">=</span> <span class="nx">globalFuncTryCatch</span><span class="p">;</span>
+
+</code></pre></div>
+<p>借助于<code>globalFuncTryCatch</code>，我们对每个函数进行自动化地添加try catch语句，并使用自定义的错误处理函数：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">
+<span class="nx">globalFuncTryCatch</span><span class="p">(</span><span class="nx">inputCode</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
+   <span class="c1">//此处是异常处理代码，可以上报并记录日志</span>
+   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>通过将globalFuncTryCatch功能集成到构建工具中，我们就可以对目标Javascript文件进行try catch处理。</p>
+
+<p>综上所述：</p>
+
+<p>当静态资源服务器可以添加<code>Access-Control-Allow-Origin: *</code> 时，我们可以直接使用window.onError进行全局异常捕获；当静态资源服务器不受控制，window.onError失效，我们可以借助AST技术，自动化地对全部目标Javascript函数添加try catch来捕获所有异常。</p>
+
+<hr>
+
+<p>参考文档</p>
+
+<p><a href="https://blog.sentry.io/2016/01/04/client-javascript-reporting-window-onerror.html">https://blog.sentry.io/2016/01/04/client-javascript-reporting-window-onerror.html</a></p>
+
+<p><a href="http://lisperator.net/uglifyjs/">http://lisperator.net/uglifyjs/</a></p>
+
+<p><a href="https://developer.mozilla.org/en/docs/Web/API/GlobalEventHandlers/onerror">https://developer.mozilla.org/en/docs/Web/API/GlobalEventHandlers/onerror</a></p>
+
+<p><a href="http://rapheal.sinaapp.com/2014/11/06/javascript-error-monitor/">http://rapheal.sinaapp.com/2014/11/06/javascript-error-monitor/</a></p>
+
+<p><a href="http://resources.jointjs.com/demos/javascript-ast">http://resources.jointjs.com/demos/javascript-ast</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2016-09-04T00:00:00+08:00"><a href="/react-redux-performance-boost/">September 04, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -149,7 +300,7 @@ table{
 
 <p>而redux就可以视为其中的“global event system”，使用redux可以使得我们的react应用有更加清晰的架构。</p>
 
-<p>本文我们来探讨，基于react和redux架构的前端应用，如何进行渲染性能优化。<code>对于小型react前端应用，最好的优化就是不优化</code>因为React本身就是通过比较虚拟DOM的差异，从而对真实DOM进行最小化操作，小型React应用的虚拟DOM结构简单，虚拟DOM比较的耗时可以忽略不计。而对于复杂的前端项目，我们所指的渲染性能优化，实际上是指，<code>在不需要更新DOM时，如何避免虚拟DOM的比较</code>。</p>
+<p>本文我们来探讨，基于react和redux架构的前端应用，如何进行渲染性能优化。<code>对于小型react前端应用，最好的优化就是不优化</code>因为React本身就是通过比较虚拟DOM的差异，从而对真实DOM进行最小化操作，小型React应用的虚拟DOM结构简单，虚拟DOM比较的耗时可以忽略不计。而对于复杂的前端项目，我们所指的渲染性能优化，实际上是指，<code>在不需要更新DOM时，如何避免虚拟DOM的比较</code>。关于虚拟DOM的原理请参看我的另一篇博客<a href="http://foio.github.io/virtual-dom/">全面理解虚拟DOM，实现虚拟DOM</a> </p>
 
 <h3 id="1-react">1. react组件的生命周期</h3>
 
@@ -344,323 +495,6 @@ render()方法中不能设置组件的state。
 <p><a href="https://www.toptal.com/react/react-redux-and-immutablejs">https://www.toptal.com/react/react-redux-and-immutablejs</a></p>
 
 <p><a href="https://facebook.github.io/react/docs/advanced-performance.html">https://facebook.github.io/react/docs/advanced-performance.html</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-08-15T00:00:00+08:00"><a href="/node-memory/">August 15, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/node-memory/" rel="bookmark" title="node内存基础知识" itemprop="url">node内存基础知识</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <style type="text/css">
-td, table {
-   border: solid gray 1px;
-   padding: 10px;
-}
-table{
-   margin: 0 auto;
-}
-</style>
-
-<p>开始之前，先来个段子，博君一笑:</p>
-
-<blockquote>
-<p>虽然go成为了世界上最并发的语言，但是， 这并不妨碍php成为世界上最好的语言，也不妨碍java成为世界上最有模式的语言，更不会妨碍c++成为21 天就能学会了的语言...但是JavaScript终将统治世界,而V8将成为世界的基石!</p>
-</blockquote>
-
-<h2 id="1-node">1. node内存分配基础</h2>
-
-<p>在V8中所有的JavaScript对象都是通过堆来分配的。为了提高垃圾回收的效率，V8将堆分为新生代和老生代两个部分，其中新生代为存活时间较短的对象(需要经常进行垃圾回收)，而老生代为存活时间较长的对象(垃圾回收的频率较低)。</p>
-
-<p><img src="/images/v8-memory.png" alt="Alt text"></p>
-
-<p>新生代和老生代的默认内存限制在启动的时候就确定了，没办法根据应用使用内存情况自动扩充，当应用分配过多内存时，就会引起OOM(Out Of Memory，内存溢出)进程错误。64位系统和32位系统的内存限制不同，分别如下：</p>
-
-<table><thead>
-<tr>
-<th>类型</th>
-<th style="text-align: center">64位系统</th>
-<th style="text-align: right">32位系统</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>新生代</td>
-<td style="text-align: center">32MB x 2</td>
-<td style="text-align: right">16MB x 2</td>
-</tr>
-<tr>
-<td>老生代</td>
-<td style="text-align: center">1400MB</td>
-<td style="text-align: right">700MB</td>
-</tr>
-<tr>
-<td>实际可用内存</td>
-<td style="text-align: center">1432MB</td>
-<td style="text-align: right">716MB</td>
-</tr>
-</tbody></table>
-
-<p>在node启动时，通过<code>--max-new-space-size</code>和<code>--max-old-space-size</code>可分别设置新生代和老生代的默认内存限制。V8为什么要对内存做如此限制呢？最终的原因还是V8的垃圾回收机制所限制的，在较大的内存上进行垃圾回收是很耗时地。下面我们就来了解一下V8的垃圾回收机制。</p>
-
-<h2 id="2-node">2. node垃圾回收原理</h2>
-
-<h3 id="2-1">2.1 常用垃圾回收基本算法</h3>
-
-<p>垃圾回收机制有多种，但最常用的就是以下几种：</p>
-
-<table><thead>
-<tr>
-<th>类型</th>
-<th>方法</th>
-<th style="text-align: center">是否停止程序</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>引用计数(Reference Counting)</td>
-<td>每个对象配置一个计数器即可,每当引用它的对象被删除时，就将其引用数减1，当其引用计数为0时，即可清除</td>
-<td style="text-align: center">否</td>
-</tr>
-<tr>
-<td>标记-清除(Mark-Sweep)</td>
-<td>标记阶段标记活对象，清除阶段清除未被标记的对象</td>
-<td style="text-align: center">是</td>
-</tr>
-<tr>
-<td>停止-复制(Stop-Copy)</td>
-<td>内存分为两块，并将正在使用的内存中的存活对象复制到未被使用的内存块中，之后，清除正在使用的内存块中的所有对象，交换两个内存的角色</td>
-<td style="text-align: center">是</td>
-</tr>
-<tr>
-<td>标记-压缩(Mark-Compact)</td>
-<td>对所有可达对象做一次标记，将所有的存活对象压缩到内存的一端，以减少内存碎片</td>
-<td style="text-align: center">是</td>
-</tr>
-<tr>
-<td>增量算法(Incremental Collecting)</td>
-<td>每次，垃圾收集线程只收集一小片区域的内存空间，接着切换到应用程序线程。依次反复，直到垃圾收集完成。</td>
-<td style="text-align: center">否</td>
-</tr>
-</tbody></table>
-
-<h3 id="2-2-v8">2.2 V8的分代垃圾回收</h3>
-
-<p>上面提到过，V8将内存分为新生代和老生代，新生代中对象存活时间较短，老生代中对象存活时间较长。为了最大程度的提升垃圾回收效率，V8使用了一种综合性的方法，其在新生代和老生代中分别使用上文提到的不同的基本垃圾回收算法。</p>
-
-<h4 id="1-scavenge">[1] 新生代垃圾回收算法Scavenge</h4>
-
-<p>在新生代中，由于内存较小(64位系统为64MB)且存活对象较少，V8采取了一种以空间换时间的方案，即停止-复制算法 (Stop-Copy)。它将新生代分为两个半区域(semi-space)，分别称为from空间和to空间。一次垃圾回收分为两步：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">(1) 将from空间中的活对象复制到to空间
-(2) 切换from和to空间
-</code></pre></div>
-<p>V8将新生代中的一次垃圾回收过程，称为Scavenge。</p>
-
-<p><img src="/images/scavenge.png" alt="Alt text"></p>
-
-<h4 id="2">[2] 老生代垃圾回收算法</h4>
-
-<p>老生代的内存空间较大且存活对象较多，因此其垃圾回收算法也就没有新生代那么简单了。为此V8使用了标记-清除算法 (Mark-Sweep)进行垃圾回收，并使用标记-压缩算法 (Mark-Compact)整理内存碎片，提高内存的利用率。老生代的垃圾回收算法步骤如下：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">(1).对老生代进行第一遍扫描，标记存活的对象
-(2).对老生代进行第二次扫描，清除未被标记的对象
-(3).将存活对象往内存的一端移动
-(4).清除掉存活对象边界外的内存
-</code></pre></div>
-<p><img src="/images/full-gc.png" alt="Alt text"></p>
-
-<p>从上面的表格可以看出，停止-复制(Stop-Copy)、标记-清除(Mark-Sweep)和标记-压缩(Mark-Compact)都需要停止应用逻辑，我们将之称为stop-the-world。但因为新生代内存较小且存活对象较少，即便stop-the-world，对应用的性能影响也不大；而老生代的内存很大，stop-the-world就不能接受了，为此V8引入了增量标记。增量标记使得应用逻辑和垃圾回收交替运行，减少了垃圾回收对应用逻辑的干扰。</p>
-
-<h3 id="2-3">2.3 分代垃圾回收的代价</h3>
-
-<p>在讨论新生代中的垃圾回收算法Scavenge时，我们忽略了许多细节。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">真的仅仅扫描新生代的内存空间，就能确定新生代的活动对象吗？
-</code></pre></div>
-<p>当然不是，老生代的对象也可能引用新生代的对象啊。如果每次运行Scavenge算法时，都要扫描老生代空间的话，这种操作带来的性能损耗就完全抵消了分代式垃圾回收所带来的性能提升。为此<code>V8使用写屏障技术</code>解决了这个问题：</p>
-
-<blockquote>
-<p>V8使用一个列表(我们称之为CrossRefList)记录所有老生代对象指向新生代的情况，当有老生代中的对象出现指向新生代对象的指针时，便记录下来这样的跨区指向。由于这种记录行为总是发生在写操作时，因此被称为写屏障。</p>
-</blockquote>
-
-<p><img src="/images/cross-ref-list.png" alt="Alt text"></p>
-
-<p>每个写操作都要经历这样一关，性能上必然有损失，这是分代垃圾回收的代价之一。通过使用写屏障技术，我们在对新生代进行垃圾回收时，只需要扫描新生代From空间和CrossRefList列表就可以确定活动对象了。</p>
-
-<h2 id="3">3.垃圾回收监控</h2>
-
-<p>理解了垃圾回收的基本原理以后，我们来看一看如何监控node的垃圾回收情况。查看垃圾回收方式的最方便的方法是通过在启动时使用--trace-gc参数：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">node --trace-gc app.js
-1254 ms: Scavenge 413.1 (460.9) -&gt; 413.1 (460.9) MB, 0.5 
-        / 0 ms (+ 3.0 ms in 14 steps since last GC)
-1258 ms: Mark-sweep 413.5 (461.9) -&gt; 412.6 (461.9) MB, 1.0 
-        / 0 ms (+ 255.0 ms in 2050 steps since start of marking, biggest step 1.0 ms)
-         [GC interrupt] [GC in old space requested]
-</code></pre></div>
-<p>从控制台日志中可以轻易的看出node的垃圾回收动作，包括新生代垃圾回收(Scavenge)和老生代垃圾回收(Mark-sweep)。</p>
-
-<p>而一种更加程序化的方式是使用<a href="https://www.npmjs.com/package/memwatch-next">memwatch-next</a>模块，该模块在node每一次进行全量垃圾(full-gc,包括标记-清除和标记-压缩)回收时触发相应的事件：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">memwatch</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'memwatch-next'</span><span class="p">);</span>
-<span class="nx">memwatch</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'stats'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">stats</span><span class="p">)</span> <span class="p">{</span> 
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">stats</span><span class="p">);</span>
-<span class="p">});</span>
-
-</code></pre></div>
-<p>上述代码监控每一次全量垃圾回收动作，并打印出相应垃圾回收统计信息：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span>
-  <span class="s2">"num_full_gc"</span><span class="err">:</span> <span class="mi">8</span><span class="p">,</span>            <span class="c1">//目前为止进行全量GC的次数</span>
-  <span class="s2">"num_inc_gc"</span><span class="err">:</span> <span class="mi">18</span><span class="p">,</span>             <span class="c1">//目前为止进行增量GC的次数</span>
-  <span class="s2">"heap_compactions"</span><span class="err">:</span> <span class="mi">8</span><span class="p">,</span>        <span class="c1">//目前为止进行的内存压缩的次数</span>
-  <span class="s2">"usage_trend"</span><span class="err">:</span> <span class="mi">0</span><span class="p">,</span>             <span class="c1">//内存增长趋势，如果一直大于0，则可能有内存泄露</span>
-  <span class="s2">"estimated_base"</span><span class="err">:</span> <span class="mi">2592568</span><span class="p">,</span>    
-  <span class="s2">"current_base"</span><span class="err">:</span> <span class="mi">2592568</span><span class="p">,</span>
-  <span class="s2">"min"</span><span class="err">:</span> <span class="mi">2499912</span><span class="p">,</span>
-  <span class="s2">"max"</span><span class="err">:</span> <span class="mi">2592568</span>
-<span class="p">}</span>                 
-</code></pre></div>
-<h2 id="4">4.内存泄露定位</h2>
-
-<p>使用上文提到的垃圾回收监控方法，我们可以知道程序是否有内存泄露，那么具体在什么地方有内存泄露呢？我们需要借助于新的工具。<a href="https://github.com/bnoordhuis/node-heapdump">node-heapdump</a>提供了v8的堆内存快照抓取工具。</p>
-
-<h3 id="4-1">4.1 抓取对内存镜像</h3>
-
-<p>我们可以在程序中直接通过它提供的函数抓取内存快照：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">heapdump</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'heapdump'</span><span class="p">);</span>
-<span class="nx">heapdump</span><span class="p">.</span><span class="nx">writeSnapshot</span><span class="p">(</span><span class="s1">'/tmp/'</span> <span class="o">+</span> <span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">()</span> <span class="o">+</span> <span class="s1">'.heapsnapshot'</span><span class="p">);</span>
-</code></pre></div>
-<p>在linux下，我们还可以通过向node进程发送信号来抓取内存快照：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">kill -USR2 pid
-</code></pre></div>
-<p>有了内存快照后，我们就可以借助chrome的Profile工具，具体的分析内存泄露发生在什么地方了。</p>
-
-<h3 id="4-2">4.2 三次快照法</h3>
-
-<p>利用chrome的Profile工具分析内存泄露的经典方法是<code>三次快照法</code>，我们需要首选准备3个内存快照文件：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">(1) 第一次获取正常情况下内存快照
-(2) 第二次获取发生内存泄露时的内存快照
-(3) 第三次获取继续发生内存泄露时的内存快照
-</code></pre></div>
-<p>三次快照要求第一次必须在没有出现内存泄露时，是为了过滤一些无用的信息，使得分析结果可读性更强。</p>
-
-<h2 id="5-case">5.常见的内存泄露case</h2>
-
-<p>了解了node内存的基本原理后，我们一起来看一看常见的内存泄露case。</p>
-
-<p>5.1 使用对象作为缓存</p>
-
-<p>使用javascript键值对作为缓存，我们几乎必然要承担内存泄露的风险，因为严格意义的缓存有完善的过期策略，而普通的javascript对象显然不具备这个功能：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">cache</span> <span class="o">=</span> <span class="p">{};</span>
-<span class="kd">function</span> <span class="nx">getFromCache</span><span class="p">(</span><span class="nx">key</span><span class="p">){</span>
-    <span class="k">if</span><span class="p">(</span><span class="nx">cache</span><span class="p">[</span><span class="nx">key</span><span class="p">]){</span>
-        <span class="k">return</span> <span class="nx">cache</span><span class="p">[</span><span class="nx">key</span><span class="p">];</span>
-    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
-        <span class="nx">cache</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">CacheItem</span><span class="p">();</span>
-        <span class="k">return</span> <span class="nx">cache</span><span class="p">[</span><span class="nx">key</span><span class="p">];</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div>
-<p>上述cache里缓存的item永远得不到释放，尽管没有任何引用。那么如果我们确实需要使用缓存呢？有两种方案：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">(1) 使用外部缓存服务，比如memcahe
-(2) 使用es6的WeakMap作为程序内缓存数据结构
-</code></pre></div>
-<p><a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">WeakMap</a>是ES6标准中新引入的一种类似字典的数据结构，和普通字典数据结构不同的是，当WeakMap中key没有其他引用，并且value也没有除key之外的引用时，value可以被垃圾回收，这是一种程序内缓存的理想选择。</p>
-
-<h2 id="6">6.堆外内存</h2>
-
-<p>在node中，我们不可避免的需要操作大内存，而堆内内存大小的限制显然无法满足我们的要求。为此，node通过内置的全局Buffer模块提供堆外的内存使用方法。Buffer是一个C++与Javascript结合的模块，其内存分配策略，也非常值得我们研究。我们知道大部分Javascript对象所使用的内存都是很小的，如果每一次都向操作系统申请，就必须频繁地进行系统调用；为了解决这个问题，node使用C++层面申请一大块内存，然后按需分配给Javascript的策略；也就是*nix系统常用的slab内存分配策略，这是一种典型的对时间和空间的折衷算法(time/space trade-off)。</p>
-
-<p>slab是一块提前申请好地固定大小的内存，一个slab有三种状态：full、partial、empty。node层面提供了一个SlowBuffer类，封装C++的api，用于申请真实的物理内存，可以简单地将一个slab理解为一个SlowBuffer对象。node中维护着一个名为pool的指针，它指向当前slab(SlowBuffer对象)。向系统申请slab的过程可用如下伪代码表示：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">pool</span><span class="p">;</span>
-<span class="kd">function</span> <span class="nx">allocateSlab</span><span class="p">(){</span>
-    <span class="nx">pool</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SlowBuffer</span><span class="p">();</span>
-    <span class="nx">pool</span><span class="p">.</span><span class="nx">used</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">}</span>
-</code></pre></div>
-<h3 id="6-1-lt-4kb">6.1 小内存(&lt;4kB)的分配</h3>
-
-<p>一个slab的大小为8KB(Buffer.poolSize)，node中通过Buffer.poolSize定义。当我们需要创建一个长度小于4kB的Buffer对象时，会首先判断当前slab的剩余空间是否足够，如果剩余空间足够，则在当前slab上为Buffer对象分配内存，否则创建一个新的slab块，并在新的slab上为Buffer对象分配内存。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">pool</span> <span class="o">||</span> <span class="nx">pool</span><span class="p">.</span><span class="nx">lengh</span> <span class="o">-</span> <span class="nx">pool</span><span class="p">.</span><span class="nx">used</span> <span class="o">&lt;</span> <span class="k">this</span><span class="p">.</span><span class="nx">length</span><span class="p">){</span>
-    <span class="nx">allocateSlab</span><span class="p">();</span> <span class="c1">//向系统申请新的slab</span>
-    <span class="nx">allocateBuffer</span><span class="p">();</span> <span class="c1">//给buffer对象分配内存</span>
-<span class="p">}</span><span class="k">else</span><span class="p">{</span>
-    <span class="nx">allocateBuffer</span><span class="p">();</span> <span class="c1">//给buffer对象分配内存</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>从当前slab上为Buffer分配内存的算法也很容易理解，只需要将Buffer指向slab的某段内存，并调整pool的length和used等属性：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">function allocateBuffer(){
-    this.parent = pool; //buffer的parent属性指向当前slab
-    this.offset = pool.used; //buffer的offset属性指向当前slab可用内存段的开始位置
-    pool.used += this.length; //调整buffer的已使用空间
-}
-</code></pre></div>
-<p>由此可见，一个slab(SlowBuffer对象)可供多个小内存的Buffer共用：</p>
-
-<p><img src="/images/slow-buffer.png" alt="Alt text"></p>
-
-<p>在写本文时，node官方已经不建议使用<code>new Buffer()</code>创建buffer对象了，官方提供了更新的<code>Buffer.alloc()</code>和<code>Buffer.allocUnsafe()</code>。其中<code>Buffer.alloc()</code>在创建Buffer对象时会对内存进行初始化，并且不会使用slab策略；而<code>Buffer.allocUnsafe()</code>则是使用slab算法分配一块未初始化的内存，因此其性能要比<code>Buffer.alloc()</code>高很多。因此我们应该使用<code>Buffer.allocUnsafe()</code>替换来的<code>new Buffer()</code>。</p>
-
-<h3 id="6-2-gt-4kb">6.2 大内存(&gt;4kB)的分配</h3>
-
-<p>对于大于4KB的Buffer对象，其大小甚至可能超过一个slab的大小，系统就无法使用固定大小的slab分配算法了。值得注意的是，node对单个Buffer大小是有上限的(buffer.kMaxLength)，在32系统上其上限接近1GB(2<sup>30-1)，而在64位系统上其上限则接近2GB(2<sup>31-1)。</sup></sup></p>
-
-<h3 id="6-3-slab">6.3  slab算法的代价</h3>
-
-<p>鱼与熊掌不可兼得，上文中提到slab算法一种时间和空间的折衷算法。为了提高内存的分配速度，该算法可能导致内存碎片：当一个slab上的剩余空间不足于容纳新申请的Buffer的大小，或者新申请Buffer大于等于4kb(Buffer.poolSize)时，就需要创建新的slab，原来slab上剩余的空间就浪费了。我们写个小程序证明一下我们的猜想:</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">size</span><span class="p">){</span>
-    <span class="kd">var</span> <span class="nx">itt</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
-    <span class="kd">var</span> <span class="nx">store</span> <span class="o">=</span> <span class="p">[];</span>
-    <span class="kd">var</span> <span class="nx">rss</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">memoryUsage</span><span class="p">().</span><span class="nx">rss</span><span class="p">;</span>
-    <span class="kd">var</span> <span class="nx">tmpMem</span><span class="p">;</span>
-    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span><span class="mi">0</span> <span class="p">;</span><span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">itt</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
-        <span class="nx">store</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="k">new</span> <span class="nx">Buffer</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
-        <span class="nx">tmp</span> <span class="o">=</span> <span class="nx">Buffer</span><span class="p">(</span><span class="nx">size</span><span class="p">);</span>
-        <span class="k">if</span><span class="p">(</span><span class="nx">i</span><span class="o">/</span><span class="mi">1000</span><span class="p">){</span>
-            <span class="nx">global</span><span class="p">.</span><span class="nx">gc</span><span class="p">();</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="kd">var</span> <span class="nx">nr</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">memoryUsage</span><span class="p">().</span><span class="nx">rss</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">((((</span><span class="nx">nr</span> <span class="o">-</span> <span class="nx">rss</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1024</span> <span class="o">/</span> <span class="mi">1024</span><span class="p">).</span><span class="nx">toFixed</span><span class="p">(</span><span class="mi">2</span><span class="p">)));</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>上述程序，在一万次循环中申请了一个1字节的全局缓存，并申请了size大小的临时缓存(其引用会在循环中被垃圾回收)。我们分别给<code>testBufferSlab</code>传递两个特殊的参数：<code>Buffer.poolSize</code>和<code>Buffer.poolSize/2-1</code>，并观察结果时，奇怪的现象发生了(<em>申请较大的Buffer时竟然消耗更少的内存</em>)：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">Buffer</span><span class="p">.</span><span class="nx">poolSize</span><span class="p">);</span>
-<span class="nx">node</span> <span class="o">--</span><span class="nx">expose</span><span class="o">-</span><span class="nx">gc</span> <span class="nx">test</span><span class="p">.</span><span class="nx">js</span>
-<span class="nl">output</span><span class="p">:</span> <span class="mf">5.2</span>
-</code></pre></div><div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">Buffer</span><span class="p">.</span><span class="nx">poolSize</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
-<span class="nx">node</span> <span class="o">--</span><span class="nx">expose</span><span class="o">-</span><span class="nx">gc</span> <span class="nx">test</span><span class="p">.</span><span class="nx">js</span>
-<span class="nl">output</span><span class="p">:</span> <span class="mf">54.78</span>
-</code></pre></div>
-<p>究其原因就是：当新申请的Buffer的小于4Kb时(Buffer.poolSize/2)，会使用slab算法，即便当前Buffer块已经没有引用了，只要其对应slab上还有其他Buffer指向时，整个slab内存就无法释放，这样就会造成内存碎片。</p>
-
-<hr>
-
-<p>参考文章：</p>
-
-<p><a href="https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/">https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/</a></p>
-
-<p><a href="https://www.zhihu.com/question/20018826">https://www.zhihu.com/question/20018826</a></p>
-
-<p><a href="https://github.com/caoxudong/oracle_jrockit_the_definitive_guide/blob/master/chap3/3.3.md">https://github.com/caoxudong/oracle_jrockit_the_definitive_guide/blob/master/chap3/3.3.md</a></p>
-
-<p><a href="http://newhtml.net/v8-garbage-collection/">http://newhtml.net/v8-garbage-collection/</a></p>
-
-<p><a href="http://taobaofed.org/blog/2016/04/15/how-to-find-memory-leak/">http://taobaofed.org/blog/2016/04/15/how-to-find-memory-leak/</a></p>
-
-<p><a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap</a></p>
-
-<p><a href="https://github.com/promises-aplus/promises-spec/issues/179">https://github.com/promises-aplus/promises-spec/issues/179</a></p>
-
-<p><a href="https://www.ibm.com/developerworks/cn/linux/l-linux-slab-allocator/">https://www.ibm.com/developerworks/cn/linux/l-linux-slab-allocator/</a></p>
-
-<p><a href="https://nodejs.org/api/buffer.html">https://nodejs.org/api/buffer.html</a></p>
-
-<p><a href="http://stackoverflow.com/questions/14009048/what-makes-node-js-slowbuffers-slow">http://stackoverflow.com/questions/14009048/what-makes-node-js-slowbuffers-slow</a></p>
-
-<p><a href="https://github.com/nodejs/node-v0.x-archive/issues/4525">https://github.com/nodejs/node-v0.x-archive/issues/4525</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->

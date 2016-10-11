@@ -143,7 +143,7 @@ table{
 
 <p>而redux就可以视为其中的“global event system”，使用redux可以使得我们的react应用有更加清晰的架构。</p>
 
-<p>本文我们来探讨，基于react和redux架构的前端应用，如何进行渲染性能优化。<code>对于小型react前端应用，最好的优化就是不优化</code>因为React本身就是通过比较虚拟DOM的差异，从而对真实DOM进行最小化操作，小型React应用的虚拟DOM结构简单，虚拟DOM比较的耗时可以忽略不计。而对于复杂的前端项目，我们所指的渲染性能优化，实际上是指，<code>在不需要更新DOM时，如何避免虚拟DOM的比较</code>。</p>
+<p>本文我们来探讨，基于react和redux架构的前端应用，如何进行渲染性能优化。<code>对于小型react前端应用，最好的优化就是不优化</code>因为React本身就是通过比较虚拟DOM的差异，从而对真实DOM进行最小化操作，小型React应用的虚拟DOM结构简单，虚拟DOM比较的耗时可以忽略不计。而对于复杂的前端项目，我们所指的渲染性能优化，实际上是指，<code>在不需要更新DOM时，如何避免虚拟DOM的比较</code>。关于虚拟DOM的原理请参看我的另一篇博客<a href="http://foio.github.io/virtual-dom/">全面理解虚拟DOM，实现虚拟DOM</a> </p>
 
 <h3 id="1-react">1. react组件的生命周期</h3>
 
@@ -359,20 +359,20 @@ render()方法中不能设置组件的state。
           <a href="/node-memory/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/node-memory/" title="node内存基础知识">node内存基础知识</a></h3>
-          <p>node内存基础知识,node垃圾回收,node内存泄漏 <a href="/node-memory/">Continue reading</a></p>
+          <h3><a href="/javascript-global-exceptions/" title="捕获页面中全局Javascript异常">捕获页面中全局Javascript异常</a></h3>
+          <p>捕获页面中全局Javascript异常, window.onError, AST, 抽象语法树 <a href="/javascript-global-exceptions/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/redux-state-manage/" title="redux,一种页面状态管理的优雅方案">redux,一种页面状态管理的优雅方案</a></h4>
-            <span>Published on July 01, 2016</span>
+            <h4><a href="/node-memory/" title="node内存基础知识">node内存基础知识</a></h4>
+            <span>Published on August 15, 2016</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/mean-web/" title="使用MEAN进行现代化WEB开发">使用MEAN进行现代化WEB开发</a></h4>
-            <span>Published on May 01, 2016</span>
+            <h4><a href="/redux-state-manage/" title="redux,一种页面状态管理的优雅方案">redux,一种页面状态管理的优雅方案</a></h4>
+            <span>Published on July 01, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

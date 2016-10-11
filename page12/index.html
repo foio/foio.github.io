@@ -119,6 +119,122 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-03-13T00:00:00+08:00"><a href="/jquery-ready-load/">March 13, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/jquery-ready-load/" rel="bookmark" title="jQuery的ready事件实现原理" itemprop="url">jQuery的ready事件实现原理</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>大家在面试的过程中，经常会被问到一个问题：ready与load那一个先执行，那一个后执行？答案是ready先执行，load后执行。</p>
+
+<p>DOM文档加载的步骤：
+要想理解为什么ready先执行，load后执行就要先了解下DOM文档加载的步骤：</p>
+
+<blockquote>
+<p>(1) 解析HTML结构。
+(2) 加载外部脚本和样式表文件。
+(3) 解析并执行脚本代码。
+(4) 构造HTML DOM模型。//ready
+(5) 加载图片等外部文件。
+(6) 页面加载完毕。//load</p>
+</blockquote>
+
+<p>从上面的描述中大家应该已经理解了吧，ready在第（4）步完成之后就执行了，但是load要在第（6）步完成之后才执行。</p>
+
+<p>所以有如下结论：</p>
+
+<blockquote>
+<p>ready与load的区别就在于资源文件的加载，ready构建了基本的DOM结构，所以对于代码来说应该越快加载越好。在一个高速浏览的时代，没人愿意等待答案。假如一个网站页面加载超过4秒，不好意思，你1/4的用户将面临着流失，所以对于框架来说用户体验是至关重要的，我们应该越早处理DOM越好，我们不需要等到图片资源都加载后才去处理框架的加载，图片资源过多load事件就会迟迟不会触发。</p>
+</blockquote>
+
+<p>我们经常使如下jQuery语句,用于在页面dom结构刚刚加载完成时,执行代码.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//普通方式</span>
+<span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="c1">//your code here</span>
+<span class="p">});</span>
+<span class="c1">//简写方式</span>
+<span class="nx">$</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+    <span class="c1">//your code here</span>
+<span class="p">});</span></code></pre></figure>
+
+<p>那么jquery的ready函数是如何实现的呢? 它时如何保证ready在load之前执行的呢?</p>
+
+<h3 id="1-domcontentloaded">1. 现代浏览器通过DOMContentLoaded事件实现</h3>
+
+<p>当HTML文档下载并解析完成以后，就会在document对象上触发DOMContentLoaded事件。这时，仅仅完成了HTML文档的解析（整张页面的DOM生成），所有外部资源（样式表、脚本、iframe等等）可能还没有下载结束。也就是说，这个事件比load事件，发生时间早得多。</p>
+
+<p>因此可以通过如下方式实现jQuery的ready函数.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s2">"DOMContentLoaded"</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">//your code here</span>
+<span class="p">});</span></code></pre></figure>
+
+<p>但是对于IE8以及以下的浏览器,世界就没有那么友好了. </p>
+
+<h3 id="2-readystatechange">2. 低版本浏览器通过readystatechange事件实现?</h3>
+
+<p>写过AJAX原生代码的童鞋都知道, readystatechange用于表示XMLHttpRequest的状态发生改变,当readyState=2时表示AJAX执行成功. readystatechange也会在dom状态发生变化时触发.</p>
+
+<p>因此可以通过如下方式实现jQuery的ready函数.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">"interactive"</span> <span class="o">||</span> <span class="nb">document</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">"complete"</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">initApplication</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>但是readyState为interactive时, DOM结构并没有稳定, 此时依然会有脚本修改DOM元素,导致执行事件太早. readyState为complete时, 图片已经加载完毕, 所以complete虽然在window.onload前执行, 导致执行事件太晚.
+让我们看看jQuery的源码时如何实现的.</p>
+
+<h3 id="3-jquery-ready">3. jQuery在低版本浏览器上是如何实现ready方法的</h3>
+
+<p>jQuery源码中使用了Diego Perini 在 2007 年的时候报告的一种检测 IE 是否加载完成的方式的方法. 该方法通过使用 doScroll 方法调用，可以看下这哥们的<a href="http://javascript.nwbox.com/IEContentLoaded/">博客</a>。</p>
+
+<p>原理就是对于 IE 在非 iframe 内时，只有不断地通过能否执行 doScroll 判断 DOM 是否加载完毕。在上述中间隔 50 毫秒尝试去执行 doScroll，注意，由于页面没有加载完成的时候，调用 doScroll 会导致异常，所以使用了 try -catch 来捕获异常。</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">// 用于保证事件在onload之前执行</span>
+<span class="nb">document</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span> <span class="s2">"onreadystatechange"</span><span class="p">,</span> <span class="nx">completed</span> <span class="p">);</span>
+<span class="c1">// 如果是IE且不是iframe就通过不停的检查doScroll来判断dom结构是否ready</span>
+<span class="kd">var</span> <span class="nx">top</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+<span class="k">try</span> <span class="p">{</span>
+    <span class="nx">top</span> <span class="o">=</span> <span class="nb">window</span><span class="p">.</span><span class="nx">frameElement</span> <span class="o">==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="nb">document</span><span class="p">.</span><span class="nx">documentElement</span><span class="p">;</span>
+<span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{}</span>
+<span class="k">if</span> <span class="p">(</span> <span class="nx">top</span> <span class="o">&amp;&amp;</span> <span class="nx">top</span><span class="p">.</span><span class="nx">doScroll</span> <span class="p">)</span> <span class="p">{</span>
+    <span class="p">(</span><span class="kd">function</span> <span class="nx">doScrollCheck</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="o">!</span><span class="nx">jQuery</span><span class="p">.</span><span class="nx">isReady</span> <span class="p">)</span> <span class="p">{</span><span class="c1">//ready方法没有执行过</span>
+            <span class="k">try</span> <span class="p">{</span>
+                <span class="c1">// 检查是否可以向左scroll滑动,当dom结构还没有解析完成时会抛出异常</span>
+                <span class="nx">top</span><span class="p">.</span><span class="nx">doScroll</span><span class="p">(</span><span class="s2">"left"</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">//递归调用,直到当dom结构解析完成</span>
+                <span class="k">return</span> <span class="nx">setTimeout</span><span class="p">(</span> <span class="nx">doScrollCheck</span><span class="p">,</span> <span class="mi">50</span> <span class="p">);</span>
+            <span class="p">}</span>
+            <span class="c1">//没有发现异常,表示dom结构解析完成,删除之前绑定的onreadystatechange事件</span>
+            <span class="nx">detach</span><span class="p">();</span>
+
+            <span class="c1">//执行jQuery的ready方法</span>
+            <span class="nx">jQuery</span><span class="p">.</span><span class="nx">ready</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">})();</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>当然,通过检查doScroll的方法也不是完美的, 这种实现的jQuery的ready方法执行时,readyState可能为interactive, 也可能为complete.  也即没法保证dom加载完成后立刻执行, 但是一定会在DOM结构稳定后, 且图片加载完毕前执行.</p>
+
+<hr>
+
+<p>参考文档</p>
+
+<p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState">MDN里面关于Document.readyState的文档</a>, <a href="http://www.cnblogs.com/zhangziqiu/archive/2011/06/27/domready.html">一篇关于dom ready的博客</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-01-02T00:00:00+08:00"><a href="/mongo-atom/">January 02, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -152,75 +268,6 @@ rel="stylesheet" type="text/css" -->
 <hr>
 
 <p>参考资料: (1) <a href="http://docs.mongodb.org/manual/core/write-operations-atomicity/">mongoDB原子性与实务</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-12-10T00:00:00+08:00"><a href="/hive-function/">December 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/hive-function/" rel="bookmark" title="hive自定义函数" itemprop="url">hive自定义函数</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <blockquote>
-<p>Hive可以将类sql查询语句转换成Hadoop的map reduce任务，让熟悉关系型数据库的人也可以利用hadoop的强大并行计算能力。Hive提供了强大的内置函数支持，但是总有一些特殊情况，内置函数无法覆盖，这就要求我们对定义自己的函数。接下来我们通过一个例子看一下如何自定义hive函数。</p>
-</blockquote>
-
-<h3 id="1">1. 自定义函数的实现</h3>
-
-<p>假设我们的关系型数据库中user表有一个status字段，代表着用户的活跃等级，取值为1~10，活跃度一次递增。现在我们要根据status字段将用户分为3个活跃度等级。Hive显然没有这种与业务逻辑强耦合的内置函数，但这不应该成为阻碍我们使用Hive的理由。下面的扩展函数就可以满足需求。</p>
-
-<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">test</span><span class="o">.</span><span class="na">example</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.apache.hadoop.hive.ql.exec.Description</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.apache.hadoop.hive.ql.exec.UDF</span><span class="o">;</span>
-<span class="kn">import</span> <span class="nn">org.apache.hadoop.io.Text</span><span class="o">;</span>
-<span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserStatus</span> <span class="kd">extends</span> <span class="n">UDF</span> <span class="o">{</span>
-   <span class="kd">public</span> <span class="n">Text</span> <span class="n">evaluate</span><span class="o">(</span><span class="n">Text</span> <span class="n">input</span><span class="o">)</span> <span class="o">{</span>
-     <span class="k">if</span><span class="o">(</span><span class="n">input</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
-     <span class="kt">int</span> <span class="n">status</span><span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">input</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-     <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span> <span class="mi">3</span><span class="o">){</span>
-         <span class="k">return</span> <span class="k">new</span> <span class="n">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
-     <span class="o">}</span><span class="k">else</span> <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">7</span><span class="o">){</span>
-         <span class="k">return</span> <span class="k">new</span> <span class="n">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">2</span><span class="o">));</span>
-     <span class="o">}</span><span class="k">else</span> <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">7</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">10</span><span class="o">){</span>
-         <span class="k">return</span> <span class="k">new</span> <span class="n">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">3</span><span class="o">));</span>
-     <span class="o">}</span>
-     <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
-   <span class="o">}</span>
-<span class="o">}</span></code></pre></figure>
-
-<p>从上面的例子可以看出实现自定义的hive函数还是相当简单的。就是继承org.apache.hadoop.hive.ql.exec.UDF 并实现execute函数。</p>
-
-<h3 id="2">2. 自定义函数的使用</h3>
-
-<p>定义为自定义函数后该如何使用呢？其实也是相关简单的。假设包含自定义函数的jar包为mydf.jar。</p>
-
-<h4 id="1-hive-shell">(1).在hive shell中加载</h4>
-
-<p>首先加载jar包，并创建临时函数\</p>
-
-<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="o">%&gt;</span> <span class="n">hive</span>
-<span class="n">hive</span><span class="o">&gt;</span> <span class="n">ADD</span> <span class="n">JAR</span> <span class="o">/</span><span class="n">path</span><span class="o">/</span><span class="n">to</span><span class="o">/</span><span class="n">mydf</span><span class="o">.</span><span class="na">jar</span><span class="o">;</span>
-<span class="n">hive</span><span class="o">&gt;</span> <span class="n">create</span> <span class="n">temporary</span> <span class="n">function</span> <span class="n">userStatus</span> <span class="n">as</span> <span class="err">'</span><span class="n">com</span><span class="o">.</span><span class="na">test</span><span class="o">.</span><span class="na">example</span><span class="o">.</span><span class="na">UserStatus</span><span class="err">'</span><span class="o">;</span></code></pre></figure>
-
-<p>然后就可以直接使用了</p>
-
-<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">hive</span><span class="o">&gt;</span> <span class="n">select</span> <span class="n">userStatus</span><span class="o">(</span><span class="mi">4</span><span class="o">);</span></code></pre></figure>
-
-<p>但是每次使用都要加载一次，太费劲了。有没有别的方法呢。</p>
-
-<h4 id="2-hiverc">(2).在.hiverc中加载</h4>
-
-<p>编辑home目录下的.hiverc文件，如果没有这个文件就新建一个。将加载jar包的命令写入.hiverc文件，启动hive shell时会自动执行.hiverc文件，不需要每个shell都load一遍。</p>
-
-<hr>
-
-<p>参考资料: <a href="https://cwiki.apache.org/confluence/display/Hive/LanguageManual+UDF">hive内置函数</a>, <a href="https://github.com/foio/hive-extension-examples">hive自定义函数demo</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->

@@ -152,6 +152,10 @@
 
     
     <url>
+        <loc>/javascript-global-exceptions/</loc>
+    </url>
+    
+    <url>
         <loc>/react-redux-performance-boost/</loc>
     </url>
     
