@@ -149,7 +149,15 @@
         <loc>/page29/</loc>
     </url>
     
+    <url>
+        <loc>/page30/</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/wepack-code-spliting/</loc>
+    </url>
     
     <url>
         <loc>/javascript-global-exceptions/</loc>

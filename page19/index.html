@@ -119,6 +119,151 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-30T00:00:00+08:00"><a href="/linux-expects/">July 30, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/linux-expects/" rel="bookmark" title="linux expect详解" itemprop="url">linux expect详解</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>Expect是一个用来处理<strong>交互</strong>的命令。借助Expect，我们可以将交互过程写在一个脚本上，使之自动化完成。形象的说，ssh登录，ftp登录等都符合<strong>交互</strong>的定义。下文我们首先提出一个问题，然后介绍基础知四个命令，最后提出解决方法。</p>
+
+<h2 id=">问题</h2>
+
+<blockquote>
+<p>如何从机器A上ssh到机器B上，然后执行机器B上的命令？如何使之自动化完成？</p>
+</blockquote>
+
+<hr>
+
+<h2 id=">四个命令</h2>
+
+<p>Expect中最关键的四个命令是send,expect,spawn,interact。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">send：用于向进程发送字符串
+expect：从进程接收字符串
+spawn：启动新的进程
+interact：允许用户交互
+</code></pre></div>
+<h3 id="1-send">1. send命令</h3>
+
+<p>send命令接收一个字符串参数，并将该参数发送到进程。</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect1</span><span class="p">.</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">send</span> <span class="s">"hello world</span><span class="se">\n</span><span class="s">"</span>
+<span class="n">hello</span> <span class="n">world</span></code></pre></figure>
+
+<h3 id="2-expect">2. expect命令</h3>
+
+<hr>
+
+<h4 id="1">(1)基础知识</h4>
+
+<p>expect命令和send命令正好相反，expect通常是用来等待一个进程的反馈。expect可以接收一个字符串参数，也可以接收正则表达式参数。和上文的send命令结合，现在我们可以看一个最简单的交互式的例子：</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">"hi</span><span class="se">\n</span><span class="s">"</span>
+<span class="n">send</span> <span class="s">"hello there!</span><span class="se">\n</span><span class="s">"</span></code></pre></figure>
+
+<p>这两行代码的意思是：从<strong>标准输入</strong>中等到hi和换行键后，向<strong>标准输出</strong>输出hello there。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">tips： $expect_out(buffer)存储了所有对expect的输入，&lt;$expect_out(0,string)&gt;存储了匹配到expect参数的输入。
+</code></pre></div>
+<p>比如如下程序：</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">"hi</span><span class="se">\n</span><span class="s">"</span>
+<span class="n">send</span> <span class="s">"you typed &lt;$expect_out(buffer)&gt;"</span>
+<span class="n">send</span> <span class="s">"but I only expected &lt;$expect_out(0,string)&gt;"</span></code></pre></figure>
+
+<p>当在标准输入中输入</p>
+<div class="highlight"><pre><code class="language-" data-lang="">test
+hi
+</code></pre></div>
+<p>是，运行结果如下</p>
+<div class="highlight"><pre><code class="language-" data-lang="">you typed: test
+hi
+I only expect: hi
+</code></pre></div>
+<hr>
+
+<h4 id="2">(2)模式-动作</h4>
+
+<p>expect最常用的语法是来自tcl语言的模式-动作。这种语法极其灵活，下面我们就各种语法分别说明。</p>
+
+<p>单一分支模式语法：</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">"hi"</span> <span class="p">{</span><span class="n">send</span> <span class="s">"You said hi"</span><span class="p">}</span></code></pre></figure>
+
+<p>匹配到hi后，会输出&quot;you said hi&quot;</p>
+
+<p>多分支模式语法：</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">"hi"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"You said hi</span><span class="se">\n</span><span class="s">"</span> <span class="p">}</span> \
+<span class="s">"hello"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"Hello yourself</span><span class="se">\n</span><span class="s">"</span> <span class="p">}</span> \
+<span class="s">"bye"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"That was unexpected</span><span class="se">\n</span><span class="s">"</span> <span class="p">}</span></code></pre></figure>
+
+<p>匹配到hi,hello,bye任意一个字符串时，执行相应的输出。等同于如下写法：</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="p">{</span>
+<span class="s">"hi"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"You said hi</span><span class="se">\n</span><span class="s">"</span><span class="p">}</span>
+<span class="s">"hello"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"Hello yourself</span><span class="se">\n</span><span class="s">"</span><span class="p">}</span>
+<span class="s">"bye"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"That was unexpected</span><span class="se">\n</span><span class="s">"</span><span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+<hr>
+
+<h3 id="3-spawn">3. spawn命令</h3>
+
+<p>上文的所有demo都是和标准输入输出进行交互，但是我们跟希望他可以和某一个进程进行交互。spawm命令就是用来启动新的进程的。spawn后的send和expect命令都是和spawn打开的进程进行交互的。结合上文的send和expect命令我们可以看一下更复杂的程序段了。</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">set</span> <span class="n">timeout</span> <span class="o">-</span><span class="mi">1</span>
+<span class="n">spawn</span> <span class="n">ftp</span> <span class="n">ftp</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">com</span>      <span class="c1">//打开新的进程，该进程用户连接远程ftp服务器
+</span><span class="n">expect</span> <span class="s">"Name"</span>             <span class="c1">//进程返回Name时
+</span><span class="n">send</span> <span class="s">"user</span><span class="se">\r</span><span class="s">"</span>        <span class="c1">//向进程输入anonymous\r
+</span><span class="n">expect</span> <span class="s">"Password:"</span>        <span class="c1">//进程返回Password:时
+</span><span class="n">send</span> <span class="s">"123456</span><span class="se">\r</span><span class="s">"</span>    <span class="c1">//向进程输入don@libes.com\r
+</span><span class="n">expect</span> <span class="s">"ftp&gt; "</span>            <span class="c1">//进程返回ftp&gt;时
+</span><span class="n">send</span> <span class="s">"binary</span><span class="se">\r</span><span class="s">"</span>           <span class="c1">//向进程输入binary\r
+</span><span class="n">expect</span> <span class="s">"ftp&gt; "</span>            <span class="c1">//进程返回ftp&gt;时
+</span><span class="n">send</span> <span class="s">"get test.tar.gz</span><span class="se">\r</span><span class="s">"</span>  <span class="o">//</span><span class="err">向进程输入</span><span class="n">get</span> <span class="n">test</span><span class="p">.</span><span class="n">tar</span><span class="p">.</span><span class="n">gz</span><span class="err">\</span><span class="n">r</span></code></pre></figure>
+
+<p>这段代码的作用是登录到ftp服务器ftp ftp.uu.net上，并以二进制的方式下载服务器上的文件test.tar.gz。程序中有详细的注释。</p>
+
+<hr>
+
+<h3 id="4-interact">4.interact</h3>
+
+<p>到现在为止，我们已经可以结合spawn、expect、send自动化的完成很多任务了。但是，如何让人在适当的时候干预这个过程了。比如下载完ftp文件时，仍然可以停留在ftp命令行状态，以便手动的执行后续命令。interact可以达到这些目的。下面的demo在自动登录ftp后，允许用户交互。</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">spawn</span> <span class="n">ftp</span> <span class="n">ftp</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">com</span>
+<span class="n">expect</span> <span class="s">"Name"</span>
+<span class="n">send</span> <span class="s">"user</span><span class="se">\r</span><span class="s">"</span>
+<span class="n">expect</span> <span class="s">"Password:"</span>
+<span class="n">send</span> <span class="s">"123456</span><span class="se">\r</span><span class="s">"</span>
+<span class="n">interact</span></code></pre></figure>
+
+<hr>
+
+<h3 id=">解决方法</h3>
+
+<p>上文中提到：</p>
+
+<blockquote>
+<p>如何从机器A上ssh到机器B上，然后执行机器B上的命令？如何使之自动化完成？</p>
+</blockquote>
+
+<p>下面一段脚本实现了从机器A登录到机器B，然后执行机器B上的pwd命令，并停留在B机器上，等待用户交互。具体含义请参考上文。</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"> <span class="cp">#!/home/tools/bin/64/expect -f
+</span> <span class="n">set</span> <span class="n">timeout</span> <span class="o">-</span><span class="mi">1</span>  
+ <span class="n">spawn</span> <span class="n">ssh</span> <span class="err">$</span><span class="n">BUser</span><span class="err">@$</span><span class="n">BHost</span>
+ <span class="n">expect</span>  <span class="s">"*password:"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"$password</span><span class="se">\r</span><span class="s">"</span> <span class="p">}</span>
+ <span class="n">expect</span>  <span class="s">"$*"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"pwd</span><span class="se">\r</span><span class="s">"</span> <span class="p">}</span>
+ <span class="n">interact</span></code></pre></figure>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-07-28T00:00:00+08:00"><a href="/ripple/">July 28, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -194,74 +339,6 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
 </figure>
 
 <hr>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-07-25T00:00:00+08:00"><a href="/varnish/">July 25, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/varnish/" rel="bookmark" title="使用varnish缓存静态内容" itemprop="url">使用varnish缓存静态内容</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>Varnish是一款高性能的开源HTTP加速器，一般用来和Nginx、Apache等搭配使用，组建一个高效率的Web服务器。varnish是一个cache型的HTTP反向代理。</p>
-
-<p>常见的工作方式是：某个负责接受新HTTP连接的线程开始等待用户，如果有新的HTTP连接过来，它总负责接收，然后叫醒某个等待中的线程。Worker线程读入HTTP请求的URI，查找已有的object，如果命中则直接返回并回复用户。如果没有命中，则需要将所请求的内容，从后端服务器中取过来，存到缓存中，然后再回复。</p>
-
-<p>典型的结构如下：</p>
-
-<figure>
-    <img src="/images/varnish.jpg"/>
-</figure>
-
-<p>本文将简单介绍ubuntu server下安装和配置varnish的方法。</p>
-
-<h2 id="varnish">安装varnish</h2>
-
-<p>使用ubuntu软件包管理工具安装varnish。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">apt-get install varnish
-</code></pre></div>
-<h2 id="varnish">配置varnish</h2>
-
-<h3 id="1-etc-default-varnish">1. /etc/default/varnish</h3>
-<div class="highlight"><pre><code class="language-" data-lang="">DAEMON_OPTS="-a :80 \                                             
-             -T localhost:6082 \
-             -f /etc/varnish/default.vcl \
-             -S /etc/varnish/secret \
-             -s malloc,100m"
-</code></pre></div>
-<p>各个字段的含义如下：</p>
-
-<blockquote>
-<p><code>-a :80</code>表示监听端口为80,<code>-T
- localhost:6082</code>表示控制端口为本机6082,即可以通过localhost:6802访问varnish的控制信息,
- <code>-f /etc/varnish/default.vcl</code>表示将请求forword到由vcl配置的机器,
- <code>-s malloc,100m</code> 表示使用100m的内存</p>
-</blockquote>
-
-<h3 id="2-etc-varnish-default-vcl">2.  /etc/varnish/default.vcl</h3>
-<div class="highlight"><pre><code class="language-" data-lang="">backend default {
-    .host = "127.0.0.1";
-    .port = "8080";
-}
-</code></pre></div>
-<p>backend default定义默认的后端服务器的ip和端口，也即nginx监听的端口。当然vcl可以定义各种复杂的转发策略，这个超出了本文的范围。配置好后可以重新启动varnish了</p>
-<div class="highlight"><pre><code class="language-" data-lang="">/etc/init.d/varnish restart
- * Stopping HTTP accelerator varnishd      [ok]
- * Starting HTTP accelerator varnishd      [ok]
-
-</code></pre></div>
-<h2 id="varnish">测试varnish</h2>
-
-<p>配置好varnish后，浏览站点，发现HTTP Response头中多了:</p>
-<div class="highlight"><pre><code class="language-" data-lang="">X-Varnish   1666066465 1666066458
-</code></pre></div>
-<p>上面的头信息表示varnish正常工作了。我们也可以使用varnish提供的命令行工具<code>varnishstat</code>分析varnish的缓存状态,可以使用<code>varnishlog</code>查看varnish的和客户端以及后端的通信信息。</p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -445,6 +522,12 @@ Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报�
       <li>
         
           <a href="/page29">29</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page30">30</a>
         
       </li>
     

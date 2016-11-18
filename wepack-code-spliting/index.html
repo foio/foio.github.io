@@ -1,0 +1,417 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>webpack代码分割技巧 &#8211; 积木村の研究所</title>
+<meta name="description" content="webpack代码分割，require.ensure，CommonChunkPlugin，DllPlugin和DllReferencePlugin">
+<meta name="keywords" content="javascript, require.ensure, CommonChunkPlugin, DllPlugin, DllReferencePlugin">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="webpack代码分割技巧">
+<meta property="og:description" content="webpack代码分割，require.ensure，CommonChunkPlugin，DllPlugin和DllReferencePlugin">
+<meta property="og:url" content="/wepack-code-spliting/">
+<meta property="og:site_name" content="积木村の研究所">
+
+
+
+
+
+<link rel="canonical" href="/wepack-code-spliting/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>Baidu Software Engineer</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/wepack-code-spliting/" rel="bookmark" title="webpack代码分割技巧">webpack代码分割技巧</a></h1>
+        
+        <h2>November 18, 2016</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <h2 id="1">1. 代码中定义分割点</h2>
+
+<p>webpack支持在代码中定义分割点。分割点指定的模块只有在真正使用时才加载，可以使用webpack提供的require.ensure语法:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">'#okButton'</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">require</span><span class="p">.</span><span class="nx">ensure</span><span class="p">([</span><span class="s1">'./foo'</span><span class="p">],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">foo</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'./foo'</span><span class="p">);</span>
+    <span class="c1">//your code here</span>
+  <span class="p">});</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>也可以像RequireJS一样使用AMD语法：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">'#okButton'</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">require</span><span class="p">([</span><span class="s1">'foo'</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">foo</span><span class="p">){</span>
+    <span class="c1">// your code here</span>
+  <span class="p">}]);</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>上面两种方式都会<code>以foo模块为入口将其依赖模块递归地打包到一个新的Chunk</code>，并在<code>#okButton</code>按钮点击时才异步地加载这个以foo模块为入口的新的chunk。</p>
+
+<h2 id="2-commonschunkplugin">2. 使用CommonsChunkPlugin分割代码</h2>
+
+<p>在理解CommonsChunkPlugin代码分割之前，我们需要熟悉webpack中chunk的概念，webpack将多个模块打包之后的代码集合称为chunk。根据不同webpack配置，chunk又有如下几种类型：</p>
+
+<blockquote>
+<p>Entry Chunk: 包含一系列模块代码，以及webpack的运行时(Runtime)代码，一个页面只能有一个Entry Chunk，并且需要先于Normal Chunk载入</p>
+
+<p>Normal Chunk: 只包含一系列模块代码，不包含运行时(Runtime)代码。</p>
+</blockquote>
+
+<p>作为webpack代码分割的利器，网络上有太多CommonsChunkPlugin的文章，但以某一使用场景的入门案例为主。本文我们根据不同场景下的使用方法，分别介绍。</p>
+
+<h3 id="2-1">2.1 提取库代码</h3>
+
+<p>假设我们需要将很少变化的常用库（react、lodash、redux）等与业务代码分割，可以在webpack.config.js采用如下配置：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">app</span><span class="p">:</span> <span class="s2">"./app.js"</span><span class="p">,</span>
+    <span class="na">vendor</span><span class="p">:</span> <span class="p">[</span><span class="s2">"lodash"</span><span class="p">,</span><span class="s2">"jquery"</span><span class="p">],</span>
+  <span class="p">},</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s2">"release"</span><span class="p">,</span>
+    <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].[chunkhash].js"</span>
+  <span class="p">},</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+    <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">({</span><span class="na">names</span><span class="p">:</span> <span class="p">[</span><span class="s2">"vendor"</span><span class="p">]})</span>
+  <span class="p">]</span>
+<span class="p">};</span>
+
+</code></pre></div>
+<p>上述配置将常用库打包到一个vender命名的<code>Entry Chunk</code>，并将以app.js为入口的业务代码打包到一个以business命名的<code>Normal Chunk</code>。其中<code>Entry Chunk</code>包含了webpack的运行时(Runtime)代码，所以在页面中必须先于业务代码加载。</p>
+
+<h3 id="2-2">2.2 提取公有代码</h3>
+
+<p>假设我们有多个页面，为了优化网络加载性能，我们需要将多个页面共用的代码提取出来单独打包。可以在webpack.config.js进行如下配置：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">entry</span><span class="p">:</span> <span class="p">{</span> 
+          <span class="na">page1</span><span class="p">:</span> <span class="s2">"./page1.js"</span><span class="p">,</span> 
+          <span class="na">page2</span><span class="p">:</span> <span class="s2">"./page2.js"</span> 
+        <span class="p">},</span>
+    <span class="na">output</span><span class="p">:</span> <span class="p">{</span> 
+          <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].[chunkhash].js"</span> 
+        <span class="p">},</span>
+    <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span> <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">(</span><span class="s2">"common.[chunkhash].js"</span><span class="p">)</span> <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>上述配置将两个页面中通用的代码抽取出来并打包到以common命名的<code>Entry Chunk</code>，并将以page1.js和page2.js为入口代码分别打包到以page1和page2命名的<code>Normal Chunk</code>。
+其中<code>Entry Chunk</code>包含了webpack的运行时(Runtime)代码，所以<code>common.[chunkhash].js</code>在两个页面中都必须在page1.[chunkhash].js和page2.[chunkhash].js前加载。</p>
+
+<p>在这种配置下，CommonsChunkPlugin的作用可以抽象：</p>
+
+<blockquote>
+<p>将多个入口中的公有代码和Runtime(运行时)抽取到父节点</p>
+</blockquote>
+
+<p>理解了CommonsChunkPlugin的本质后，我们看一个更复杂的例子：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">p1</span><span class="p">:</span> <span class="s2">"./page1"</span><span class="p">,</span>
+        <span class="na">p2</span><span class="p">:</span> <span class="s2">"./page2"</span><span class="p">,</span>
+        <span class="na">p3</span><span class="p">:</span> <span class="s2">"./page3"</span><span class="p">,</span>
+        <span class="na">ap1</span><span class="p">:</span> <span class="s2">"./admin/page1"</span><span class="p">,</span>
+        <span class="na">ap2</span><span class="p">:</span> <span class="s2">"./admin/page2"</span>
+    <span class="p">},</span>
+    <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].js"</span>
+    <span class="p">},</span>
+    <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+        <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">(</span><span class="s2">"admin-commons.js"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"ap1"</span><span class="p">,</span> <span class="s2">"ap2"</span><span class="p">]),</span>
+        <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">(</span><span class="s2">"commons.js"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"p1"</span><span class="p">,</span> <span class="s2">"p2"</span><span class="p">,</span> <span class="s2">"admin-commons.js"</span><span class="p">])</span>
+    <span class="p">]</span>
+<span class="p">};</span>
+<span class="c1">// page1.html: commons.js, p1.js</span>
+<span class="c1">// page2.html: commons.js, p2.js</span>
+<span class="c1">// page3.html: p3.js</span>
+<span class="c1">// admin-page1.html: commons.js, admin-commons.js, ap1.js</span>
+<span class="c1">// admin-page2.html: commons.js, admin-commons.js, ap2.js</span>
+</code></pre></div>
+<p>我们可以用树结构描述上述配置的作用：</p>
+
+<p><img src="/images/common-chunk-tree.png" alt="commonchunk"></p>
+
+<p>每一次使用CommonsChunkPlugin都会将共有代码和runtime提取到父节点。上述例子中，通过两次CommonChunkPlugin的作用，runtime被提取到common.js中。通过这种树型结构，我们可以清晰的看出每个页面对各个chunk的依赖顺序。</p>
+
+<h3 id="2-3-runtime">2.3 提取Runtime(运行时)代码</h3>
+
+<p>使用CommonsChunkPlugins时，一个常见的问题就是：</p>
+
+<blockquote>
+<p>没有被修改过的公有代码或库代码打包出的Entry Chunk，会随着其他业务代码的变化而变化，导致页面上的长缓存机制失效。</p>
+</blockquote>
+
+<p><a href="https://github.com/webpack/webpack/issues/1315#issuecomment-155100976">github上有一个与此相关的问题</a>。本意就是在只修改业务代码时，而不改动库代码时，打包出的库代码的chunkhash也发生变化，导致浏览器端的长缓存机制失效。如图所示，app和vender的chunkhash都发生了变化。</p>
+
+<p><img src="/images/common-chunk-vender.png" alt="commonchunk"></p>
+
+<p><img src="/images/common-chunk-vender2.png" alt="commonchunk"></p>
+
+<p>这主要是因为使用CommonsChunkPlugin提取代码到新的chunk时，会将webpack运行时(Runtime)也提取到打包后的新的chunk。通过如下配置就可以将webpack的runtime单独提取出来：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">app</span><span class="p">:</span> <span class="s2">"./app.js"</span><span class="p">,</span>
+    <span class="na">vendor</span><span class="p">:</span> <span class="p">[</span><span class="s2">"lodash"</span><span class="p">,</span><span class="s2">"jquery"</span><span class="p">],</span>
+  <span class="p">},</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s1">'release'</span><span class="p">,</span>
+    <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].[chunkhash].js"</span>
+  <span class="p">},</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+    <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">({</span><span class="na">names</span><span class="p">:</span> <span class="p">[</span><span class="s1">'vendor'</span><span class="p">,</span><span class="s1">'runtime'</span><span class="p">]}),</span>
+  <span class="p">]</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>这种情况下，当业务代码发送变化，而库代码没有改动时，vender的chunkhash不会变，这样才能最大化的利用浏览器的缓存机制。如下图所示：</p>
+
+<p><img src="/images/common-chunk-runtime.png" alt="commonchunk"></p>
+
+<p>修改业务代码后，vender的chunkhash不会变化，方便使用浏览器的缓存：</p>
+
+<p><img src="/images/common-chunk-runtime2.png" alt="commonchunk"></p>
+
+<p>由于webpack的runtime比较小，我们可以直接将该文件的内容inline到html中。</p>
+
+<h2 id="3-dllplugin-dllreferenceplugin">3. 使用DllPlugin和DllReferencePlugin分割代码</h2>
+
+<p>通过DllPlugin和DllReferencePlugin，webpack引入了另外一种代码分割的方案。我们可以将常用的库文件打包到dll包中，然后在webpack配置中引用。业务代码的可以像往常一样使用require引入依赖模块，比如require(&#39;react&#39;), webpack打包业务代码时会首先查找该模块是否已经包含在dll中了，只有dll中没有该模块时，webpack才将其打包到业务chunk中。</p>
+
+<p>首先我们使用DllPlugin将常用的库打包在一起：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'webpack'</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">vendor</span><span class="p">:</span> <span class="p">[</span><span class="s1">'lodash'</span><span class="p">,</span><span class="s1">'react'</span><span class="p">],</span>
+  <span class="p">},</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">filename</span><span class="p">:</span> <span class="s1">'[name].[chunkhash].js'</span><span class="p">,</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s1">'build/'</span><span class="p">,</span>
+  <span class="p">},</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span><span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">DllPlugin</span><span class="p">({</span>
+    <span class="na">name</span><span class="p">:</span> <span class="s1">'[name]_lib'</span><span class="p">,</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s1">'./[name]-manifest.json'</span><span class="p">,</span>
+  <span class="p">})]</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>该配置会产生两个文件，模块库文件：vender.[chunkhash].js和模块映射文件：vender-menifest.json。其中vender-menifest.json标明了模块路径和模块ID（由webpack产生）的映射关系，其文件内容如下：</p>
+<div class="highlight"><pre><code class="language-" data-lang=""><span class="p">{</span><span class="w">
+  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vendor_lib"</span><span class="p">,</span><span class="w">
+  </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nt">"./node_modules/.npminstall/lodash/4.17.2/lodash/lodash.js"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+    </span><span class="nt">"./node_modules/.npminstall/webpack/1.13.3/webpack/buildin/module.js"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
+    </span><span class="nt">"./node_modules/.npminstall/react/15.3.2/react/react.js"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">
+    </span><span class="err">...</span><span class="w">
+    </span><span class="err">}</span><span class="w">
+</span><span class="p">}</span><span class="w">    
+</span></code></pre></div>
+<p><img src="/images/webpack-dll-vender.png" alt="commonchunk"></p>
+
+<p>在业务代码的webpack配置文件中使用DllReferencePlugin插件引用模块映射文件：vender-menifest.json后，我们可以正常的通过require引入依赖的模块，如果在vender-menifest.json中找到依赖模块的路径映射信息，webpack会直接使用dll包中的该依赖模块，否则将该依赖模块打包到业务chunk中。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'webpack'</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">app</span><span class="p">:</span> <span class="p">[</span><span class="s1">'./app'</span><span class="p">],</span>
+  <span class="p">},</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">filename</span><span class="p">:</span> <span class="s1">'[name].[chunkhash].js'</span><span class="p">,</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s1">'build/'</span><span class="p">,</span>
+  <span class="p">},</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span><span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">DllReferencePlugin</span><span class="p">({</span>
+    <span class="na">context</span><span class="p">:</span> <span class="s1">'.'</span><span class="p">,</span>
+    <span class="na">manifest</span><span class="p">:</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'./vendor-manifest.json'</span><span class="p">),</span>
+  <span class="p">})]</span>
+<span class="p">};</span>
+
+</code></pre></div>
+<p>由于依赖的模块都在dll包中，所以例子中app打包后的chunk很小。</p>
+
+<p><img src="/images/webpack-dll-app.png" alt="commonchunk"></p>
+
+<p>需要注意的是：dll包的代码是不会执行的，需要在业务代码中通过require显示引入。相比于CommonChunkPlugin，使用DllReferencePlugin分割代码有两个明显的好处：</p>
+
+<blockquote>
+<p>（1）由于dll包和业务chunk包是分开进行打包的，每一次修改代码时只需要对业务chunk重新打包，webpack的编译速度得到极大的提升，因此相比于CommonChunkPlugin，DllPlugin进行代码分割可以显著的提升开发效率。</p>
+
+<p>（2）使用DllPlugin进行代码分割，dll包和业务chunk相互独立，其chunkhash互不影响，dll包很少变动，因此可以更充分的利用浏览器的缓存系统。而使用CommonChunk打包出的代码，由于公有chunk中包含了webpack的runtime(运行时)，公有chunk和业务chunk的chunkhash会互相影响，必须将runtime单独提取出来，才能对公有chunk充分地使用浏览器的缓存。</p>
+</blockquote>
+
+<p>本文所有demo代码均在github上：<a href="https://github.com/foio/webpack-code-splitting-demos">https://github.com/foio/webpack-code-splitting-demos</a></p>
+
+<hr>
+
+<p>参考文献</p>
+
+<p><a href="https://robertknight.github.io/posts/webpack-dll-plugins/">https://robertknight.github.io/posts/webpack-dll-plugins/</a></p>
+
+<p><a href="http://engineering.invisionapp.com/post/optimizing-webpack/">http://engineering.invisionapp.com/post/optimizing-webpack/</a></p>
+
+<p><a href="https://github.com/webpack/docs/wiki/optimization">https://github.com/webpack/docs/wiki/optimization</a></p>
+
+<p><a href="https://medium.com/@soederpop/webpack-plugins-been-we-been-keepin-on-the-dll-cdfdd6cb8cd7#.g79bu37wr">https://medium.com/@soederpop/webpack-plugins-been-we-been-keepin-on-the-dll-cdfdd6cb8cd7#.g79bu37wr</a></p>
+
+<p><a href="http://engineering.invisionapp.com/post/optimizing-webpack/">http://engineering.invisionapp.com/post/optimizing-webpack/</a></p>
+
+<p><a href="https://github.com/webpack/docs/wiki/optimization">https://github.com/webpack/docs/wiki/optimization</a></p>
+
+<p><a href="https://github.com/webpack/webpack/issues/1315#issuecomment-155100976">https://github.com/webpack/webpack/issues/1315#issuecomment-155100976</a></p>
+
+<p><a href="https://github.com/zhengweikeng/blog/issues/10">https://github.com/zhengweikeng/blog/issues/10</a></p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#javascript" title="Pages tagged javascript" class="tag">javascript</a><a href="/tags/#require.ensure" title="Pages tagged require.ensure" class="tag">require.ensure</a><a href="/tags/#CommonChunkPlugin" title="Pages tagged CommonChunkPlugin" class="tag">CommonChunkPlugin</a><a href="/tags/#DllPlugin" title="Pages tagged DllPlugin" class="tag">DllPlugin</a><a href="/tags/#DllReferencePlugin" title="Pages tagged DllReferencePlugin" class="tag">DllReferencePlugin</a></span>
+        <span><a href="/wepack-code-spliting/" rel="bookmark" title="webpack代码分割技巧">webpack代码分割技巧</a> was published on <span class="entry-date date published updated"><time datetime="2016-11-18T00:00:00+08:00">November 18, 2016</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2016-11-18">11/18/2016</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+
+    
+	        
+
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/javascript-global-exceptions/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/javascript-global-exceptions/" title="捕获页面中全局Javascript异常">捕获页面中全局Javascript异常</a></h3>
+          <p>捕获页面中全局Javascript异常, window.onError, AST, 抽象语法树 <a href="/javascript-global-exceptions/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/react-redux-performance-boost/" title="react+redux渲染性能优化原理">react+redux渲染性能优化原理</a></h4>
+            <span>Published on September 04, 2016</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/node-memory/" title="node内存基础知识">node内存基础知识</a></h4>
+            <span>Published on August 15, 2016</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-79866739-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+	        
+</body>
+</html>

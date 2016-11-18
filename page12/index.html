@@ -119,6 +119,220 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-04-12T00:00:00+08:00"><a href="/jquery-callback/">April 12, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/jquery-callback/" rel="bookmark" title="jQuery的回调模块实现原理" itemprop="url">jQuery的回调模块实现原理</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>jQuery的回调系统是jQuery的基本功能之一,用于支撑jQuery的<code>ajax()</code>方法的实现和对promise规范的实现。jQuery提供了<code>callback</code>方法用于实现各种复杂回调功能.</p>
+
+<h3 id="1">1.基本用法以及特殊参数</h3>
+
+<hr>
+
+<p>下面是使用callback最简单的例子,其中<code>callback</code> 函数没有任何参数,其中<code>add</code>,<code>fire</code>,<code>remove</code> 的含义通过方法名可以立刻知道.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">callbacks</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">Callbacks</span><span class="p">();</span>
+<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn1</span> <span class="p">);</span>
+<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn2</span> <span class="p">);</span>
+<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"bar!"</span> <span class="p">);</span>
+<span class="nx">callbacks</span><span class="p">.</span><span class="nx">remove</span><span class="p">(</span> <span class="nx">fn2</span> <span class="p">);</span></code></pre></figure>
+
+<p>当然作为基础模块的回调功能这么简单,显然是无法支撑jQuery其他模块的.<code>callback</code>函数可以传入由空白分隔的多个flag,使得callback用不同的表现.常用的flag如下(多个flag可以同时使用)</p>
+<div class="highlight"><pre><code class="language-" data-lang="">once:确保回调列表的函数只能被触发一次.
+memory:当一个回调函数添加到回到列表时,立即使用上一次传递的历史参数(上次回调列表必须执行成功)调用回调函数.主要用于实现Deferred
+unique:确保一个回调函数只添加一次.
+stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表中后续的函数.
+</code></pre></div>
+<p>其中较难理解的flag是memory, 上个demo先:</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">callbacks</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">Callbacks</span><span class="p">(</span> <span class="s2">"memory"</span> <span class="p">);</span>
+<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn1</span> <span class="p">);</span>
+<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"foo"</span> <span class="p">);</span>
+<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn2</span> <span class="p">);</span>
+<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"bar"</span> <span class="p">);</span>
+<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"foobar"</span> <span class="p">);</span>
+ 
+<span class="cm">/*
+output:
+fn1 says:foo
+fn2 says:foo //这个输出是memory标记的作用
+fn1 says:bar
+fn2 says:bar
+fn1 says:foobar
+fn2 says:foobar
+*/</span></code></pre></figure>
+
+<h3 id="2-2-1-4">2.源码分析(版本2.1.4)</h3>
+
+<hr>
+
+<p>jQuery的callback函数的实现在源码的<code>3066~3288</code>行,源码的基本结构为:</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">jQuery</span><span class="p">.</span><span class="nx">Callbacks</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">//内部变量</span>
+    <span class="kd">var</span> <span class="c1">// 用于记录上次调用fire时的参数,用于memory回调列表</span>
+        <span class="nx">memory</span><span class="p">,</span>
+        <span class="c1">// 标记列表是否被触发过</span>
+        <span class="nx">fired</span><span class="p">,</span>
+        <span class="c1">// 标记列表是否正在触发</span>
+        <span class="nx">firing</span><span class="p">,</span>
+        <span class="c1">// 第一个回调函数</span>
+        <span class="nx">firingStart</span><span class="p">,</span>
+        <span class="c1">// 回调函数列表的长度</span>
+        <span class="nx">firingLength</span><span class="p">,</span>
+        <span class="c1">// 正在回调的函数在列表中的下标</span>
+        <span class="nx">firingIndex</span><span class="p">,</span>
+        <span class="c1">// 回调函数列表</span>
+        <span class="nx">list</span> <span class="o">=</span> <span class="p">[],</span>
+        <span class="c1">// 用于可用户回调的数据,当flag没有once时stack为false</span>
+        <span class="nx">stack</span> <span class="o">=</span> <span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">once</span> <span class="o">&amp;&amp;</span> <span class="p">[],</span>
+    <span class="c1">//参数转换</span>
+    <span class="nx">options</span> <span class="o">=</span> <span class="k">typeof</span> <span class="nx">options</span> <span class="o">===</span> <span class="s2">"string"</span> <span class="p">?</span>
+        <span class="p">(</span><span class="nx">optionsCache</span><span class="p">[</span><span class="nx">options</span><span class="p">]</span> <span class="o">||</span> <span class="nx">createOptions</span><span class="p">(</span><span class="nx">options</span><span class="p">))</span> <span class="p">:</span>
+        <span class="nx">jQuery</span><span class="p">.</span><span class="nx">extend</span><span class="p">({},</span> <span class="nx">options</span><span class="p">);</span>
+    <span class="c1">//方法实现</span>
+    <span class="nx">fire</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{}</span>
+    <span class="nx">self</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="na">add</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
+        <span class="na">remove</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
+        <span class="na">has</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">fn</span><span class="p">)</span> <span class="p">{},</span>
+        <span class="na">empty</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
+        <span class="na">disable</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
+        <span class="na">disabled</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
+        <span class="na">lock</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
+        <span class="na">locked</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
+        <span class="na">fireWith</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">context</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span> <span class="p">{},</span>
+        <span class="na">fire</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
+        <span class="na">fired</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{}</span>
+    <span class="p">};</span>
+    <span class="k">return</span> <span class="nx">self</span><span class="p">;</span>
+<span class="p">};</span></code></pre></figure>
+
+<p>下面我们分别详细研究以下<code>fire,add,remove</code>等几个主要函数的实现.</p>
+
+<p>该函数主要是对函数回调列表进行遍历执行,但让要考虑stopOnFalse和memory标记的影响.</p>
+
+<h4 id="1-fire">(1)fire函数的实现</h4>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//self中fire只是简单的封装了下callback中的fire函数</span>
+<span class="nx">self</span><span class="p">.</span><span class="nx">fire</span><span class="err">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">//讲self对象传递给callback.fire函数</span>
+    <span class="nx">self</span><span class="p">.</span><span class="nx">fireWith</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="nx">callback</span><span class="p">.</span><span class="nx">fire</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">//如果callback工厂方法的参数中有memory标记,则记住本次调用fire的参数</span>
+    <span class="nx">memory</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">memory</span> <span class="o">&amp;&amp;</span> <span class="nx">data</span><span class="p">;</span>
+    <span class="nx">fired</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="nx">firingIndex</span> <span class="o">=</span> <span class="nx">firingStart</span> <span class="o">||</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="nx">firingStart</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="nx">firingLength</span> <span class="o">=</span> <span class="nx">list</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
+    <span class="nx">firing</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="c1">//循环遍历回调函数列表</span>
+    <span class="k">for</span> <span class="p">(;</span> <span class="nx">list</span> <span class="o">&amp;&amp;</span> <span class="nx">firingIndex</span> <span class="o">&lt;</span> <span class="nx">firingLength</span><span class="p">;</span> <span class="nx">firingIndex</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//使用callback对象调用回调函数,请参阅代码3217~3220行,如果设置了stopOnFalse标记则在函数执行返回false时,不再调用回调列表中的后续函数</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">[</span><span class="nx">firingIndex</span><span class="p">].</span><span class="nx">apply</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">data</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">===</span> <span class="kc">false</span> <span class="o">&amp;&amp;</span> <span class="nx">options</span><span class="p">.</span><span class="nx">stopOnFalse</span><span class="p">)</span> <span class="p">{</span>
+            <span class="c1">//由于函数回调列表没有执行完成,阻止add方法使用memory参数调用新添加的函数</span>
+            <span class="nx">memory</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span> <span class="c1">// To prevent further calls using add</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="c1">//执行完成,设置标记</span>
+    <span class="nx">firing</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">stack</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">stack</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">fire</span><span class="p">(</span><span class="nx">stack</span><span class="p">.</span><span class="nx">shift</span><span class="p">());</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">memory</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">list</span> <span class="o">=</span> <span class="p">[];</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nx">self</span><span class="p">.</span><span class="nx">disable</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span></code></pre></figure>
+
+<h4 id="2-add">(2)add函数的实现</h4>
+
+<p>add函数主要实现往回调列表中添加函数的功能,考虑了unique标记的影响,并实现了memory标记的功能.如果该回调列表正在在执行,则新加入的函数也会被调用.</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">add</span><span class="err">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">)</span> <span class="p">{</span>
+        <span class="c1">//记录当前回调列表的长度</span>
+        <span class="kd">var</span> <span class="nx">start</span> <span class="o">=</span> <span class="nx">list</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
+        <span class="c1">//用一个立即执行函数实现add的主要逻辑</span>
+        <span class="p">(</span><span class="kd">function</span> <span class="nx">add</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">{</span>  
+            <span class="c1">//遍历参数</span>
+            <span class="nx">jQuery</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">args</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span> <span class="nx">arg</span><span class="p">)</span> <span class="p">{</span>
+                <span class="kd">var</span> <span class="nx">type</span> <span class="o">=</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">type</span><span class="p">(</span><span class="nx">arg</span><span class="p">);</span>
+                <span class="c1">//添加函数</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">type</span> <span class="o">===</span> <span class="s2">"function"</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="c1">//如果有unique标记,且回调列表中已经存在该函数,则不添加</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">unique</span> <span class="o">||</span> <span class="o">!</span><span class="nx">self</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">arg</span><span class="p">))</span> <span class="p">{</span>
+                        <span class="nx">list</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">arg</span><span class="p">);</span>
+                    <span class="p">}</span>
+                <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">arg</span> <span class="o">&amp;&amp;</span> <span class="nx">arg</span><span class="p">.</span><span class="nx">length</span> <span class="o">&amp;&amp;</span> <span class="nx">type</span> <span class="o">!==</span> <span class="s2">"string"</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="c1">//如果函数时数组则使用递归</span>
+                    <span class="nx">add</span><span class="p">(</span><span class="nx">arg</span><span class="p">);</span>
+                <span class="p">}</span>
+            <span class="p">});</span>
+        <span class="p">})(</span><span class="nx">arguments</span><span class="p">);</span>
+        <span class="c1">//如果当前正在执行回调列表,则让本次执行包括新添加的函数</span>
+        <span class="k">if</span> <span class="p">(</span><span class="nx">firing</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">firingLength</span> <span class="o">=</span> <span class="nx">list</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">memory</span><span class="p">)</span> <span class="p">{</span><span class="c1">//否则立即用上次fire的参数执行该回调函数</span>
+            <span class="nx">firingStart</span> <span class="o">=</span> <span class="nx">start</span><span class="p">;</span>
+            <span class="nx">fire</span><span class="p">(</span><span class="nx">memory</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<h4 id="3-remove">3.remove函数的实现</h4>
+
+<p>remove函数的实现相对较为简单,其实就是将函数从回调列表中移除,但同时要考虑对正在执行的回调列表的影响</p>
+
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">remove</span><span class="err">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">jQuery</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">arguments</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span> <span class="nx">arg</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kd">var</span> <span class="nx">index</span><span class="p">;</span>
+            <span class="c1">//移除回调列表中的函数,注意:while循环会将多个同样的函数全部移除</span>
+            <span class="k">while</span> <span class="p">((</span><span class="nx">index</span> <span class="o">=</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">inArray</span><span class="p">(</span><span class="nx">arg</span><span class="p">,</span> <span class="nx">list</span><span class="p">,</span> <span class="nx">index</span><span class="p">))</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">//删除下标为index的函数</span>
+                <span class="nx">list</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="nx">index</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
+                <span class="c1">//需要考虑移除函数对正在执行的回调函数列表的影响</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">firing</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="c1">//减小回调列表长度,防止数组越界</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="nx">index</span> <span class="o">&lt;=</span> <span class="nx">firingLength</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nx">firingLength</span><span class="o">--</span><span class="p">;</span>
+                    <span class="p">}</span>
+                    <span class="c1">//当前移除函数的下表在当前执行函数的下标之前,需要使当前执行下标减一</span>
+                    <span class="k">if</span> <span class="p">(</span><span class="nx">index</span> <span class="o">&lt;=</span> <span class="nx">firingIndex</span><span class="p">)</span> <span class="p">{</span>
+                        <span class="nx">firingIndex</span><span class="o">--</span><span class="p">;</span>
+                    <span class="p">}</span>
+                <span class="p">}</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
+<span class="p">},</span></code></pre></figure>
+
+<p>Ok,分析完这3个函数的源码后,我们应该能够完全明白jQuery时如何实现回调的,以及各个标记时如何起作用的.</p>
+
+<hr>
+
+<p><a href="https://api.jquery.com/jQuery.Callbacks/">jQuery的callback方法文档</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-03-13T00:00:00+08:00"><a href="/jquery-ready-load/">March 13, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -228,46 +442,6 @@ rel="stylesheet" type="text/css" -->
 <p>参考文档</p>
 
 <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Document/readyState">MDN里面关于Document.readyState的文档</a>, <a href="http://www.cnblogs.com/zhangziqiu/archive/2011/06/27/domready.html">一篇关于dom ready的博客</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-01-02T00:00:00+08:00"><a href="/mongo-atom/">January 02, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/mongo-atom/" rel="bookmark" title="关于mongo原子操作的探讨" itemprop="url">关于mongo原子操作的探讨</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <blockquote>
-<p>众所周知，Redis采用的是异步I/O非阻塞的单进程模型，每一条Redis命令都是原子性的。那么mongoDB呢？ mongo有哪些原子操作呢？有哪些实现事务性操作的技巧呢？</p>
-</blockquote>
-
-<h3 id="1">1.对单个文档的原子性修改</h3>
-
-<p>mongoDB保证了对单个document的多个filed的原子性修改。如果需要对单个文档进行原子性的CAS操作(check and set)，可以使用findAndModify操作。</p>
-
-<p>比如下面就是一条原子性的CAS操作，首先选择_id为123的文档（注意这里只选择了一个文档），然后对计数器count加1，将status字段变为true，并返回修改后的结果。</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">db</span><span class="p">.</span><span class="nx">colleciton</span><span class="p">.</span><span class="nx">findAndModify</span><span class="p">({</span><span class="na">query</span><span class="p">:{</span><span class="na">_id</span><span class="p">:</span><span class="s1">'123'</span><span class="p">},</span><span class="na">$inc</span><span class="p">:{</span><span class="na">count</span><span class="p">:</span><span class="mi">1</span><span class="p">},</span><span class="na">$update</span><span class="p">:{</span><span class="na">status</span><span class="p">:</span><span class="kc">true</span><span class="p">}},</span><span class="na">new</span><span class="p">:</span><span class="kc">true</span><span class="p">);</span></code></pre></figure>
-
-<h3 id="2-isolate">2.对多个文档使用$isolate操作符</h3>
-
-<p><code>$isolate</code>操作符可以对多个文档的修改提供隔离性。针对其他线程的并发写操作，<code>$isolate</code>保证了提交前其他线程无法修改对应的文档。针对其他线程的读操作，<code>$isolate</code>保证了其他线程读取不到未提交的数据。</p>
-
-<p>但是<code>$isolate</code>有验证的性能问题，因为这种情况下线程持有锁的时间较长，严重的影响mongo的并发性。另外，<code>$isolate</code>也无法保证多个文档修改的一致性(all-or-nothing)，$isolate失败是可能只修改了部分文档。</p>
-
-<h3 id="3">3.从语意层面实现事务性操作</h3>
-
-<p>mongoDB官方提供了一种做法，即两阶段提交(two-phase commit)，基本的原理就是利用了写操作的幂等性。具体实现可以看官网的详细讲解。但是利用幂等性来实现事务性有一个重要的前置条件：业务不在乎中间态的不一致。幂等性可以保证最终的一致性，但是会出现中间的不一致状态。</p>
-
-<hr>
-
-<p>参考资料: (1) <a href="http://docs.mongodb.org/manual/core/write-operations-atomicity/">mongoDB原子性与实务</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -451,6 +625,12 @@ rel="stylesheet" type="text/css" -->
       <li>
         
           <a href="/page29">29</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page30">30</a>
         
       </li>
     
