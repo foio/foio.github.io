@@ -156,6 +156,10 @@
 
     
     <url>
+        <loc>/mobx-react/</loc>
+    </url>
+    
+    <url>
         <loc>/wepack-code-spliting/</loc>
     </url>
     

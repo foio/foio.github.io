@@ -119,6 +119,71 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-12-14T00:00:00+08:00"><a href="/angular-route/">December 14, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/angular-route/" rel="bookmark" title="angular正则表达式路由" itemprop="url">angular正则表达式路由</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>本文源于对stackoverflow上一道问题的思考:<a href="http://stackoverflow.com/questions/14216565/how-to-have-wildcards-in-angular-routes">如何在正则angular路由中使用正则表达式中的通配符*</a></p>
+
+<p>在使用angular的过程中，我们经常需要通过不同的url定位到不通过的页面。</p>
+
+<p>这时候我们就可以借助angular的routeProvider提供的when方法来实现，比如</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">myApp</span><span class="p">.</span><span class="nx">config</span><span class="p">([</span><span class="s1">'$routeProvider'</span><span class="p">,</span> <span class="s1">'$httpProvider'</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">$routeProvider</span><span class="p">,</span><span class="nx">$httpProvider</span><span class="p">)</span> <span class="p">{</span>
+     <span class="c1">//配置路由</span>
+     <span class="nx">$routeProvider</span><span class="p">.</span>
+         <span class="nx">when</span><span class="p">(</span><span class="s1">'/tab1'</span><span class="p">,</span> <span class="p">{</span>
+         <span class="na">templateUrl</span><span class="p">:</span> <span class="s1">'sections/tab1.html'</span><span class="p">,</span>
+         <span class="na">controller</span><span class="p">:</span> <span class="s1">'Tab1Ctrl'</span><span class="p">,</span>
+     <span class="p">}).</span>
+         <span class="nx">when</span><span class="p">(</span><span class="s1">'/tab2'</span><span class="p">,</span> <span class="p">{</span>
+         <span class="na">templateUrl</span><span class="p">:</span> <span class="s1">'sections/tab2.html'</span><span class="p">,</span>
+         <span class="na">controller</span><span class="p">:</span> <span class="s1">'Tab2Ctrl'</span><span class="p">,</span>
+     <span class="p">}).</span>
+         <span class="nx">when</span><span class="p">(</span><span class="s1">'/tab3'</span><span class="p">,</span> <span class="p">{</span>
+         <span class="na">templateUrl</span><span class="p">:</span> <span class="s1">'sections/tab3.html'</span><span class="p">,</span>
+         <span class="na">controller</span><span class="p">:</span> <span class="s1">'Tab3Ctrl'</span><span class="p">,</span>
+     <span class="p">}).</span>
+         <span class="nx">otherwise</span><span class="p">({</span>
+         <span class="na">redirectTo</span><span class="p">:</span> <span class="s1">'/tab1'</span>
+     <span class="p">});</span>
+</code></pre></div>
+<p>when方法的原型是：when(path, route)，其中path</p>
+
+<ul>
+<li><p>path可以包括以冒号开头的命名组，比如/tab1/:item</p></li>
+<li><p>path可以包含以冒号开头并以星号结束的命名组，比如/tab1/:item*</p></li>
+<li><p>path可以包含以冒号开头并以问号结束可选的命名组，比如/tab1/:item?</p></li>
+</ul>
+
+<p>比如，path为：<code>/color/:color/largecode/:largecode*\/edit</code>会匹配<code>/color/brown/largecode/code/with/slashes/edit</code>
+会匹配：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">color: brown
+largecode: code/with/slashes.
+</code></pre></div>
+<p>但是如果我们要实现以<code>/tab1</code>开头的url全部路由到<code>/tab1</code>呢？比如<code>/tab1click</code>、<code>/tab1touch</code>等都路由到/tab1。用正则表达式描述就是：<code>/tab1.*</code>全部路由到<code>/tab1</code>，使用上述的when方法我们无能为力了。 于是有人出来叫喧说，angular的路由连正则表达式都不支持，实在太弱了，但是其实我们是有方法实现完全按正则进行路由分发地。angular有个$locationChangeStart事件，我们可以监听这个事件，修改location。下面的例子就可以实现以/<code>tab1</code>开头的url全部路由到<code>/tab1</code>，即<code>/tab1.*</code>全部路由到<code>/tab1</code>。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">myApp</span><span class="p">.</span><span class="nx">config</span><span class="p">()</span>
+<span class="p">.</span><span class="nx">run</span><span class="p">([</span><span class="s1">'$rootScope'</span><span class="p">,</span><span class="s1">'$location'</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">$rootScope</span><span class="p">,</span><span class="nx">$location</span><span class="p">){</span>
+    <span class="nx">$rootScope</span><span class="p">.</span><span class="nx">$on</span><span class="p">(</span><span class="s1">'$locationChangeStart'</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">,</span><span class="nx">next</span><span class="p">,</span><span class="nx">current</span><span class="p">){</span>
+        <span class="kd">var</span> <span class="nx">path</span> <span class="o">=</span> <span class="sr">/#</span><span class="se">\/(</span><span class="sr">tab1</span><span class="se">)</span><span class="sr">.*/i</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">next</span><span class="p">);</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">path</span> <span class="o">&amp;&amp;</span> <span class="nx">path</span><span class="p">[</span><span class="mi">1</span><span class="p">]){</span>
+            <span class="nx">$location</span><span class="p">.</span><span class="nx">path</span><span class="p">(</span><span class="s1">'/tab1'</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">});</span>
+<span class="p">}]);</span>
+
+</code></pre></div>
+<p>在事件$locationChangeStart触发时，我们就对路由的变化有了全部的控制，各种正则匹配自然不在话下。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-12-10T00:00:00+08:00"><a href="/javascript-asyn-pattern/">December 10, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -433,181 +498,6 @@ rel="stylesheet" type="text/css" -->
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-12-02T00:00:00+08:00"><a href="/javascript-inheritance/">December 02, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/javascript-inheritance/" rel="bookmark" title="系统的研究Javascript继承实现机制" itemprop="url">系统的研究Javascript继承实现机制</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>老生常谈的问题，大部分人也不一定可以系统的理解。Javascript语言对继承实现的并不好，需要工程师自己去实现一套完整的继承机制。下面我们由浅入深的系统掌握使用javascript继承的技巧。</p>
-
-<h3 id="1">1. 直接使用原型链</h3>
-
-<p>这是最简粗暴的一种方式，基本没法用于具体的项目中。一个简单的demo如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">property</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">SuperType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getSuperValue</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">property</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">subproperty</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="c1">//继承</span>
-<span class="nx">SubType</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SuperType</span><span class="p">();</span>
-<span class="nx">SubType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">getSubValue</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">.</span><span class="nx">subproperty</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubType</span><span class="p">();</span>
-</code></pre></div>
-<p>这种方式的问题是原型中的属性会被所用实例共享，这显然不是一种常规意义上的继承。</p>
-
-<h3 id="2">2.使用构造函数</h3>
-
-<p>构造函数本质上也只是一个函数而已，可以在任何作用域中调用，在子构造函数中调用父构造函数，就可以实现简单的继承。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">colors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"red"</span><span class="p">,</span><span class="s2">"blue"</span><span class="p">,</span><span class="s2">"green"</span><span class="p">}</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(){</span>
-    <span class="nx">SuperType</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>   
-<span class="p">}</span>
-<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubType</span><span class="p">();</span>
-</code></pre></div>
-<p>这种实现的问题太多了，比如没法共享函数，而且 <code>instance instanceof SuperType</code> 为false。</p>
-
-<h3 id="3">3. 组合使用原型和构造函数</h3>
-
-<p>结合上述的两种方法，就可以实现共享函数并且隔离属性的目的了。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">colors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"red"</span><span class="p">,</span><span class="s2">"blue"</span><span class="p">,</span><span class="s2">"green"</span><span class="p">}</span>
-<span class="p">}</span>
-<span class="nx">SuperType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">sayName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//code</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="nx">age</span><span class="p">){</span>
-    <span class="nx">SuperType</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>  
-    <span class="k">this</span><span class="p">.</span><span class="nx">age</span> <span class="o">=</span> <span class="nx">age</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">SubType</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SuperType</span><span class="p">();</span>
-<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubTYpe</span><span class="p">();</span>
-</code></pre></div>
-<p>组合使用原型和构造函数是javascript中最常用的继承模式。使用这种方式，每个实例都有自己的属性，同时可以共享原型中的方法。但是这种方式的缺点是：无论什么情况，都会调用两次超类构造函数。一次是在创建子类原型时，另一次是在子类构造函数内部。这种问题该怎么解决呢？</p>
-
-<h3 id="4">4. 寄生组合式继承</h3>
-
-<p>SubType的原型并不一定非要是SuperType的实例。只需是一个构造函数的原型是SuperType的原型的普通对象就可以了。</p>
-
-<p>Douglas Crockford的方法如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">obejct</span><span class="p">(</span><span class="nx">o</span><span class="p">){</span>
-    <span class="kd">function</span> <span class="nx">F</span><span class="p">(){};</span>
-    <span class="nx">F</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">o</span><span class="p">;</span>
-    <span class="k">return</span> <span class="k">new</span> <span class="nx">F</span><span class="p">();</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>其实这也就是ES5中Object.create的实现。那么我们可以修改本文中的第3种方案：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">inheritPrototype</span><span class="p">(</span><span class="nx">subType</span><span class="p">,</span><span class="nx">superType</span><span class="p">){</span>
-    <span class="kd">var</span> <span class="nx">prototype</span> <span class="o">=</span> <span class="nx">object</span><span class="p">(</span><span class="nx">superType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">);</span>
-    <span class="nx">prototype</span><span class="p">.</span><span class="nx">constructor</span> <span class="o">=</span> <span class="nx">subType</span><span class="p">;</span>
-    <span class="nx">subType</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">prototype</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SuperType</span><span class="p">(</span><span class="nx">name</span><span class="p">){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">colors</span> <span class="o">=</span> <span class="p">{</span><span class="s2">"red"</span><span class="p">,</span><span class="s2">"blue"</span><span class="p">,</span><span class="s2">"green"</span><span class="p">}</span>
-<span class="p">}</span>
-<span class="nx">SuperType</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">sayName</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//code</span>
-<span class="p">}</span>
-<span class="kd">function</span> <span class="nx">SubType</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="nx">age</span><span class="p">){</span>
-    <span class="nx">SuperType</span><span class="p">.</span><span class="nx">call</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>  
-    <span class="k">this</span><span class="p">.</span><span class="nx">age</span> <span class="o">=</span> <span class="nx">age</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">inheritPrototype</span><span class="p">(</span><span class="nx">SubType</span><span class="p">,</span><span class="nx">SuperType</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">instance</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SubTYpe</span><span class="p">();</span>
-</code></pre></div>
-<p>其实寄生组合式继承已经是一种非常好的继承实现机制了，足以应付日常使用。如果我们提出更高的要求：比如如何在子类中调用父类的方法呢？</p>
-
-<h3 id="5-simple-inheritance">5.simple-inheritance库的实现</h3>
-
-<p>看这么难懂的代码，起初我是拒绝的，但是深入之后才发现大牛就是大牛，精妙思想无处不在。我对每一行代码都有详细的注释。如果你想了解细节，请务必详细研究，读懂每一行。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-    <span class="c1">//initializing用于控制类的初始化，非常巧妙，请留意下文中使用技巧</span>
-    <span class="c1">//fnTest返回一个正则比表达式，用于检测函数中是否含有_super，这样就可以按需重写，提高效率。当然浏览器如果不支持的话就返回一个通用正则表达式</span>
-    <span class="kd">var</span> <span class="nx">initializing</span> <span class="o">=</span> <span class="kc">false</span><span class="p">,</span><span class="nx">fnTest</span> <span class="o">=</span> <span class="sr">/xyz/</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span><span class="nx">xyz</span><span class="p">;})</span> <span class="p">?</span> <span class="sr">/</span><span class="se">\b</span><span class="sr">_super</span><span class="se">\b</span><span class="sr">/</span> <span class="p">:</span> <span class="sr">/.*/</span><span class="p">;</span>
-    <span class="c1">//所有类的基类Class,这里的this一般是window对象</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">Class</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){};</span>
-    <span class="c1">//对基类添加extend方法，用于从基类继承</span>
-    <span class="nx">Class</span><span class="p">.</span><span class="nx">extend</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">prop</span><span class="p">){</span>
-        <span class="c1">//保存当前类的原型</span>
-        <span class="kd">var</span> <span class="nx">_super</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">prototype</span><span class="p">;</span>
-        <span class="c1">//创建当前类的对象，用于赋值给子类的prototype，这里非常巧妙的使用父类实例作为子类的原型，而且避免了父类的初始化(通过闭包作用域的initializing控制)</span>
-        <span class="nx">initializing</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-        <span class="kd">var</span> <span class="nx">prototype</span> <span class="o">=</span> <span class="k">new</span> <span class="k">this</span><span class="p">();</span>     
-        <span class="nx">initializing</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-        <span class="c1">//将参数prop中赋值到prototype中，这里的prop中一般是包括init函数和其他函数的对象</span>
-        <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">name</span> <span class="k">in</span> <span class="nx">prop</span><span class="p">){</span>
-            <span class="c1">//对应重名函数，需要特殊处理，处理后可以在子函数中使用this._super()调用父类同名构造函数, 这里的fnTest很巧妙:只有子类中含有_super字样时才处理从写以提高效率</span>
-            <span class="nx">prototype</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">=</span> <span class="k">typeof</span> <span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"function"</span> <span class="o">&amp;&amp;</span> <span class="k">typeof</span> <span class="nx">_super</span><span class="p">[</span><span class="nx">name</span><span class="p">]</span> <span class="o">==</span> <span class="s2">"function"</span> <span class="o">&amp;&amp;</span> <span class="nx">fnTest</span><span class="p">.</span><span class="nx">test</span><span class="p">(</span><span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">])?</span>
-             <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">name</span><span class="p">,</span><span class="nx">fn</span><span class="p">){</span>
-                <span class="k">return</span> <span class="kd">function</span><span class="p">(){</span>
-                    <span class="c1">//_super在这里是我们的关键字，需要暂时存储一下</span>
-                    <span class="kd">var</span> <span class="nx">tmp</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">_super</span><span class="p">;</span>  
-                    <span class="c1">//这里就可以通过this._super调用父类的构造函数了              </span>
-                    <span class="k">this</span><span class="p">.</span><span class="nx">_super</span> <span class="o">=</span> <span class="nx">_super</span><span class="p">[</span><span class="nx">name</span><span class="p">];</span>
-                    <span class="c1">//调用子类函数  </span>
-                    <span class="nx">fn</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">arguments</span><span class="p">);</span>
-                    <span class="c1">//复原_super，如果tmp为空就不需要复原了</span>
-                    <span class="nx">tmp</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">_super</span> <span class="o">=</span> <span class="nx">tmp</span><span class="p">);</span>
-                <span class="p">}</span>
-             <span class="p">})(</span><span class="nx">name</span><span class="p">,</span><span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">])</span> <span class="p">:</span> <span class="nx">prop</span><span class="p">[</span><span class="nx">name</span><span class="p">];</span>
-        <span class="p">}</span>
-        <span class="c1">//当new一个对象时，实际上是调用该类原型上的init方法,注意通过new调用时传递的参数必须和init函数的参数一一对应</span>
-        <span class="kd">function</span> <span class="nx">Class</span><span class="p">(){</span>
-            <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">initializing</span> <span class="o">&amp;&amp;</span> <span class="k">this</span><span class="p">.</span><span class="nx">init</span><span class="p">){</span>
-                <span class="k">this</span><span class="p">.</span><span class="nx">init</span><span class="p">.</span><span class="nx">apply</span><span class="p">(</span><span class="k">this</span><span class="p">,</span><span class="nx">arguments</span><span class="p">);</span>    
-            <span class="p">}</span>
-        <span class="p">}</span>       
-        <span class="c1">//给子类设置原型</span>
-        <span class="nx">Class</span><span class="p">.</span><span class="nx">prototype</span> <span class="o">=</span> <span class="nx">prototype</span><span class="p">;</span>
-        <span class="c1">//给子类设置构造函数</span>
-        <span class="nx">Class</span><span class="p">.</span><span class="nx">prototype</span><span class="p">.</span><span class="nx">constructor</span> <span class="o">=</span> <span class="nx">Class</span><span class="p">;</span>
-        <span class="c1">//设置子类的extend方法，使得子类也可以通过extend方法被继承</span>
-        <span class="nx">Class</span><span class="p">.</span><span class="nx">extend</span> <span class="o">=</span> <span class="nx">arguments</span><span class="p">.</span><span class="nx">callee</span><span class="p">;</span>
-        <span class="k">return</span> <span class="nx">Class</span><span class="p">;</span>
-    <span class="p">}</span>
-<span class="p">})();</span>
-</code></pre></div>
-<p>通过使用simple-inheritance库，我们就可以通过很简单的方式实现继承了，是不是发现特别像强类型语言的继承。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">Human</span> <span class="o">=</span> <span class="nx">Class</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
-  <span class="na">init</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">age</span><span class="p">,</span><span class="nx">name</span><span class="p">){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">age</span> <span class="o">=</span> <span class="nx">age</span><span class="p">;</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">name</span> <span class="o">=</span> <span class="nx">name</span><span class="p">;</span>
-  <span class="p">},</span>
-  <span class="na">say</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"I am a human"</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="p">});</span>
-<span class="kd">var</span> <span class="nx">Man</span> <span class="o">=</span> <span class="nx">Human</span><span class="p">.</span><span class="nx">extend</span><span class="p">({</span>
-    <span class="na">init</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">age</span><span class="p">,</span><span class="nx">name</span><span class="p">,</span><span class="nx">height</span><span class="p">){</span>
-        <span class="k">this</span><span class="p">.</span><span class="nx">_super</span><span class="p">(</span><span class="nx">age</span><span class="p">,</span><span class="nx">name</span><span class="p">);</span>
-        <span class="k">this</span><span class="p">.</span><span class="nx">height</span> <span class="o">=</span> <span class="nx">height</span><span class="p">;</span>
-    <span class="p">},</span>  
-    <span class="na">say</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
-        <span class="k">this</span><span class="p">.</span><span class="nx">_super</span><span class="p">();</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"I am a man"</span><span class="p">);</span>  
-    <span class="p">}</span>
-<span class="p">});</span>
-<span class="kd">var</span> <span class="nx">man</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Man</span><span class="p">(</span><span class="mi">21</span><span class="p">,</span><span class="s1">'bob'</span><span class="p">,</span><span class="s1">'191'</span><span class="p">);</span>
-<span class="nx">man</span><span class="p">.</span><span class="nx">say</span><span class="p">();</span>
-</code></pre></div>
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
 
 <div class="pagination">
   
@@ -806,7 +696,7 @@ rel="stylesheet" type="text/css" -->
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
-    <span>&copy; 2016 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+    <span>&copy; 2017 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
 
   </footer>
 </div><!-- /.footer-wrapper -->
