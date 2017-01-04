@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2017-01-04T08:54:26+08:00</updated>
+<updated>2017-01-04T20:53:45+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -52,7 +52,7 @@ table{
 &lt;p&gt;mobx推荐使用ES7的decorator语法，以实现最精炼的表达。通过对babel简单的配置我们就可以使用decorator的语法了，具体配置请参考&lt;a href=&quot;https://mobxjs.github.io/mobx/best/decorators.html&quot;&gt;官方文档&lt;/a&gt;。在理解mobx之前，我们需要搞清楚mobx中的两个基本概念Observable和Reactions：&lt;/p&gt;
 
 &lt;blockquote&gt;
-&lt;p&gt;Observable: 需要被监听的应用状态；通过@observable修饰符可以细粒度地控制一个Class的哪个属性需要被监听。&lt;/p&gt;
+&lt;p&gt;Observable: 需要被监听的应用状态；通过&lt;code&gt;@observable&lt;/code&gt;修饰符可以细粒度地控制一个Class的哪个属性需要被监听。&lt;/p&gt;
 
 &lt;p&gt;Reactions: 应用状态的监听者；当依赖的应用状态发生变化时，能够自动地执行相应的动作。&lt;code&gt;reaction&lt;/code&gt;、&lt;code&gt;autorun&lt;/code&gt;、&lt;code&gt;@observer&lt;/code&gt;都可以生成一个Reactions。&lt;/p&gt;
 &lt;/blockquote&gt;
@@ -61,7 +61,7 @@ table{
 
 &lt;h3 id=&quot;1&quot;&gt;(1). 创建需要被监听的应用状态&lt;/h3&gt;
 
-&lt;p&gt;通过对Class的属性简单的使用&lt;code&gt;@observable&lt;/code&gt;修饰符，就定义了一个需要被监听的应用状态变量；然后直接在类中定义对应用状态变量的操作；我们就实现了一个灵活的Store层。如下代码中，创建了一个TodoItemModel的Store层：使用@observable修饰符将title和completed定义为需要被监听地应用状态变量。这样，mobx就会监听title和completed的变化，并在其发生变化时，执行这些变量的监听者(Reactions)。&lt;/p&gt;
+&lt;p&gt;通过对Class的属性简单的使用&lt;code&gt;@observable&lt;/code&gt;修饰符，就定义了一个需要被监听的应用状态变量；然后直接在类中定义对应用状态变量的操作；我们就实现了一个灵活的Store层。如下代码中，创建了一个TodoItemModel的Store层：使用&lt;code&gt;@observable&lt;/code&gt;修饰符将title和completed定义为需要被监听地应用状态变量。这样，mobx就会监听title和completed的变化，并在其发生变化时，执行这些变量的监听者(Reactions)。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;kr&quot;&gt;class&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;TodoItemModel&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
     &lt;span class=&quot;nx&quot;&gt;id&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
     &lt;span class=&quot;err&quot;&gt;@&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;observable&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;title&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
@@ -255,7 +255,7 @@ table{
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;&lt;img src=&quot;/images/mobx-transaction-2.png&quot; alt=&quot;mobx-transaction-2&quot;&gt;&lt;/p&gt;
 
-&lt;h2 id=&quot;4&quot;&gt;4.最佳实践&lt;/h2&gt;
+&lt;h2 id=&quot;3&quot;&gt;3.最佳实践&lt;/h2&gt;
 
 &lt;p&gt;上文中提到，一般情况下，mobx和react结合时不需要任何的额外操作，就能够使我们的react组件达到100%无浪费渲染。但这是建立在正确的使用mobx的基础上的，mobx极其灵活，也容易误用。下面我们总结一些mobx的最佳实践。&lt;/p&gt;
 
@@ -354,7 +354,7 @@ table{
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;需要注意的是action只能影响同步函数，函数中如果有异步调用，则需要对异步调用的函数也使用aciton包裹。请&lt;a href=&quot;http://mobxjs.github.io/mobx/refguide/action.html&quot;&gt;参考官方文档&lt;/a&gt;。&lt;/p&gt;
 
-&lt;h2 id=&quot;5-mobx-redux&quot;&gt;5.mobx与redux的对比&lt;/h2&gt;
+&lt;h2 id=&quot;4-mobx-redux&quot;&gt;4.mobx与redux的对比&lt;/h2&gt;
 
 &lt;p&gt;不可否认，redux依然是react生态系统中最流行的数据层框架；但是mobx也有自己的优势。下面我们从完整性、状态传播方式、适用性等方面对mobx和redux进行简单的对比。&lt;/p&gt;
 
