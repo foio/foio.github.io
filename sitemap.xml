@@ -145,15 +145,11 @@
         <loc>/page28/</loc>
     </url>
     
-    <url>
-        <loc>/page29/</loc>
-    </url>
-    
-    <url>
-        <loc>/page30/</loc>
-    </url>
-    
 
+    
+    <url>
+        <loc>/babel-try-catch/</loc>
+    </url>
     
     <url>
         <loc>/mobx-react/</loc>
@@ -241,18 +237,6 @@
     
     <url>
         <loc>/sizzle-research/</loc>
-    </url>
-    
-    <url>
-        <loc>/javascript-memoryleak/</loc>
-    </url>
-    
-    <url>
-        <loc>/jquery-callback/</loc>
-    </url>
-    
-    <url>
-        <loc>/jquery-ready-load/</loc>
     </url>
     
     <url>
@@ -353,14 +337,6 @@
     
     <url>
         <loc>/nginx-phpfpm/</loc>
-    </url>
-    
-    <url>
-        <loc>/RESTful/</loc>
-    </url>
-    
-    <url>
-        <loc>/sibinnuosha/</loc>
     </url>
     
     <url>

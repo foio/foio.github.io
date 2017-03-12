@@ -217,7 +217,7 @@ RequestAnimationFrame(step);
     <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">webkitRequestAnimationFrame</span> <span class="o">&amp;&amp;</span> <span class="nx">webkitRequestAnimationFrame</span><span class="p">(</span><span class="nb">String</span><span class="p">))</span> <span class="p">{</span>
         <span class="k">return</span> <span class="p">{</span>
             <span class="na">request</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nl">return</span><span class="p">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitRequestAnimationFrame</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+                <span class="na">return</span><span class="p">:</span> <span class="nb">window</span><span class="p">.</span><span class="nx">webkitRequestAnimationFrame</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
                     <span class="k">return</span> <span class="nx">callback</span><span class="p">(</span><span class="k">new</span> <span class="nb">Date</span> <span class="o">-</span> <span class="mi">0</span><span class="p">);</span> <span class="c1">//修正部分webkit版本下没有给callback传time参数的bug</span>
                 <span class="p">});</span>
             <span class="p">},</span>
@@ -355,20 +355,20 @@ RequestAnimationFrame(step);
           <a href="/ui-preview/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mobx-react/" title="使用mobx开发高性能react应用">使用mobx开发高性能react应用</a></h3>
-          <p>mobx与react性能优化，mobx最佳实践，mobx与redux对比 <a href="/mobx-react/">Continue reading</a></p>
+          <h3><a href="/babel-try-catch/" title="一种生产环境中高效定位JS异常的方案">一种生产环境中高效定位JS异常的方案</a></h3>
+          <p>babel try catch，AST，webpack loader，global try catch <a href="/babel-try-catch/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/wepack-code-spliting/" title="webpack代码分割技巧">webpack代码分割技巧</a></h4>
-            <span>Published on November 18, 2016</span>
+            <h4><a href="/mobx-react/" title="使用mobx开发高性能react应用">使用mobx开发高性能react应用</a></h4>
+            <span>Published on January 02, 2017</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/javascript-global-exceptions/" title="捕获页面中全局Javascript异常">捕获页面中全局Javascript异常</a></h4>
-            <span>Published on October 11, 2016</span>
+            <h4><a href="/wepack-code-spliting/" title="webpack代码分割技巧">webpack代码分割技巧</a></h4>
+            <span>Published on November 18, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

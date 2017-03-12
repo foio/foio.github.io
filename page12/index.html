@@ -119,137 +119,156 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-05-12T00:00:00+08:00"><a href="/javascript-memoryleak/">May 12, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <span class="entry-date date published updated"><time datetime="2015-08-26T00:00:00+08:00"><a href="/sizzle-research/">August 26, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
     
-      <h1 class="entry-title"><a href="/javascript-memoryleak/" rel="bookmark" title="javascript 内存泄露研究" itemprop="url">javascript 内存泄露研究</a></h1>
+      <h1 class="entry-title"><a href="/sizzle-research/" rel="bookmark" title="sizzle引擎研究" itemprop="url">sizzle引擎研究</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>这篇文章我们主要研究下，几种常见的内存泄露模式以及预防方法，最后说一下jquery容易造成内存泄露的地方。</p>
+    <p>什么是sizzle？下面时官方的一段解释。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">A pure-javascript CSS selector engine
+× Standalone(no dependencies)
+× Competitive performance
+× Only 4kB with gzipped
+× Easy to use
+× Css3 support
+× Bla bla ……
+</code></pre></div>
+<p>其实说白了，sizzle就是一个很给力的选择器解析引擎。</p>
 
-<h3 id="1-ie8-js-dom">1.IE8以下版本js和dom循环引用造成的内存泄露</h3>
+<p>我们为什么需要sizzle呢？其实对现代浏览器来说，document.querySelectorAll就可以解决一切。比如zeptoJs就是用querySelectorAll进行选择器解析的，因为移动端所有浏览器都支撑querySelectorAll。但是对于低版本的IE(&lt;=8)浏览器，不仅不支持querySelectorAll，连getElementById都有bug，因此自己用浏览器原生API解析选择器简直难上加难。好在sizzle引擎帮我们处理了一切。知其然，更要知其所以然。下面让我们看看sizzle引擎内部时如何实现的。</p>
 
-<hr>
+<p>sizzle解析器的主要有以下几个工作步骤。</p>
 
-<p>使用简单基于引用记数技术的GC机制，都会因为循环引用而造成内存泄露，早期的php(&lt;=5.2)也会因为循环引用造成内存泄露。理论上说，现代浏览器一般使用基于标记清除的机制来回收内存。但是由于IE的dom结构使用Com组件实现，导致js的垃圾回收器无法回收dom造成的内存泄露。</p>
+<figure>
+        <img src="/images/sizzle-step.jpg"/>
+</figure>
 
-<p>如下代码在IE&lt;=8中会造成内存泄露：</p>
+<p>接下来我们就依次解析。为了简单，我们在接下来的文章中都使用选择器<code>div input[name=ttt]</code>作为例子。</p>
 
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">setHandler</span><span class="p">()</span> <span class="p">{</span>
-  <span class="kd">var</span> <span class="nx">elem</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'id'</span><span class="p">)</span>
-  <span class="nx">elem</span><span class="p">.</span><span class="nx">onclick</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="cm">/* ... */</span> <span class="p">}</span>
-<span class="p">}</span></code></pre></figure>
-
-<p>由于有作用域链的存在，以上代码即便function为空，也会存在循环引用，会在
-IE8以下版本的浏览器中造成内存泄露。</p>
-
-<h3 id="2-ie">2.IE浏览器的跨页面内存泄露</h3>
-
-<hr>
-
-<p>我们在动态创建dom片段结构并添加到dom时也会出现内存泄露，这种内存泄露，即使关闭页面也不会回收，只有当IE进程终止时才会回收。比如如下代码（其实这些代码应该很少出现在项目中，因为不会有人直接将事件绑定写成javascript内联函数），就会出现内存泄露：</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//dom结构必须绑定javascript事件函数才会由内存泄露问题</span>
-<span class="kd">var</span> <span class="nx">parentDiv</span> <span class="o">=</span>
-    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">"&lt;div onClick='foo()'&gt;"</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">childDiv</span> <span class="o">=</span>
-    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">"&lt;div onClick='foo()'&gt;"</span><span class="p">);</span>
-
-<span class="c1">// 这里会造成内存泄露</span>
-<span class="nx">parentDiv</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
-<span class="nx">hostElement</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
-<span class="nx">hostElement</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
-<span class="nx">parentDiv</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
-<span class="nx">parentDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
-<span class="nx">childDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span></code></pre></figure>
-
-<p>这是因为，为临时父节点添加子节点时会创建临时的作用域变量，而将节点片段添加到根dom结构时，他们都会从根dom结构继承作用域，这就会导致临时作用域变量无法回收。避免这种内存泄露的最简单方法
-是改变dom插入顺序，防止创建临时作用域链。</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">parentDiv</span> <span class="o">=</span>
-    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">"&lt;div onClick='foo()'&gt;"</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">childDiv</span> <span class="o">=</span>
-    <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">"&lt;div onClick='foo()'&gt;"</span><span class="p">);</span>
-
-<span class="c1">//改变了dom插入顺序，避免了临时作用域变量的创建，从而防止了内存泄露</span>
-<span class="nx">hostElement</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
-<span class="nx">parentDiv</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
-<span class="nx">hostElement</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">parentDiv</span><span class="p">);</span>
-<span class="nx">parentDiv</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">childDiv</span><span class="p">);</span>
-<span class="nx">parentDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
-<span class="nx">childDiv</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span></code></pre></figure>
-
-<h3 id="3-ie9-xmlhttprequest">3.IE9以下浏览器的XMLHttpRequest造成的内存泄露</h3>
+<h3 id="1">1.词法分析</h3>
 
 <hr>
 
-<p>以下常用的代码，就会找出内存泄露。</p>
+<p>词法分析是指我们将文本代码解析为一个个记号(token)，以便后续语法分析使用。</p>
 
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">xhr</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">XMLHttpRequest</span><span class="p">()</span> <span class="c1">// or ActiveX in older IE</span>
-<span class="nx">xhr</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="s1">'/server.url'</span><span class="p">,</span> <span class="kc">true</span><span class="p">)</span>
-<span class="nx">xhr</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-  <span class="k">if</span><span class="p">(</span><span class="nx">xhr</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="nx">xhr</span><span class="p">.</span><span class="nx">status</span> <span class="o">==</span> <span class="mi">200</span><span class="p">)</span> <span class="p">{</span>            
-    <span class="c1">// ...</span>
+<h4 id="1-sizzle-token">(1) sizzle的token种类</h4>
+
+<p>css选择器的词法分析相对较为简单，不用通过lex等专业工具，简单的正则表达式就搞定了。下面依次是用于切分分组，层级关系，以及单个元素的正则表达式。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">分组(,):/^[\x20\t\r\n\f]*,[\x20\t\r\n\f]*/
+
+层级关系( &gt;+~):/^[\x20\t\r\n\f]*([&gt;+~]|[\x20\t\r\n\f])[\x20\t\r\n\f]*/
+
+单个元素处理:
+        var characterEncoding = "(?:\\\\.|[\\w-]|[^\\x00-\\xa0])+"
+        var ID = new RegExp("^#(" + characterEncoding + ")")
+        var TAG = new RegExp( "^(" + characterEncoding.replace( "w", "w*" ) + ")" )
+        var Class = new RegExp( "^\\.(" + characterEncoding + ")" )
+</code></pre></div>
+<h4 id="2-token">(2)从左到右扫描生产token集合</h4>
+
+<p>用正则表达式切分出token的过程，如下代码所示。基本原理就是从左到右扫描，用正则切分。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//分组</span>
+  <span class="kd">var</span> <span class="nx">rcomma</span> <span class="o">=</span> <span class="sr">/^</span><span class="se">[\x</span><span class="sr">20</span><span class="se">\t\r\n\f]</span><span class="sr">*,</span><span class="se">[\x</span><span class="sr">20</span><span class="se">\t\r\n\f]</span><span class="sr">*/</span><span class="p">;</span>
+  <span class="c1">//层级</span>
+  <span class="kd">var</span> <span class="nx">rcombinators</span> <span class="o">=</span>           
+ <span class="sr">/^</span><span class="se">[\x</span><span class="sr">20</span><span class="se">\t\r\n\f]</span><span class="sr">*</span><span class="se">([</span><span class="sr">&gt;+~</span><span class="se">]</span><span class="sr">|</span><span class="se">[\x</span><span class="sr">20</span><span class="se">\t\r\n\f])[\x</span><span class="sr">20</span><span class="se">\t\r\n\f]</span><span class="sr">*/</span>
+  <span class="c1">//选择器</span>
+  <span class="kd">var</span> <span class="nx">TAG</span> <span class="o">=</span> <span class="sr">/^</span><span class="se">((?:\\</span><span class="sr">.|</span><span class="se">[\w</span><span class="sr">*-</span><span class="se">]</span><span class="sr">|</span><span class="se">[^\x</span><span class="sr">00-</span><span class="se">\x</span><span class="sr">a0</span><span class="se">])</span><span class="sr">+</span><span class="se">)</span><span class="sr">/</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">matchExpr</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="na">CLASS</span><span class="p">:</span> <span class="sr">/^</span><span class="se">\.((?:\\</span><span class="sr">.|</span><span class="se">[\w</span><span class="sr">-</span><span class="se">]</span><span class="sr">|</span><span class="se">[^\x</span><span class="sr">00-</span><span class="se">\x</span><span class="sr">a0</span><span class="se">])</span><span class="sr">+</span><span class="se">)</span><span class="sr">/</span><span class="p">,</span>
+      <span class="na">TAG</span><span class="p">:</span> <span class="sr">/^</span><span class="se">((?:\\</span><span class="sr">.|</span><span class="se">[\w</span><span class="sr">*-</span><span class="se">]</span><span class="sr">|</span><span class="se">[^\x</span><span class="sr">00-</span><span class="se">\x</span><span class="sr">a0</span><span class="se">])</span><span class="sr">+</span><span class="se">)</span><span class="sr">/</span>
+  <span class="p">};</span>
+  <span class="c1">//扫描</span>
+  <span class="k">while</span> <span class="p">(</span><span class="nx">selector</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">//分组</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">match</span> <span class="o">=</span> <span class="nx">rcomma</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">selector</span><span class="p">))</span> <span class="p">{</span>
+          <span class="nx">selector</span> <span class="o">=</span> <span class="nx">selector</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">match</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">length</span><span class="p">)</span>
+          <span class="nx">groups</span><span class="p">.</span><span class="nx">push</span><span class="p">((</span><span class="nx">tokens</span> <span class="o">=</span> <span class="p">[]));</span>
+      <span class="p">}</span>
+      <span class="c1">//层级关系</span>
+      <span class="k">if</span> <span class="p">((</span><span class="nx">match</span> <span class="o">=</span> <span class="nx">rcombinators</span><span class="p">.</span><span class="nx">exec</span><span class="p">(</span><span class="nx">selector</span><span class="p">)))</span> <span class="p">{</span>
+          <span class="nx">matched</span> <span class="o">=</span> <span class="nx">match</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
+          <span class="nx">tokens</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
+              <span class="na">value</span><span class="p">:</span> <span class="nx">matched</span><span class="p">,</span>
+              <span class="na">type</span><span class="p">:</span> <span class="nx">match</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">replace</span><span class="p">(</span><span class="nx">rtrim</span><span class="p">,</span> <span class="s2">" "</span><span class="p">)</span>
+          <span class="p">});</span>
+          <span class="nx">selector</span> <span class="o">=</span> <span class="nx">selector</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">matched</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+      <span class="p">}</span>
+      <span class="c1">//选择器</span>
+      <span class="k">for</span> <span class="p">(</span><span class="nx">type</span> <span class="k">in</span> <span class="nx">matchExpr</span><span class="p">)</span> <span class="p">{</span>
+          <span class="k">if</span> <span class="p">((</span><span class="nx">match</span> <span class="o">=</span> <span class="nx">matchExpr</span><span class="p">[</span><span class="nx">type</span><span class="p">].</span><span class="nx">exec</span><span class="p">(</span><span class="nx">selector</span><span class="p">)))</span> <span class="p">{</span>
+              <span class="nx">matched</span> <span class="o">=</span> <span class="nx">match</span><span class="p">.</span><span class="nx">shift</span><span class="p">();</span>
+              <span class="nx">tokens</span><span class="p">.</span><span class="nx">push</span><span class="p">({</span>
+                  <span class="na">value</span><span class="p">:</span> <span class="nx">matched</span><span class="p">,</span>
+                  <span class="na">type</span><span class="p">:</span> <span class="nx">type</span><span class="p">,</span>
+                  <span class="na">matches</span><span class="p">:</span> <span class="nx">match</span>
+              <span class="p">});</span>
+              <span class="nx">selector</span> <span class="o">=</span> <span class="nx">selector</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="nx">matched</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
+          <span class="p">}</span>
+      <span class="p">}</span>
   <span class="p">}</span>
+</code></pre></div>
+<p>最终生成的token集合如下:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span><span class="nl">matches</span><span class="p">:</span> <span class="p">[</span><span class="s2">"div"</span><span class="p">],</span><span class="nx">type</span><span class="err">:</span> <span class="s2">"TAG"</span><span class="p">,</span><span class="nx">value</span><span class="err">:</span> <span class="s2">"div“ }, 
+{matches:[“”], type: "</span> <span class="s2">", value: "</span> <span class="s2">"},
+{matches: ["</span><span class="nx">input</span><span class="s2">"], type: "</span><span class="nx">TAG</span><span class="s2">", value: "</span><span class="nx">input</span><span class="s2">"}, 
+{matches: ["</span><span class="nx">name</span><span class="s2">"], type: "</span><span class="nx">ATTR</span><span class="s2">", value: "</span><span class="p">[</span><span class="nx">name</span><span class="o">=</span><span class="nx">ttt</span><span class="p">]</span><span class="err">"</span><span class="p">}</span>
+</code></pre></div>
+<h3 id="2">2.过滤函数</h3>
+
+<hr>
+
+<p>过滤函数用于从浏览器dom模型中找到基本符合css选择器的种子集，sizzle针对每一种token都实现一个过滤函数，如下代码所示：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//各种类型的token的过滤器，全部返回闭包函数</span>
+<span class="nx">Expr</span><span class="p">.</span><span class="nx">filter</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">ATTR</span>   <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">name</span><span class="p">,</span> <span class="nx">operator</span><span class="p">,</span> <span class="nx">check</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">CHILD</span>  <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">type</span><span class="p">,</span> <span class="nx">what</span><span class="p">,</span> <span class="nx">argument</span><span class="p">,</span> <span class="nx">first</span><span class="p">,</span> <span class="nx">last</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">CLASS</span>  <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">className</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">ID</span>     <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">PSEUDO</span> <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">pseudo</span><span class="p">,</span> <span class="nx">argument</span><span class="p">)</span> <span class="p">{</span><span class="k">return</span> <span class="nx">closure</span><span class="p">}</span>
+    <span class="nl">TAG</span>    <span class="p">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nodeNameSelector</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="kd">function</span><span class="p">(</span><span class="nx">elem</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">nodeName</span> <span class="o">&amp;&amp;</span> <span class="nx">elem</span><span class="p">.</span><span class="nx">nodeName</span><span class="p">.</span><span class="nx">toLowerCase</span><span class="p">()</span> <span class="o">===</span> <span class="nx">nodeNameSelector</span><span class="p">;</span>
+              <span class="p">};</span>
+     <span class="p">}</span>
 <span class="p">}</span>
-<span class="nx">xhr</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="kc">null</span><span class="p">)</span></code></pre></figure>
+</code></pre></div>
+<p>通过部分过滤函数，我们可以初步得到符合条件的种子集合。如下图</p>
 
-<p>当请求完成时，xhr变量引用为0 了，应该会被垃圾回收啊，但是浏览器自己也需要持有一个XMLHttpRequest的引用用于管理请求的状态，而浏览器没有能正确处理。</p>
+<figure>
+        <img src="/images/sizzle-seed.png"/>
+</figure>
 
-<h3 id="4">4.闭包造成的内存泄露</h3>
+<h3 id="3">3.编译函数</h3>
 
+<p>其实sizzle引擎最难的地方就在编译函数。为什么叫做编译呢？抽象的讲，把高级规则转换成底层实现就叫编译；比如高级语言到机器语言的过程就是编译。同样把抽象的css选择语法转变成具体的匹配函数的过程也是编译。
+<figure>
+        <img src="/images/sizzle-compile-step.png"/>
+</figure></p>
+
+<p>编译的过程还是比较复杂的，其实就是从左到右扫描css选择表达式，并使用与当前token对应的过滤函组合成最终的超级匹配函数。扫描编译的核心步骤是：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">(1)遇到关系token(+&gt; ~)则依次出栈并根据层级规则合并栈中函数
+(2)其他情况将当前token对应的处理函数压入栈中
+(3)选择器表达式结束后依次出栈并合并栈中函数
+</code></pre></div>
+<p>很难说清楚，高手常常说一图胜千言，我也把扫描编译css选择表达式<code>div [name=ttt]</code>的过程做成图，希望能够讲清楚。</p>
+
+<figure>
+        <img src="/images/sizzle-compile-process.png"/>
+</figure>
+
+<p>现在假设我们已经通过编译获得了最终的超级匹配函数。那么从种子集中找到结果集就比较简单了。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">for</span> <span class="nx">item</span> <span class="k">in</span> <span class="nx">seed</span>
+      <span class="k">if</span><span class="p">(</span><span class="nx">superMatcher</span><span class="p">(</span><span class="nx">item</span> <span class="p">)){</span>
+               <span class="nx">resultSet</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">item</span><span class="p">);</span>
+      <span class="p">}</span>
+<span class="k">return</span> <span class="nx">resultSet</span><span class="p">;</span>
+</code></pre></div>
 <hr>
 
-<p>Javascript解析器并不知道内嵌函数需要外部函数中的哪些局部变量，因此它会把外部函数中的全部变量都放在作用域对象中，这就会造成外层函数中的变量即便不使用也不会得到释放。如下代码：</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">f</span><span class="p">()</span> <span class="p">{</span>
-  <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="s2">"Large piece of data, probably received from server"</span>
-  <span class="kd">function</span> <span class="nx">inner</span><span class="p">()</span> <span class="p">{</span>
-      <span class="c1">//inner中并没有使用data</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="nx">inner</span>
-<span class="p">}</span></code></pre></figure>
-
-<p>一种处理方式是在返回内嵌函数时将外部函数中不需要的便利设置为null，如下：</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">f</span><span class="p">()</span> <span class="p">{</span>
-  <span class="kd">var</span> <span class="nx">data</span> <span class="o">=</span> <span class="s2">"Large piece of data, probably received from server"</span>
-  <span class="kd">function</span> <span class="nx">inner</span><span class="p">()</span> <span class="p">{</span>
-      <span class="c1">//inner中并没有使用data</span>
-  <span class="p">}</span>
-  <span class="nx">data</span> <span class="o">=</span> <span class="kc">null</span>
-  <span class="k">return</span> <span class="nx">inner</span>
-<span class="p">}</span></code></pre></figure>
-
-<h3 id="5-jquery">5.jQuery是如何处理的，带来了什么新的问题</h3>
-
-<hr>
-
-<p>我们经常使用<code>$.data()</code>来给dom结构绑定数据属性，jQuery的事件处理机制也在内部使用了<code>$.data()</code>API，其实jQuery的内部实现是为每个dom生产一个id，然后将数据存储在jQuyer.cache对象中。</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//生成唯一id</span>
-<span class="nx">elem</span><span class="p">[</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">expando</span> <span class="p">]</span> <span class="o">=</span> <span class="nx">id</span> <span class="o">=</span> <span class="o">++</span><span class="nx">jQuery</span><span class="p">.</span><span class="nx">uuid</span>
-<span class="c1">//将数据存储在cache对象中</span>
-<span class="nx">jQuery</span><span class="p">.</span><span class="nx">cache</span><span class="p">[</span><span class="nx">id</span><span class="p">][</span><span class="s1">'prop'</span><span class="p">]</span> <span class="o">=</span> <span class="nx">val</span></code></pre></figure>
-
-<p>这种方式避免了dom结构指向js对象，从而有效的防止了循环引用造成的内存泄露。看似完美，其实又带来了新的问题。以下代码存在内存泄露：</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">'&lt;div/&gt;'</span><span class="p">)</span>
-  <span class="p">.</span><span class="nx">html</span><span class="p">(</span><span class="k">new</span> <span class="nb">Array</span><span class="p">(</span><span class="mi">1000</span><span class="p">).</span><span class="nx">join</span><span class="p">(</span><span class="s1">'text'</span><span class="p">))</span>
-  <span class="p">.</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="p">})</span>
-  <span class="p">.</span><span class="nx">appendTo</span><span class="p">(</span><span class="s1">'#data'</span><span class="p">)</span>
-<span class="nb">document</span><span class="p">.</span><span class="nx">getElementById</span><span class="p">(</span><span class="s1">'data'</span><span class="p">).</span><span class="nx">innerHTML</span> <span class="o">=</span> <span class="s1">''</span></code></pre></figure>
-
-<p>Dom结构已经被删除了，为什么还是会泄露内存呢？因为<code>jQuery.cache</code>中还保存这指向<code>function</code>的引用，而<code>function</code>中存在指向<code>div</code>片段的引用，这就导致<code>function</code>和<code>div</code>片段形成的整个闭包都无法被内存回收。</p>
-
-<p>嗯，就到这了，肚子饿了，觅食去。</p>
-
-<hr>
-
-<p>参考文档
-<a href="http://javascript.info/tutorial/memory-leaks#ie-lt-8-dom-js-memory-leak">http://javascript.info/tutorial/memory-leaks#ie-lt-8-dom-js-memory-leak</a></p>
+<p><a href="/download/sizzle-presentation.pptx">为了便于理解本文，请下载本文对应的ppt</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -257,213 +276,39 @@ IE8以下版本的浏览器中造成内存泄露。</p>
 <article class="hentry">
   <header>
     <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-04-12T00:00:00+08:00"><a href="/jquery-callback/">April 12, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <span class="entry-date date published updated"><time datetime="2015-01-02T00:00:00+08:00"><a href="/mongo-atom/">January 02, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
     
-      <h1 class="entry-title"><a href="/jquery-callback/" rel="bookmark" title="jQuery的回调模块实现原理" itemprop="url">jQuery的回调模块实现原理</a></h1>
+      <h1 class="entry-title"><a href="/mongo-atom/" rel="bookmark" title="关于mongo原子操作的探讨" itemprop="url">关于mongo原子操作的探讨</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>jQuery的回调系统是jQuery的基本功能之一,用于支撑jQuery的<code>ajax()</code>方法的实现和对promise规范的实现。jQuery提供了<code>callback</code>方法用于实现各种复杂回调功能.</p>
+    <blockquote>
+<p>众所周知，Redis采用的是异步I/O非阻塞的单进程模型，每一条Redis命令都是原子性的。那么mongoDB呢？ mongo有哪些原子操作呢？有哪些实现事务性操作的技巧呢？</p>
+</blockquote>
 
-<h3 id="1">1.基本用法以及特殊参数</h3>
+<h3 id="1">1.对单个文档的原子性修改</h3>
 
-<hr>
+<p>mongoDB保证了对单个document的多个filed的原子性修改。如果需要对单个文档进行原子性的CAS操作(check and set)，可以使用findAndModify操作。</p>
 
-<p>下面是使用callback最简单的例子,其中<code>callback</code> 函数没有任何参数,其中<code>add</code>,<code>fire</code>,<code>remove</code> 的含义通过方法名可以立刻知道.</p>
+<p>比如下面就是一条原子性的CAS操作，首先选择_id为123的文档（注意这里只选择了一个文档），然后对计数器count加1，将status字段变为true，并返回修改后的结果。</p>
 
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">callbacks</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">Callbacks</span><span class="p">();</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn1</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn2</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"bar!"</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">remove</span><span class="p">(</span> <span class="nx">fn2</span> <span class="p">);</span></code></pre></figure>
+<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">db</span><span class="p">.</span><span class="nx">colleciton</span><span class="p">.</span><span class="nx">findAndModify</span><span class="p">({</span><span class="na">query</span><span class="p">:{</span><span class="na">_id</span><span class="p">:</span><span class="s1">'123'</span><span class="p">},</span><span class="na">$inc</span><span class="p">:{</span><span class="na">count</span><span class="p">:</span><span class="mi">1</span><span class="p">},</span><span class="na">$update</span><span class="p">:{</span><span class="na">status</span><span class="p">:</span><span class="kc">true</span><span class="p">}},</span><span class="na">new</span><span class="p">:</span><span class="kc">true</span><span class="p">);</span></code></pre></figure>
 
-<p>当然作为基础模块的回调功能这么简单,显然是无法支撑jQuery其他模块的.<code>callback</code>函数可以传入由空白分隔的多个flag,使得callback用不同的表现.常用的flag如下(多个flag可以同时使用)</p>
-<div class="highlight"><pre><code class="language-" data-lang="">once:确保回调列表的函数只能被触发一次.
-memory:当一个回调函数添加到回到列表时,立即使用上一次传递的历史参数(上次回调列表必须执行成功)调用回调函数.主要用于实现Deferred
-unique:确保一个回调函数只添加一次.
-stopOnFalse:当回调列表中的函数返回false时,不会继续调用列表中后续的函数.
-</code></pre></div>
-<p>其中较难理解的flag是memory, 上个demo先:</p>
+<h3 id="2-isolate">2.对多个文档使用$isolate操作符</h3>
 
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">callbacks</span> <span class="o">=</span> <span class="nx">$</span><span class="p">.</span><span class="nx">Callbacks</span><span class="p">(</span> <span class="s2">"memory"</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn1</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"foo"</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span> <span class="nx">fn2</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"bar"</span> <span class="p">);</span>
-<span class="nx">callbacks</span><span class="p">.</span><span class="nx">fire</span><span class="p">(</span> <span class="s2">"foobar"</span> <span class="p">);</span>
- 
-<span class="cm">/*
-output:
-fn1 says:foo
-fn2 says:foo //这个输出是memory标记的作用
-fn1 says:bar
-fn2 says:bar
-fn1 says:foobar
-fn2 says:foobar
-*/</span></code></pre></figure>
+<p><code>$isolate</code>操作符可以对多个文档的修改提供隔离性。针对其他线程的并发写操作，<code>$isolate</code>保证了提交前其他线程无法修改对应的文档。针对其他线程的读操作，<code>$isolate</code>保证了其他线程读取不到未提交的数据。</p>
 
-<h3 id="2-2-1-4">2.源码分析(版本2.1.4)</h3>
+<p>但是<code>$isolate</code>有验证的性能问题，因为这种情况下线程持有锁的时间较长，严重的影响mongo的并发性。另外，<code>$isolate</code>也无法保证多个文档修改的一致性(all-or-nothing)，$isolate失败是可能只修改了部分文档。</p>
+
+<h3 id="3">3.从语意层面实现事务性操作</h3>
+
+<p>mongoDB官方提供了一种做法，即两阶段提交(two-phase commit)，基本的原理就是利用了写操作的幂等性。具体实现可以看官网的详细讲解。但是利用幂等性来实现事务性有一个重要的前置条件：业务不在乎中间态的不一致。幂等性可以保证最终的一致性，但是会出现中间的不一致状态。</p>
 
 <hr>
 
-<p>jQuery的callback函数的实现在源码的<code>3066~3288</code>行,源码的基本结构为:</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">jQuery</span><span class="p">.</span><span class="nx">Callbacks</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">options</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">//内部变量</span>
-    <span class="kd">var</span> <span class="c1">// 用于记录上次调用fire时的参数,用于memory回调列表</span>
-        <span class="nx">memory</span><span class="p">,</span>
-        <span class="c1">// 标记列表是否被触发过</span>
-        <span class="nx">fired</span><span class="p">,</span>
-        <span class="c1">// 标记列表是否正在触发</span>
-        <span class="nx">firing</span><span class="p">,</span>
-        <span class="c1">// 第一个回调函数</span>
-        <span class="nx">firingStart</span><span class="p">,</span>
-        <span class="c1">// 回调函数列表的长度</span>
-        <span class="nx">firingLength</span><span class="p">,</span>
-        <span class="c1">// 正在回调的函数在列表中的下标</span>
-        <span class="nx">firingIndex</span><span class="p">,</span>
-        <span class="c1">// 回调函数列表</span>
-        <span class="nx">list</span> <span class="o">=</span> <span class="p">[],</span>
-        <span class="c1">// 用于可用户回调的数据,当flag没有once时stack为false</span>
-        <span class="nx">stack</span> <span class="o">=</span> <span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">once</span> <span class="o">&amp;&amp;</span> <span class="p">[],</span>
-    <span class="c1">//参数转换</span>
-    <span class="nx">options</span> <span class="o">=</span> <span class="k">typeof</span> <span class="nx">options</span> <span class="o">===</span> <span class="s2">"string"</span> <span class="p">?</span>
-        <span class="p">(</span><span class="nx">optionsCache</span><span class="p">[</span><span class="nx">options</span><span class="p">]</span> <span class="o">||</span> <span class="nx">createOptions</span><span class="p">(</span><span class="nx">options</span><span class="p">))</span> <span class="p">:</span>
-        <span class="nx">jQuery</span><span class="p">.</span><span class="nx">extend</span><span class="p">({},</span> <span class="nx">options</span><span class="p">);</span>
-    <span class="c1">//方法实现</span>
-    <span class="nx">fire</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{}</span>
-    <span class="nx">self</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="na">add</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">remove</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">has</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">fn</span><span class="p">)</span> <span class="p">{},</span>
-        <span class="na">empty</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">disable</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">disabled</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">lock</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">locked</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">fireWith</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">context</span><span class="p">,</span> <span class="nx">args</span><span class="p">)</span> <span class="p">{},</span>
-        <span class="na">fire</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{},</span>
-        <span class="na">fired</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{}</span>
-    <span class="p">};</span>
-    <span class="k">return</span> <span class="nx">self</span><span class="p">;</span>
-<span class="p">};</span></code></pre></figure>
-
-<p>下面我们分别详细研究以下<code>fire,add,remove</code>等几个主要函数的实现.</p>
-
-<p>该函数主要是对函数回调列表进行遍历执行,但让要考虑stopOnFalse和memory标记的影响.</p>
-
-<h4 id="1-fire">(1)fire函数的实现</h4>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//self中fire只是简单的封装了下callback中的fire函数</span>
-<span class="nx">self</span><span class="p">.</span><span class="nx">fire</span><span class="err">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="c1">//讲self对象传递给callback.fire函数</span>
-    <span class="nx">self</span><span class="p">.</span><span class="nx">fireWith</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">arguments</span><span class="p">);</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">callback</span><span class="p">.</span><span class="nx">fire</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">//如果callback工厂方法的参数中有memory标记,则记住本次调用fire的参数</span>
-    <span class="nx">memory</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">memory</span> <span class="o">&amp;&amp;</span> <span class="nx">data</span><span class="p">;</span>
-    <span class="nx">fired</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-    <span class="nx">firingIndex</span> <span class="o">=</span> <span class="nx">firingStart</span> <span class="o">||</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="nx">firingStart</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="nx">firingLength</span> <span class="o">=</span> <span class="nx">list</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-    <span class="nx">firing</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-    <span class="c1">//循环遍历回调函数列表</span>
-    <span class="k">for</span> <span class="p">(;</span> <span class="nx">list</span> <span class="o">&amp;&amp;</span> <span class="nx">firingIndex</span> <span class="o">&lt;</span> <span class="nx">firingLength</span><span class="p">;</span> <span class="nx">firingIndex</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//使用callback对象调用回调函数,请参阅代码3217~3220行,如果设置了stopOnFalse标记则在函数执行返回false时,不再调用回调列表中的后续函数</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">[</span><span class="nx">firingIndex</span><span class="p">].</span><span class="nx">apply</span><span class="p">(</span><span class="nx">data</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="nx">data</span><span class="p">[</span><span class="mi">1</span><span class="p">])</span> <span class="o">===</span> <span class="kc">false</span> <span class="o">&amp;&amp;</span> <span class="nx">options</span><span class="p">.</span><span class="nx">stopOnFalse</span><span class="p">)</span> <span class="p">{</span>
-            <span class="c1">//由于函数回调列表没有执行完成,阻止add方法使用memory参数调用新添加的函数</span>
-            <span class="nx">memory</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span> <span class="c1">// To prevent further calls using add</span>
-            <span class="k">break</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="c1">//执行完成,设置标记</span>
-    <span class="nx">firing</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">stack</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">stack</span><span class="p">.</span><span class="nx">length</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">fire</span><span class="p">(</span><span class="nx">stack</span><span class="p">.</span><span class="nx">shift</span><span class="p">());</span>
-            <span class="p">}</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">memory</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">list</span> <span class="o">=</span> <span class="p">[];</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-            <span class="nx">self</span><span class="p">.</span><span class="nx">disable</span><span class="p">();</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span></code></pre></figure>
-
-<h4 id="2-add">(2)add函数的实现</h4>
-
-<p>add函数主要实现往回调列表中添加函数的功能,考虑了unique标记的影响,并实现了memory标记的功能.如果该回调列表正在在执行,则新加入的函数也会被调用.</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">add</span><span class="err">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//记录当前回调列表的长度</span>
-        <span class="kd">var</span> <span class="nx">start</span> <span class="o">=</span> <span class="nx">list</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-        <span class="c1">//用一个立即执行函数实现add的主要逻辑</span>
-        <span class="p">(</span><span class="kd">function</span> <span class="nx">add</span><span class="p">(</span><span class="nx">args</span><span class="p">)</span> <span class="p">{</span>  
-            <span class="c1">//遍历参数</span>
-            <span class="nx">jQuery</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">args</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span> <span class="nx">arg</span><span class="p">)</span> <span class="p">{</span>
-                <span class="kd">var</span> <span class="nx">type</span> <span class="o">=</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">type</span><span class="p">(</span><span class="nx">arg</span><span class="p">);</span>
-                <span class="c1">//添加函数</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">type</span> <span class="o">===</span> <span class="s2">"function"</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="c1">//如果有unique标记,且回调列表中已经存在该函数,则不添加</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">options</span><span class="p">.</span><span class="nx">unique</span> <span class="o">||</span> <span class="o">!</span><span class="nx">self</span><span class="p">.</span><span class="nx">has</span><span class="p">(</span><span class="nx">arg</span><span class="p">))</span> <span class="p">{</span>
-                        <span class="nx">list</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">arg</span><span class="p">);</span>
-                    <span class="p">}</span>
-                <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">arg</span> <span class="o">&amp;&amp;</span> <span class="nx">arg</span><span class="p">.</span><span class="nx">length</span> <span class="o">&amp;&amp;</span> <span class="nx">type</span> <span class="o">!==</span> <span class="s2">"string"</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="c1">//如果函数时数组则使用递归</span>
-                    <span class="nx">add</span><span class="p">(</span><span class="nx">arg</span><span class="p">);</span>
-                <span class="p">}</span>
-            <span class="p">});</span>
-        <span class="p">})(</span><span class="nx">arguments</span><span class="p">);</span>
-        <span class="c1">//如果当前正在执行回调列表,则让本次执行包括新添加的函数</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">firing</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">firingLength</span> <span class="o">=</span> <span class="nx">list</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">memory</span><span class="p">)</span> <span class="p">{</span><span class="c1">//否则立即用上次fire的参数执行该回调函数</span>
-            <span class="nx">firingStart</span> <span class="o">=</span> <span class="nx">start</span><span class="p">;</span>
-            <span class="nx">fire</span><span class="p">(</span><span class="nx">memory</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
-<span class="p">}</span></code></pre></figure>
-
-<h4 id="3-remove">3.remove函数的实现</h4>
-
-<p>remove函数的实现相对较为简单,其实就是将函数从回调列表中移除,但同时要考虑对正在执行的回调列表的影响</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">remove</span><span class="err">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">list</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">jQuery</span><span class="p">.</span><span class="nx">each</span><span class="p">(</span><span class="nx">arguments</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">_</span><span class="p">,</span> <span class="nx">arg</span><span class="p">)</span> <span class="p">{</span>
-            <span class="kd">var</span> <span class="nx">index</span><span class="p">;</span>
-            <span class="c1">//移除回调列表中的函数,注意:while循环会将多个同样的函数全部移除</span>
-            <span class="k">while</span> <span class="p">((</span><span class="nx">index</span> <span class="o">=</span> <span class="nx">jQuery</span><span class="p">.</span><span class="nx">inArray</span><span class="p">(</span><span class="nx">arg</span><span class="p">,</span> <span class="nx">list</span><span class="p">,</span> <span class="nx">index</span><span class="p">))</span> <span class="o">&gt;</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-                <span class="c1">//删除下标为index的函数</span>
-                <span class="nx">list</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="nx">index</span><span class="p">,</span> <span class="mi">1</span><span class="p">);</span>
-                <span class="c1">//需要考虑移除函数对正在执行的回调函数列表的影响</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">firing</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="c1">//减小回调列表长度,防止数组越界</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="nx">index</span> <span class="o">&lt;=</span> <span class="nx">firingLength</span><span class="p">)</span> <span class="p">{</span>
-                        <span class="nx">firingLength</span><span class="o">--</span><span class="p">;</span>
-                    <span class="p">}</span>
-                    <span class="c1">//当前移除函数的下表在当前执行函数的下标之前,需要使当前执行下标减一</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="nx">index</span> <span class="o">&lt;=</span> <span class="nx">firingIndex</span><span class="p">)</span> <span class="p">{</span>
-                        <span class="nx">firingIndex</span><span class="o">--</span><span class="p">;</span>
-                    <span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">});</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="k">this</span><span class="p">;</span>
-<span class="p">},</span></code></pre></figure>
-
-<p>Ok,分析完这3个函数的源码后,我们应该能够完全明白jQuery时如何实现回调的,以及各个标记时如何起作用的.</p>
-
-<hr>
-
-<p><a href="https://api.jquery.com/jQuery.Callbacks/">jQuery的callback方法文档</a></p>
+<p>参考资料: (1) <a href="http://docs.mongodb.org/manual/core/write-operations-atomicity/">mongoDB原子性与实务</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -641,18 +486,6 @@ fn2 says:foobar
       <li>
         
           <a href="/page28">28</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page29">29</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page30">30</a>
         
       </li>
     

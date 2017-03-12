@@ -134,15 +134,15 @@ rel="stylesheet" type="text/css" -->
 <span class="kn">import</span> <span class="nn">org.apache.hadoop.hive.ql.exec.UDF</span><span class="o">;</span>
 <span class="kn">import</span> <span class="nn">org.apache.hadoop.io.Text</span><span class="o">;</span>
 <span class="kd">public</span> <span class="kd">class</span> <span class="nc">UserStatus</span> <span class="kd">extends</span> <span class="n">UDF</span> <span class="o">{</span>
-   <span class="kd">public</span> <span class="n">Text</span> <span class="n">evaluate</span><span class="o">(</span><span class="n">Text</span> <span class="n">input</span><span class="o">)</span> <span class="o">{</span>
+   <span class="kd">public</span> <span class="n">Text</span> <span class="nf">evaluate</span><span class="o">(</span><span class="n">Text</span> <span class="n">input</span><span class="o">)</span> <span class="o">{</span>
      <span class="k">if</span><span class="o">(</span><span class="n">input</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
      <span class="kt">int</span> <span class="n">status</span><span class="o">=</span> <span class="n">Integer</span><span class="o">.</span><span class="na">parseInt</span><span class="o">(</span><span class="n">input</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
      <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span> <span class="mi">3</span><span class="o">){</span>
-         <span class="k">return</span> <span class="k">new</span> <span class="n">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
+         <span class="k">return</span> <span class="k">new</span> <span class="nf">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">1</span><span class="o">));</span>
      <span class="o">}</span><span class="k">else</span> <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">7</span><span class="o">){</span>
-         <span class="k">return</span> <span class="k">new</span> <span class="n">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">2</span><span class="o">));</span>
+         <span class="k">return</span> <span class="k">new</span> <span class="nf">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">2</span><span class="o">));</span>
      <span class="o">}</span><span class="k">else</span> <span class="k">if</span><span class="o">(</span><span class="n">status</span><span class="o">&gt;=</span><span class="mi">7</span> <span class="o">&amp;&amp;</span> <span class="n">status</span><span class="o">&lt;=</span><span class="mi">10</span><span class="o">){</span>
-         <span class="k">return</span> <span class="k">new</span> <span class="n">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">3</span><span class="o">));</span>
+         <span class="k">return</span> <span class="k">new</span> <span class="nf">Text</span><span class="o">(</span><span class="n">String</span><span class="o">.</span><span class="na">valueOf</span><span class="o">(</span><span class="mi">3</span><span class="o">));</span>
      <span class="o">}</span>
      <span class="k">return</span> <span class="kc">null</span><span class="o">;</span>
    <span class="o">}</span>
@@ -164,7 +164,7 @@ rel="stylesheet" type="text/css" -->
 
 <p>然后就可以直接使用了</p>
 
-<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">hive</span><span class="o">&gt;</span> <span class="n">select</span> <span class="n">userStatus</span><span class="o">(</span><span class="mi">4</span><span class="o">);</span></code></pre></figure>
+<figure class="highlight"><pre><code class="language-java" data-lang="java"><span class="n">hive</span><span class="o">&gt;</span> <span class="n">select</span> <span class="nf">userStatus</span><span class="o">(</span><span class="mi">4</span><span class="o">);</span></code></pre></figure>
 
 <p>但是每次使用都要加载一次，太费劲了。有没有别的方法呢。</p>
 
@@ -196,20 +196,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/php-extension-autoload/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mobx-react/" title="使用mobx开发高性能react应用">使用mobx开发高性能react应用</a></h3>
-          <p>mobx与react性能优化，mobx最佳实践，mobx与redux对比 <a href="/mobx-react/">Continue reading</a></p>
+          <h3><a href="/babel-try-catch/" title="一种生产环境中高效定位JS异常的方案">一种生产环境中高效定位JS异常的方案</a></h3>
+          <p>babel try catch，AST，webpack loader，global try catch <a href="/babel-try-catch/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/wepack-code-spliting/" title="webpack代码分割技巧">webpack代码分割技巧</a></h4>
-            <span>Published on November 18, 2016</span>
+            <h4><a href="/mobx-react/" title="使用mobx开发高性能react应用">使用mobx开发高性能react应用</a></h4>
+            <span>Published on January 02, 2017</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/javascript-global-exceptions/" title="捕获页面中全局Javascript异常">捕获页面中全局Javascript异常</a></h4>
-            <span>Published on October 11, 2016</span>
+            <h4><a href="/wepack-code-spliting/" title="webpack代码分割技巧">webpack代码分割技巧</a></h4>
+            <span>Published on November 18, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->

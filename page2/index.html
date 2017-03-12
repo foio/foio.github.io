@@ -119,6 +119,250 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2016-11-18T00:00:00+08:00"><a href="/wepack-code-spliting/">November 18, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/wepack-code-spliting/" rel="bookmark" title="webpack代码分割技巧" itemprop="url">webpack代码分割技巧</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <h2 id="1">1. 代码中定义分割点</h2>
+
+<p>webpack支持在代码中定义分割点。分割点指定的模块只有在真正使用时才加载，可以使用webpack提供的require.ensure语法:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">'#okButton'</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">require</span><span class="p">.</span><span class="nx">ensure</span><span class="p">([</span><span class="s1">'./foo'</span><span class="p">],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">foo</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'./foo'</span><span class="p">);</span>
+    <span class="c1">//your code here</span>
+  <span class="p">});</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>也可以像RequireJS一样使用AMD语法：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">'#okButton'</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
+  <span class="nx">require</span><span class="p">([</span><span class="s1">'foo'</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">foo</span><span class="p">){</span>
+    <span class="c1">// your code here</span>
+  <span class="p">}]);</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>上面两种方式都会<code>以foo模块为入口将其依赖模块递归地打包到一个新的Chunk</code>，并在<code>#okButton</code>按钮点击时才异步地加载这个以foo模块为入口的新的chunk。</p>
+
+<h2 id="2-commonschunkplugin">2. 使用CommonsChunkPlugin分割代码</h2>
+
+<p>在理解CommonsChunkPlugin代码分割之前，我们需要熟悉webpack中chunk的概念，webpack将多个模块打包之后的代码集合称为chunk。根据不同webpack配置，chunk又有如下几种类型：</p>
+
+<blockquote>
+<p>Entry Chunk: 包含一系列模块代码，以及webpack的运行时(Runtime)代码，一个页面只能有一个Entry Chunk，并且需要先于Normal Chunk载入</p>
+
+<p>Normal Chunk: 只包含一系列模块代码，不包含运行时(Runtime)代码。</p>
+</blockquote>
+
+<p>作为webpack代码分割的利器，网络上有太多CommonsChunkPlugin的文章，但以某一使用场景的入门案例为主。本文我们根据不同场景下的使用方法，分别介绍。</p>
+
+<h3 id="2-1">2.1 提取库代码</h3>
+
+<p>假设我们需要将很少变化的常用库（react、lodash、redux）等与业务代码分割，可以在webpack.config.js采用如下配置：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">app</span><span class="p">:</span> <span class="s2">"./app.js"</span><span class="p">,</span>
+    <span class="na">vendor</span><span class="p">:</span> <span class="p">[</span><span class="s2">"lodash"</span><span class="p">,</span><span class="s2">"jquery"</span><span class="p">],</span>
+  <span class="p">},</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s2">"release"</span><span class="p">,</span>
+    <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].[chunkhash].js"</span>
+  <span class="p">},</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+    <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">({</span><span class="na">names</span><span class="p">:</span> <span class="p">[</span><span class="s2">"vendor"</span><span class="p">]})</span>
+  <span class="p">]</span>
+<span class="p">};</span>
+
+</code></pre></div>
+<p>上述配置将常用库打包到一个vender命名的<code>Entry Chunk</code>，并将以app.js为入口的业务代码打包到一个以business命名的<code>Normal Chunk</code>。其中<code>Entry Chunk</code>包含了webpack的运行时(Runtime)代码，所以在页面中必须先于业务代码加载。</p>
+
+<h3 id="2-2">2.2 提取公有代码</h3>
+
+<p>假设我们有多个页面，为了优化网络加载性能，我们需要将多个页面共用的代码提取出来单独打包。可以在webpack.config.js进行如下配置：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">entry</span><span class="p">:</span> <span class="p">{</span> 
+          <span class="na">page1</span><span class="p">:</span> <span class="s2">"./page1.js"</span><span class="p">,</span> 
+          <span class="na">page2</span><span class="p">:</span> <span class="s2">"./page2.js"</span> 
+        <span class="p">},</span>
+    <span class="na">output</span><span class="p">:</span> <span class="p">{</span> 
+          <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].[chunkhash].js"</span> 
+        <span class="p">},</span>
+    <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span> <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">(</span><span class="s2">"common.[chunkhash].js"</span><span class="p">)</span> <span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>上述配置将两个页面中通用的代码抽取出来并打包到以common命名的<code>Entry Chunk</code>，并将以page1.js和page2.js为入口代码分别打包到以page1和page2命名的<code>Normal Chunk</code>。
+其中<code>Entry Chunk</code>包含了webpack的运行时(Runtime)代码，所以<code>common.[chunkhash].js</code>在两个页面中都必须在page1.[chunkhash].js和page2.[chunkhash].js前加载。</p>
+
+<p>在这种配置下，CommonsChunkPlugin的作用可以抽象：</p>
+
+<blockquote>
+<p>将多个入口中的公有代码和Runtime(运行时)抽取到父节点</p>
+</blockquote>
+
+<p>理解了CommonsChunkPlugin的本质后，我们看一个更复杂的例子：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">p1</span><span class="p">:</span> <span class="s2">"./page1"</span><span class="p">,</span>
+        <span class="na">p2</span><span class="p">:</span> <span class="s2">"./page2"</span><span class="p">,</span>
+        <span class="na">p3</span><span class="p">:</span> <span class="s2">"./page3"</span><span class="p">,</span>
+        <span class="na">ap1</span><span class="p">:</span> <span class="s2">"./admin/page1"</span><span class="p">,</span>
+        <span class="na">ap2</span><span class="p">:</span> <span class="s2">"./admin/page2"</span>
+    <span class="p">},</span>
+    <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+        <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].js"</span>
+    <span class="p">},</span>
+    <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+        <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">(</span><span class="s2">"admin-commons.js"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"ap1"</span><span class="p">,</span> <span class="s2">"ap2"</span><span class="p">]),</span>
+        <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">(</span><span class="s2">"commons.js"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"p1"</span><span class="p">,</span> <span class="s2">"p2"</span><span class="p">,</span> <span class="s2">"admin-commons.js"</span><span class="p">])</span>
+    <span class="p">]</span>
+<span class="p">};</span>
+<span class="c1">// page1.html: commons.js, p1.js</span>
+<span class="c1">// page2.html: commons.js, p2.js</span>
+<span class="c1">// page3.html: p3.js</span>
+<span class="c1">// admin-page1.html: commons.js, admin-commons.js, ap1.js</span>
+<span class="c1">// admin-page2.html: commons.js, admin-commons.js, ap2.js</span>
+</code></pre></div>
+<p>我们可以用树结构描述上述配置的作用：</p>
+
+<p><img src="/images/common-chunk-tree.png" alt="commonchunk"></p>
+
+<p>每一次使用CommonsChunkPlugin都会将共有代码和runtime提取到父节点。上述例子中，通过两次CommonChunkPlugin的作用，runtime被提取到common.js中。通过这种树型结构，我们可以清晰的看出每个页面对各个chunk的依赖顺序。</p>
+
+<h3 id="2-3-runtime">2.3 提取Runtime(运行时)代码</h3>
+
+<p>使用CommonsChunkPlugins时，一个常见的问题就是：</p>
+
+<blockquote>
+<p>没有被修改过的公有代码或库代码打包出的Entry Chunk，会随着其他业务代码的变化而变化，导致页面上的长缓存机制失效。</p>
+</blockquote>
+
+<p><a href="https://github.com/webpack/webpack/issues/1315#issuecomment-155100976">github上有一个与此相关的问题</a>。本意就是在只修改业务代码时，而不改动库代码时，打包出的库代码的chunkhash也发生变化，导致浏览器端的长缓存机制失效。如图所示，app和vender的chunkhash都发生了变化。</p>
+
+<p><img src="/images/common-chunk-vender.png" alt="commonchunk"></p>
+
+<p><img src="/images/common-chunk-vender2.png" alt="commonchunk"></p>
+
+<p>这主要是因为使用CommonsChunkPlugin提取代码到新的chunk时，会将webpack运行时(Runtime)也提取到打包后的新的chunk。通过如下配置就可以将webpack的runtime单独提取出来：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">app</span><span class="p">:</span> <span class="s2">"./app.js"</span><span class="p">,</span>
+    <span class="na">vendor</span><span class="p">:</span> <span class="p">[</span><span class="s2">"lodash"</span><span class="p">,</span><span class="s2">"jquery"</span><span class="p">],</span>
+  <span class="p">},</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s1">'release'</span><span class="p">,</span>
+    <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].[chunkhash].js"</span>
+  <span class="p">},</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+    <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">({</span><span class="na">names</span><span class="p">:</span> <span class="p">[</span><span class="s1">'vendor'</span><span class="p">,</span><span class="s1">'runtime'</span><span class="p">]}),</span>
+  <span class="p">]</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>这种情况下，当业务代码发送变化，而库代码没有改动时，vender的chunkhash不会变，这样才能最大化的利用浏览器的缓存机制。如下图所示：</p>
+
+<p><img src="/images/common-chunk-runtime.png" alt="commonchunk"></p>
+
+<p>修改业务代码后，vender的chunkhash不会变化，方便使用浏览器的缓存：</p>
+
+<p><img src="/images/common-chunk-runtime2.png" alt="commonchunk"></p>
+
+<p>由于webpack的runtime比较小，我们可以直接将该文件的内容inline到html中。</p>
+
+<h2 id="3-dllplugin-dllreferenceplugin">3. 使用DllPlugin和DllReferencePlugin分割代码</h2>
+
+<p>通过DllPlugin和DllReferencePlugin，webpack引入了另外一种代码分割的方案。我们可以将常用的库文件打包到dll包中，然后在webpack配置中引用。业务代码的可以像往常一样使用require引入依赖模块，比如require(&#39;react&#39;), webpack打包业务代码时会首先查找该模块是否已经包含在dll中了，只有dll中没有该模块时，webpack才将其打包到业务chunk中。</p>
+
+<p>首先我们使用DllPlugin将常用的库打包在一起：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'webpack'</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">vendor</span><span class="p">:</span> <span class="p">[</span><span class="s1">'lodash'</span><span class="p">,</span><span class="s1">'react'</span><span class="p">],</span>
+  <span class="p">},</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">filename</span><span class="p">:</span> <span class="s1">'[name].[chunkhash].js'</span><span class="p">,</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s1">'build/'</span><span class="p">,</span>
+  <span class="p">},</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span><span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">DllPlugin</span><span class="p">({</span>
+    <span class="na">name</span><span class="p">:</span> <span class="s1">'[name]_lib'</span><span class="p">,</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s1">'./[name]-manifest.json'</span><span class="p">,</span>
+  <span class="p">})]</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>该配置会产生两个文件，模块库文件：vender.[chunkhash].js和模块映射文件：vender-menifest.json。其中vender-menifest.json标明了模块路径和模块ID（由webpack产生）的映射关系，其文件内容如下：</p>
+<div class="highlight"><pre><code class="language-" data-lang=""><span class="p">{</span><span class="w">
+  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vendor_lib"</span><span class="p">,</span><span class="w">
+  </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
+    </span><span class="nt">"./node_modules/.npminstall/lodash/4.17.2/lodash/lodash.js"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
+    </span><span class="nt">"./node_modules/.npminstall/webpack/1.13.3/webpack/buildin/module.js"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
+    </span><span class="nt">"./node_modules/.npminstall/react/15.3.2/react/react.js"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">
+    </span><span class="err">...</span><span class="w">
+    </span><span class="err">}</span><span class="w">
+</span><span class="p">}</span><span class="w">    
+</span></code></pre></div>
+<p><img src="/images/webpack-dll-vender.png" alt="commonchunk"></p>
+
+<p>在业务代码的webpack配置文件中使用DllReferencePlugin插件引用模块映射文件：vender-menifest.json后，我们可以正常的通过require引入依赖的模块，如果在vender-menifest.json中找到依赖模块的路径映射信息，webpack会直接使用dll包中的该依赖模块，否则将该依赖模块打包到业务chunk中。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'webpack'</span><span class="p">);</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
+  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">app</span><span class="p">:</span> <span class="p">[</span><span class="s1">'./app'</span><span class="p">],</span>
+  <span class="p">},</span>
+  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
+    <span class="na">filename</span><span class="p">:</span> <span class="s1">'[name].[chunkhash].js'</span><span class="p">,</span>
+    <span class="na">path</span><span class="p">:</span> <span class="s1">'build/'</span><span class="p">,</span>
+  <span class="p">},</span>
+  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span><span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">DllReferencePlugin</span><span class="p">({</span>
+    <span class="na">context</span><span class="p">:</span> <span class="s1">'.'</span><span class="p">,</span>
+    <span class="na">manifest</span><span class="p">:</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'./vendor-manifest.json'</span><span class="p">),</span>
+  <span class="p">})]</span>
+<span class="p">};</span>
+
+</code></pre></div>
+<p>由于依赖的模块都在dll包中，所以例子中app打包后的chunk很小。</p>
+
+<p><img src="/images/webpack-dll-app.png" alt="commonchunk"></p>
+
+<p>需要注意的是：dll包的代码是不会执行的，需要在业务代码中通过require显示引入。相比于CommonChunkPlugin，使用DllReferencePlugin分割代码有两个明显的好处：</p>
+
+<blockquote>
+<p>（1）由于dll包和业务chunk包是分开进行打包的，每一次修改代码时只需要对业务chunk重新打包，webpack的编译速度得到极大的提升，因此相比于CommonChunkPlugin，DllPlugin进行代码分割可以显著的提升开发效率。</p>
+
+<p>（2）使用DllPlugin进行代码分割，dll包和业务chunk相互独立，其chunkhash互不影响，dll包很少变动，因此可以更充分的利用浏览器的缓存系统。而使用CommonChunk打包出的代码，由于公有chunk中包含了webpack的runtime(运行时)，公有chunk和业务chunk的chunkhash会互相影响，必须将runtime单独提取出来，才能对公有chunk充分地使用浏览器的缓存。</p>
+</blockquote>
+
+<p>本文所有demo代码均在github上：<a href="https://github.com/foio/webpack-code-splitting-demos">https://github.com/foio/webpack-code-splitting-demos</a></p>
+
+<hr>
+
+<p>参考文献</p>
+
+<p><a href="https://robertknight.github.io/posts/webpack-dll-plugins/">https://robertknight.github.io/posts/webpack-dll-plugins/</a></p>
+
+<p><a href="http://engineering.invisionapp.com/post/optimizing-webpack/">http://engineering.invisionapp.com/post/optimizing-webpack/</a></p>
+
+<p><a href="https://github.com/webpack/docs/wiki/optimization">https://github.com/webpack/docs/wiki/optimization</a></p>
+
+<p><a href="https://medium.com/@soederpop/webpack-plugins-been-we-been-keepin-on-the-dll-cdfdd6cb8cd7#.g79bu37wr">https://medium.com/@soederpop/webpack-plugins-been-we-been-keepin-on-the-dll-cdfdd6cb8cd7#.g79bu37wr</a></p>
+
+<p><a href="http://engineering.invisionapp.com/post/optimizing-webpack/">http://engineering.invisionapp.com/post/optimizing-webpack/</a></p>
+
+<p><a href="https://github.com/webpack/docs/wiki/optimization">https://github.com/webpack/docs/wiki/optimization</a></p>
+
+<p><a href="https://github.com/webpack/webpack/issues/1315#issuecomment-155100976">https://github.com/webpack/webpack/issues/1315#issuecomment-155100976</a></p>
+
+<p><a href="https://github.com/zhengweikeng/blog/issues/10">https://github.com/zhengweikeng/blog/issues/10</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2016-10-11T00:00:00+08:00"><a href="/javascript-global-exceptions/">October 11, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -263,238 +507,6 @@ rel="stylesheet" type="text/css" -->
 <p><a href="http://rapheal.sinaapp.com/2014/11/06/javascript-error-monitor/">http://rapheal.sinaapp.com/2014/11/06/javascript-error-monitor/</a></p>
 
 <p><a href="http://resources.jointjs.com/demos/javascript-ast">http://resources.jointjs.com/demos/javascript-ast</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-09-04T00:00:00+08:00"><a href="/react-redux-performance-boost/">September 04, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/react-redux-performance-boost/" rel="bookmark" title="react+redux渲染性能优化原理" itemprop="url">react+redux渲染性能优化原理</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <style type="text/css">
-td, table {
-   border: solid gray 1px;
-   padding: 10px;
-}
-table{
-   margin: 0 auto;
-}
-</style>
-
-<blockquote>
-<p>React基本上成了前端的必备技能，redux更是对react的锦上添花。我在<a href="http://foio.github.io/redux-state-manage/">“redux,一种页面状态管理的优雅方案”</a>一文中介绍了react与redux结合的基本方法和高级技巧。</p>
-</blockquote>
-
-<p>大家都知道，react的一个痛点就是非父子关系的组件之间的通信，其官方文档对此也并不避讳：</p>
-
-<blockquote>
-<p>For communication between two components that don&#39;t have a parent-child relationship, you can set up your own global event system. Subscribe to events in componentDidMount(), unsubscribe in componentWillUnmount(), and call setState() when you receive an event. </p>
-</blockquote>
-
-<p>而redux就可以视为其中的“global event system”，使用redux可以使得我们的react应用有更加清晰的架构。</p>
-
-<p>本文我们来探讨，基于react和redux架构的前端应用，如何进行渲染性能优化。<code>对于小型react前端应用，最好的优化就是不优化</code>因为React本身就是通过比较虚拟DOM的差异，从而对真实DOM进行最小化操作，小型React应用的虚拟DOM结构简单，虚拟DOM比较的耗时可以忽略不计。而对于复杂的前端项目，我们所指的渲染性能优化，实际上是指，<code>在不需要更新DOM时，如何避免虚拟DOM的比较</code>。关于虚拟DOM的原理请参看我的另一篇博客<a href="http://foio.github.io/virtual-dom/">全面理解虚拟DOM，实现虚拟DOM</a> </p>
-
-<h3 id="1-react">1. react组件的生命周期</h3>
-
-<p>工欲善其事，必先利其器。理解react的组件的生命周期是优化其渲染性能的必备前提。我们可以将react组件的生命周期分为3个大循环：挂载到DOM、更新DOM、从DOM中卸载。React对三个大循环中每一步都暴露出钩子函数，使得我们可以细粒度地控制组件的生命周期。</p>
-
-<h4 id="1-dom">(1)挂载到DOM</h4>
-
-<p>组件首次插入到DOM时，会经历从属性和状态初始化到DOM渲染等基本流程，可以通过下图描述：</p>
-
-<figure style="width:300px;margin: 0 auto;">
-        <img src="/images/react-component-mount.png" alt="render flow">
-</figure>
-
-<p>必须注意的是，挂载到DOM流程在组件的整个生命周期只有一次，也就是组件第一次插入DOM文档流时。在挂载到DOM流程中的每一步也有相应的限制：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">getDefaultProps()和getInitialState()中不能获取和设置组件的state。
-render()方法中不能设置组件的state。
-</code></pre></div>
-<h4 id="2-dom">(2)更新DOM</h4>
-
-<p>组件挂载到DOM后，一旦其props和state有更新，就会进入更新DOM流程。同样我们也可以通过一张图清晰的描述该流程的各个步骤：</p>
-
-<figure style="width:300px;margin: 0 auto;">
-        <img src="/images/react-component-update.png" alt="render flow">
-</figure>
-
-<p>componentWillReceiveProps()提供了该流程中更新state的最后时机，后续的其他函数都不能再更新组件的state了。<code>我们尤其需要注意的是shouldComponentUpdate函数，它的结果直接影响该组件是不是需要进行虚拟DOM比较</code>，我们对组件渲染性能优化的基本思路就是：在非必要的时候将shouldComponentUpdate返回值设置为false，从而终止更新DOM流程中的后续步骤。</p>
-
-<h4 id="3-dom">(3)从DOM中卸载</h4>
-
-<p>从DOM中卸载的流程比较简单，React只暴漏出<code>componentWillUnmount</code>，该函数使得我们可以在DOM卸载的最后时机对其进行干预。</p>
-
-<h3 id="2-react">2. react组件渲染性能监控</h3>
-
-<p>在进行性能优化前，我们先来了解如何对React组件渲染性能进行监控。React官方提供了<a href="https://facebook.github.io/react/docs/perf.html">Performance Tools</a>，其使用起来也很简单，通过Perf.start启动一次性能分析，并通过Perf.stop结束一次性能分析。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">import</span> <span class="nx">Perf</span> <span class="nx">from</span> <span class="s1">'react-addons-perf'</span>
-<span class="nx">Perf</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span>
-<span class="p">....</span><span class="nx">your</span> <span class="nx">react</span> <span class="nx">code</span>
-<span class="nx">Perf</span><span class="p">.</span><span class="nx">stop</span><span class="p">();</span>
-</code></pre></div>
-<p>调用Perf.stop后，我们就可以通过Perf提供的API来获取本次性能分析的数据指标。其中最有用的API是<code>Perf.printWasted()</code>，其结果给出你在哪些组件上进行了无意义的(没有引起真实DOM的改变)虚拟DOM比较，比如如下结果表明我们在TodoItem组件上浪费了4ms进行无意义的虚拟DOM比较，我们可以从这里入手，进行性能优化。</p>
-
-<p><img src="/images/react-perf-wasted.png" alt="Alt text"></p>
-
-<p>而<code>Perf.printInclusive()</code>的结果则给出渲染各个组件的总体时间，通过它的结果我们可以找出哪个组件是页面渲染的性能瓶颈。</p>
-
-<p><img src="/images/react-perf-include.png" alt="Alt text"></p>
-
-<p>和<code>Perf.printInclusive()</code>相似的API还有<code>Perf.printExclusive()</code>，只是其结果是组件渲染的独占时间，即不包括花费于加载组件的时间： 处理 props, getInitialState, 调用 componentWillMount 及 componentDidMount, 等等。</p>
-
-<h3 id="3">3. 性能优化基本原理</h3>
-
-<p>使用上一小节的性能分析工具，我们可以轻易的定位出哪些组件是页面的性能瓶颈、哪些组件进行了无意义的虚拟DOM比较，本小节我们能探讨如何对基于react和redux架构的前端应用进行性能优化。强烈的建议你参考我的另一篇博文:<a href="http://foio.github.io/redux-state-manage/">redux,一种页面状态管理的优雅方案</a>，以便更好的理解本小节。</p>
-
-<h4 id="3-1-react">3.1 常规React组件性能优化</h4>
-
-<p>通过上文的React更新DOM流程，我们知道React提供了<code>shouldComponentUpdate</code>函数，它的结果直接影响组件是不是需要进行虚拟DOM比较以及后续的真实DOM渲染。而<code>shouldComponentUpdate</code>函数的默认返回值为true，这暗示着React总是会进行虚拟DOM比较，无论真实DOM是否需要重新渲染。我们可以通过根据自己的业务特性，重载<code>shouldComponentUpdate</code>，只在确认真实DOM需要改变时，再返回true。一般的做法是比较组件的props和state是否真的发生变化，如果发生变化则返回true，否则返回false。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
-     <span class="k">return</span> <span class="o">!</span><span class="nx">isDeepEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span><span class="nx">nextProps</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isDeepEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span><span class="nx">nextState</span><span class="p">);</span>
- <span class="p">}</span>
-</code></pre></div>
-<p>进行深度比较(isDeepEqual)来确定props和state是否发生变化是最常见的做法，其是否有性能问题呢？如果一个容器型组件有很多的子节点，而子节点又有其他子节点，对这种复杂的嵌套对象进行深度比较(isDeepEqual)是很耗时的，甚至会抵消由避免虚拟DOM比较所带来的性能收益。React官方推荐使用<a href="https://facebook.github.io/react/docs/advanced-performance.html">immutable的组件状态</a>，以便更高效的实现shouldComponentUpdate函数。</p>
-
-<p>immutable的状态有何优势呢？假设我们要修改一个列表中，某个列表项的状态，使用非immutable的方式：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">item</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="na">id</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
-    <span class="na">text</span><span class="p">:</span><span class="s1">'todo1'</span><span class="p">,</span>
-    <span class="na">status</span><span class="p">:</span><span class="s1">'doing'</span>
-<span class="p">}</span>
-<span class="kd">var</span> <span class="nx">oldTodoList</span> <span class="o">=</span> <span class="p">[</span><span class="nx">item1</span><span class="p">,</span><span class="nx">item2</span><span class="p">,....,</span><span class="nx">itemn</span><span class="p">];</span>
-<span class="nx">oldTodoList</span><span class="p">[</span><span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">status</span> <span class="o">=</span> <span class="s1">'done'</span><span class="p">;</span>
-<span class="kd">var</span> <span class="nx">newTodoList</span> <span class="o">=</span> <span class="nx">oldTotoList</span><span class="p">;</span>
-</code></pre></div>
-<p>当我们需要确认oldTodoList和newTodoList的数据是否相同时，只能遍历列表(复杂度为O(n))，依次比较:</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">oldTodoList</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
-    <span class="k">if</span><span class="p">(</span><span class="nx">isItemEqual</span><span class="p">(</span><span class="nx">oldTodoList</span><span class="p">[</span><span class="nx">i</span><span class="p">],</span><span class="nx">newTodoList</span><span class="p">[</span><span class="nx">i</span><span class="p">])){</span>
-        <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-</code></pre></div>
-<p>而如果使用immutable的方式：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">newTotoList</span> <span class="o">=</span> <span class="nx">oldTodoList</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">){</span>
-    <span class="k">if</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">id</span> <span class="o">==</span> <span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">){</span>
-        <span class="k">return</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">assign</span><span class="p">({},</span><span class="nx">item</span><span class="p">,{</span><span class="na">status</span><span class="p">:</span><span class="s1">'done'</span><span class="p">})</span>
-    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
-        <span class="k">return</span> <span class="nx">item</span><span class="p">;</span>
-    <span class="p">}</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>因为每一次变动，都会创建新的对象，因此比较oldTodoList和newTodoList是否有变化时，只需要比较其对象引用即可(复杂度O(1))：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">return</span> <span class="nx">oldTodoList</span> <span class="o">==</span> <span class="nx">newTodoList</span><span class="p">;</span>
-</code></pre></div>
-<p><code>我们优化的方向就是将</code>shouldComponentUpdate<code>中所有的props和state的比较算法复杂度降到最低</code>，而浅层对比(isShallowEqual)就是复杂度最低的对象比较算法:</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
-     <span class="k">return</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span><span class="nx">nextProps</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span><span class="nx">nextState</span><span class="p">);</span>
- <span class="p">}</span>
-</code></pre></div>
-<p>当组件的prop设state都是immutable时，<code>shouldComponentUpdate</code>的实现就非常简单了，我们可以直接使用facebook官方提供了<code>PureRenderMixin</code>，它就是对组件的props和state进行浅层比较的。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">PureRenderMixin</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'react-addons-pure-render-mixin'</span><span class="p">);</span>
-<span class="nx">React</span><span class="p">.</span><span class="nx">createClass</span><span class="p">({</span>
-  <span class="na">mixins</span><span class="p">:</span> <span class="p">[</span><span class="nx">PureRenderMixin</span><span class="p">],</span>
-
-  <span class="na">render</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">className</span><span class="p">}</span><span class="o">&gt;</span><span class="nx">foo</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">;
-</span>  <span class="p">}</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>自己实现immutable化，还是很有挑战的，我们可以借助于第三方库<a href="https://facebook.github.io/immutable-js/">ImmutableJS</a>，它是一个重型库，适合于大型复杂项目；如果你的项目复杂度不是很高，可以使用<a href="https://github.com/rtfeldman/seamless-immutable">seamless-immutable</a>，它是一个更轻量级的库，基于ES5的新特性Object.freeze来避免对象的修改，因此其只能兼容实现ES5标准的浏览器。</p>
-
-<h4 id="3-2-redux">3.2 理解Redux状态传播路径</h4>
-
-<p>Redux使用一个对象存储整个应用的状态(<code>global state</code>)，当<code>global state</code>发生变化时，状态是如何传递的呢？这个问题的答案对我们理解基于redux的react应用的渲染性能优化至关重要。</p>
-
-<p>Redux将React组件分为容器型组件和展示型组件。容器型组件一般通过connet函数生成，它订阅了全局状态的变化，通过mapStateToProps函数，我们可以对全局状态进行过滤，只返回该容器型组件关注的局部状态：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">mapStateToProps</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="p">{</span><span class="na">todos</span><span class="p">:</span> <span class="nx">state</span><span class="p">.</span><span class="nx">todos</span><span class="p">};</span>
-<span class="p">}</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">mapStateToProps</span><span class="p">)(</span><span class="nx">TodoApp</span><span class="p">);</span>
-</code></pre></div>
-<p><code>每一次全局状态变化都会调用所有容器型组件的mapStateToProps方法</code>，该方法返回一个常规的Javascript对象，并将其合并到容器型组件的props上。</p>
-
-<p>而展示型组件不直接从<code>global state</code>获取数据，其数据来源于父组件。当容器型组件对应<code>global state</code>有变化时，它会将变化传播到其所有的子组件(一般为展示型组件)。简单来说容器型组件与展示型组件是父子关系：</p>
-
-<table><thead>
-<tr>
-<th style="text-align: left">组件类型</th>
-<th style="text-align: center">数据来源</th>
-<th style="text-align: center">变化通知</th>
-</tr>
-</thead><tbody>
-<tr>
-<td style="text-align: left">展示型组件</td>
-<td style="text-align: center">父组件</td>
-<td style="text-align: center">父组件通知</td>
-</tr>
-<tr>
-<td style="text-align: left">容器型组件</td>
-<td style="text-align: center">全局状态</td>
-<td style="text-align: center">监听全局状态</td>
-</tr>
-</tbody></table>
-
-<p>组件的状态传递路径，可以用一个树形结构描述：</p>
-
-<p><img src="/images/redux-component-tree.png" alt="Alt text"></p>
-
-<h4 id="3-3-redux">3.3 理解Redux的默认性能优化</h4>
-
-<p>Redux官方对容器型组件和全局状态树有两个基本的假设，违背这些假设将使得Redux的默认性能优化无法起作用：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1. 容器型组件必须为Pure Component，即组件只依赖于state和props
-2. 全局状态树(global state)的任何变动都是immutable的
-</code></pre></div>
-<blockquote>
-<p>这种规范是有理由的：上文中我们提到过，每一次全局状态发生变化，所有的容器型组件都会得到通知，而各个容器型组件需要通过shouldComponentUpdate函数来确实自己关注的局部状态是否发生变化、自身是否需要重新渲染，默认情况下，React组件的shouldComponentUpdate总返回true，这里貌似有一个严重的性能问题：全局状态的任何变动都会使页面中的所有组件进入<code>更新DOM</code>的流程</p>
-</blockquote>
-
-<p>幸运的是，用Redux官方API函数connect生成的容器型组件，默认会提供一个shouldComponentUpdate函数，其中对props和state进行了浅层比较`。如果我们不遵从Redux的immutable状态的规范和Pure Component规范，则容器型组件默认的shouldComponentUpdate函数就是无效的了。</p>
-
-<p>在遵从Redux的immutable状态规范的情况下，当一个容器型组件的默认shouldComponentUpdate函数返回true时，则表明其对应的局部状态发生变化，需要将状态传播到各个子组件，相应的所有子组件也都会进行虚拟DOM比较，以确定是否需要重新渲染。如下图所示，<code>容器型组件#1</code>的状态发生变化后，所有的子组件都会进行虚拟DOM比较：</p>
-
-<p><img src="/images/redux-performance-loose.png" alt="Alt text"></p>
-
-<p><code>由于展示型组件对全局状态没有感知，我们就可以使用React的常规方法对展示型进行渲染性能优化了</code>。使用小节3.1中所提到的<code>常规React组件性能优化</code>方案，对每一个展示型组件实现shouldComponentUpdate函数：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
-     <span class="k">return</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span><span class="nx">nextProps</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span><span class="nx">nextState</span><span class="p">);</span>
- <span class="p">}</span>
-</code></pre></div>
-<p>我们就可以避免展示型组件多余的虚拟DOM比较。比如当只有<code>展示型组件#1.1</code>需要重新渲染时，其他同级别的组件不会进行虚拟DOM比较。比如当只有<code>展示型组件#1.1</code>需要重新渲染时，其他同级别的组件不会进行虚拟DOM比较了</p>
-
-<p><img src="/images/redux-performance-best.png" alt="Alt text"></p>
-
-<p>综上所述: 在容器型组件层面，Redux为我们提供了默认的性能优化方案；在展示型组件层面，我们可以使用常规React组件性能优化方案。</p>
-
-<hr>
-
-<p>参考文献：</p>
-
-<p><a href="https://facebook.github.io/react/docs/component-specs.html">https://facebook.github.io/react/docs/component-specs.html</a></p>
-
-<p><a href="https://facebook.github.io/react/docs/perf.html">https://facebook.github.io/react/docs/perf.html</a></p>
-
-<p><a href="http://benchling.engineering/performance-engineering-with-react/">http://benchling.engineering/performance-engineering-with-react/</a></p>
-
-<p><a href="http://jlongster.com/Using-Immutable-Data-Structures-in-JavaScript">http://jlongster.com/Using-Immutable-Data-Structures-in-JavaScript</a></p>
-
-<p><a href="https://github.com/rtfeldman/seamless-immutable">https://github.com/rtfeldman/seamless-immutable</a></p>
-
-<p><a href="https://facebook.github.io/react/docs/pure-render-mixin.html">https://facebook.github.io/react/docs/pure-render-mixin.html</a></p>
-
-<p><a href="https://facebook.github.io/react/docs/advanced-performance.html">https://facebook.github.io/react/docs/advanced-performance.html</a></p>
-
-<p><a href="https://www.toptal.com/react/react-redux-and-immutablejs">https://www.toptal.com/react/react-redux-and-immutablejs</a></p>
-
-<p><a href="https://facebook.github.io/react/docs/advanced-performance.html">https://facebook.github.io/react/docs/advanced-performance.html</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -672,18 +684,6 @@ render()方法中不能设置组件的state。
       <li>
         
           <a href="/page28">28</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page29">29</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page30">30</a>
         
       </li>
     

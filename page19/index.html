@@ -119,120 +119,81 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-08-10T00:00:00+08:00"><a href="/php-safe/">August 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <span class="entry-date date published updated"><time datetime="2014-07-28T00:00:00+08:00"><a href="/ripple/">July 28, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
     
-      <h1 class="entry-title"><a href="/php-safe/" rel="bookmark" title="php安全问题及场景演示" itemprop="url">php安全问题及场景演示</a></h1>
+      <h1 class="entry-title"><a href="/ripple/" rel="bookmark" title="ripple,下一代金融基础设施" itemprop="url">ripple,下一代金融基础设施</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>php是一门极其灵活的编程语言，它是高效开发web程序的最佳选择之一。但是灵活性往往带来安全性问题，这就需要我们工程师时刻审视自己的代码安全性。下面列举一些经常容易出现安全性问题的场景极其解决方案。</p>
+    <p>相信基本上所有人都听说过比特币，作为去中心话的p2p货币，它的单位价值从最开始低于1美元到现在的600多美元，上涨将近1000倍，成就了无数比特币淘金者的一夜暴富之梦。比特币将货币去中心化，解决了货币供应的集权问题。但是要求所有的人都使用比特币也是不现实的，而且自由的市场也应该有多种货币。如何在一个去中心化的系统中实现多种货币之间的自由流通呢？Ripple做到了。</p>
 
-<p>对于php的安全防患，是有一些基本原则的:</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1.不信任任何从客户端传入的数据，如$SERVER,$_GET,$_POST,$_COOKIE,$FILES,$ENV,$REQUEST等。
+<p>Ripple是一个去中心化的支付系统和货币兑换系统，支持任何货币，包括美元、人民币、英镑、比特币等。Jed是Ripple的创始人之一，曾一度被身边的人怀疑是最有可能创造比特币的人，他同时也是是P2P下载器（eDonkey）的发明者和创始人以及Mt.Gox(最大的比特币交易平台)的创始人。从Jed的一系列创业过程可以看出，他一直在致力于消除集权(去中心话)，削弱政府的权力以让人类更自由。目前Ripple已经获得Goole和IDG的投资。</p>
 
-2.最小化原则，将用户输入的数据的范围限制到最小化
+<p><img src="http://blog.e-money.com/content/uploads/20130925-JED-MCCALEB-037edit-660x440.gif" alt="Jed"></p>
 
-3.安全的代码不依赖任何安全配置，不能寄希望与php.ini的安全性配置
-
-4.程序的错误信息对外界屏蔽，程序的错误信息会给攻击者带来极大帮助
-</code></pre></div>
-<p>本文列举了数据库操作场景、文件操作场景、命令执行场景下容易出现的安全问题以及应对方案。</p>
-
-<h2 id="1">1 数据库操作场景</h2>
-
-<h3 id="1-1">1.1 字符串变量注入</h3>
-
-<p>比如如下php代码：。</p>
-
-<figure class="highlight"><pre><code class="language-php" data-lang="php">$user = $_POST['uesr'];
-$password = $_POST['password'];
-$query="select * from user where name = '$user' and password = '$password'";
-$result=$mysqli-&gt;query($query);</code></pre></figure>
-
-<p>这段代码没有对不可信输入做检查，当<code>$_POST[&#39;user&#39;] = &quot;&#39; OR &#39;&#39; = &#39;&quot;</code>且<code>$_POST[&#39;password&#39;] = &quot;&#39; OR &#39;&#39; = &#39;&quot;</code>，实际的sql为：<code>select * from user where name = &#39;&#39; OR &#39;&#39; = &#39;&#39; and password = &#39;&#39; OR &#39;&#39; = &#39;&#39;</code>，这样的sql就可能将所有的数据库中用户信息泄露。</p>
-
-<h3 id="1-2">1.2 整形注入</h3>
-
-<p>比如如下php代码：。</p>
-
-<figure class="highlight"><pre><code class="language-php" data-lang="php">$user = $_POST['id'];
-$query="select * from user where id = $id";
-$result=$mysqli-&gt;query($query);</code></pre></figure>
-
-<p>这段代码没有对不可信输入做检查，当<code>$_POST[&#39;id&#39;] = &quot;1 OR &#39;&#39; = &#39;&#39;&quot;</code>，实际的sql为：<code>select * from user where id = 1 OR &#39;&#39; = &#39;&#39;</code>，这样的sql就可能将所有的数据库中用户信息泄露。</p>
-
-<blockquote>
-<p>安全编码建议：以上情况都是要使用客户端传来的参数，因此必须严格检查。对于字符串型变量最好使用mysql_real_escape_string进行过滤，而对于整形变量必须使用intval来保证类型。</p>
-</blockquote>
+<p>Ripple主要引入两个观念：XRP(瑞波币)和GateWay(网关系统)。下面简单的阐述一下ripple支付系统的原理。</p>
 
 <hr>
 
-<h2 id="2">2 文件操作场景</h2>
+<h3 id="1">1.基本概念</h3>
+<div class="highlight"><pre><code class="language-" data-lang="">Ripple Ledger(总账): Ripple总账包括Ripple用户账户、账户余额，账户交易记录等信息，这些信息存储在分布式p2p网络上。Ripple网络上的交易实质上就是修改总账信息。
 
-<h3 id="2-1">2.1 文件名安全问题</h3>
+GateWay(网关): 网关是任意货币与Ripple网络的接口。网关用来接受用户的存取款、转账等资金流动性需求。类似于传统意义上的银行。
 
-<p>如下php代码段：</p>
+Market Maker(做市商): 做市商在Ripple网络上不断向公众投资者报出某些特定货币的买卖价格，并在该价位上接受公众投资者的买卖要求。做市商为Ripple网络提供了流动性。
+</code></pre></div>
+<hr>
 
-<figure class="highlight"><pre><code class="language-php" data-lang="php">$file = $_GET['file'];
-if(!empty($file)){
-    include_once($file);
-}</code></pre></figure>
+<h4 id="1">(1).总账</h4>
 
-<p>include,include_once,require,requre_once这些函数的本质是载入php文件并执行，因此使用这些函数时务必非常小心。这段代码非常不安全，比如<code>$_GET[&#39;file&#39;]=&quot;../../../../../../../../etc/passwd%00.php&quot;</code>时，将会打开敏感文件/etc/passwd，因为<code>%00</code>是<code>\0</code>url编码后的值，对于操作系统而言相当于字符串的结束符。</p>
-
-<h3 id="2-2">2.2 文件读写安全问题</h3>
-
-<p>如下php代码段：</p>
-
-<figure class="highlight"><pre><code class="language-php" data-lang="php">$filename="test1.txt";
-$file_info="user input:\n";
-$file_info.= "$conent";
-file_put_conent($filename,$conent);</code></pre></figure>
-
-<p>当<code>$conent=&quot;eval($php_code)&quot;</code>时，会执行代码中的php_code，理论上攻击者可以运行任何php代码。这段代码主要问题在于用<code>双引号</code>包含用户提交的文件内容。</p>
-
-<blockquote>
-<p>安全编码建议：将输出到文件的数据放到单引号中而非双引号。在php中表示一个字符串的方法有三种：单引号、双引号、定界符，和其他两种语法不同，单引号字符串中出现的变量和转义序列不会被变量的值替代。无论从效率还是安全性方面，都强烈推荐使用单引号。</p>
-</blockquote>
+<p>Ripple总账类似于传统银行的账户数据库，唯一的区别就是Ripple总账存储在p2p网络中并由所有的用户共享。总账信息存储在全世界范围内的基于P2P的Ripple服务器中，每一个Ripple服务器存储了一份完整的总账信息，因此任何Ripple用户都可以查看Ripple网络上的所有交易。</p>
 
 <hr>
 
-<h2 id="3">3 命令行操作场景</h2>
+<h4 id="2">(2).网关</h4>
 
-<p>如下php代码段：</p>
+<p>网关的概念上文已经简单阐述过。每一种货币都有对应的网关，比如<code>USDsnapswap</code>(美元网关),<code>EURbitstmap</code>(欧元网关),<code>BTCbitstamp</code>(比特币网关)。网关提供了存款、转账、取款等功能。如下图所示</p>
 
-<figure class="highlight"><pre><code class="language-php" data-lang="php">uri = $request['uri'];
-$from = $request['from'];
-$to   = $request['to'];
-$tmp = '/tmp/act_css_tmp_' . $uri;  
-system("/usr/bin/wget $from -O $tmp");</code></pre></figure>
+<figure>
+    <img src="/images/ripple-network.jpg"/>
+</figure>
 
-<p>$request变量来自于用户URL的输入，最终进入到system函数里作为命令来执行，但是这段代码没有安全处理用户的输入，任意用户都可以通过如下URL来在机上执行自己的命令， <code>php?cmd=1190&amp;func=sync_css&amp;uri=hi&amp;from=;cat /etc/passwd;&amp;to=hi&amp;1=2</code> 最后导致系统的沦陷。</p>
+<p><strong>网关的风险</strong></p>
+
+<p>一个用户在银行中的钱其实就是银行对你的债务。同样，用户在某个网关的账户余额，也是网关对你的债务。像现实世界中的银行会倒闭一样，网关也会破产。用户在往ripple钱包中充值时，需要选择网关。Ripple公司已经在尽力的寻求银行合作，目前看来效果不错，未来可能大部分银行会成为Ripple的网关。</p>
 
 <blockquote>
-<p>安全编码建议我们应该尽量避免使用systemexecpopenpassthru, 反引号(``)......等直接执行系统命令的函数如果必须使用这些函数的时候我们就需要在用户的参数进入system函数之前经过过滤。Php提供两个作为命令安全输入的函数一个是escapeshellarg一个是escapeshellcmd。</p>
+<p>用户的账户余额只是网关对用户的债务，因此用户应该只在值得信任的网关进行交易。</p>
 </blockquote>
+
+<p>如何避免网关破产的风险呢？交给自由竞争的市场吧。</p>
 
 <hr>
 
-<h3 id="4">4.安全配置</h3>
-<div class="highlight"><pre><code class="language-" data-lang="">register_globals = Off   
-</code></pre></div>
-<p>register_globals允许php将$_GET和$_POST,$_COOKIE等变量里的内容自动注册为全局变量,如果程序里的某些变量没有经过初始化而直接使用将导致安全问题。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">isplay_errors = Off, log_errors = On 
-</code></pre></div>
-<p>如果脚本运行时出错,错误信息将提供非常多的信息给黑客,里面可能包含了web路径,一些调试信息甚至是部分的php代码。我们应该强制在线上业务关闭错误信息对外的显示该选项。并将error_log 指定为我们自定义的错误路径。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">expose_php = Off
-</code></pre></div>
-<p>防止php在http头输出中加入版本信息防止恶意攻击者从中获取敏感信息强制执行将此选项为off。</p>
-<div class="highlight"><pre><code class="language-" data-lang=""> allow_url_include = Off
-</code></pre></div>
-<p>防止php将远程资源作为php源文件执行。从而从一定程度上防范文件包含漏洞。强制执行此选项为off。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">max_input_vars = 1000 
-</code></pre></div>
-<p>设置用户输入生成的最大变量值。防止利用大量无用变量造成php程序hashtable冲突导致占用大量系统资源。建议执行为默认1000个值。 </p>
+<h4 id="3">(3).做市商</h4>
+
+<p>如果两个用户在同一个网关下(他们信任同一网关)，他们是可以自由交易的，类似同行转账。如果两个用户的账户不在同一个网关下(他们信任不同的网关)，他们该如何完成交易呢？做市商就是为了协助达成这些跨网关交易的。比如一个美元用户alice要向欧元用户bob付款时，就需要通过做市商，做市商给出了美元和欧元的标价，并愿意以此价格买入和卖出，当然做市商必须同时信任美元网关和欧元网关。如下图所示：</p>
+
+<figure>
+    <img src="/images/ripple-market-maker.jpg"/>
+</figure>
+
+<p><strong>汇率问题</strong></p>
+
+<p>也许读者已经想到:<strong>汇率是由做市商确定的</strong>。是的，但是不用担心某个做市商会控制汇率，因为充分竞争的市场上会有无数个做市商。</p>
+
+<p><strong>最低成本问题</strong></p>
+
+<p>如何使每一次付款的成本最低呢？当然是选择最合算的做市商了，不过这个不需要你来考虑，Ripple网络的<code>path finding</code>算法会自动选取最佳路径。这也进一步消除了信息不对称问题，加剧了做市商之间的竞争，保证汇率处于合理水平。
+算法选出的路径可能简短，也可能很复杂，但是它肯定是最便宜的，比如下图：</p>
+
+<figure>
+    <img src="/images/ripple-path-finding.jpg"/>
+</figure>
+
+<hr>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -240,144 +201,67 @@ system("/usr/bin/wget $from -O $tmp");</code></pre></figure>
 <article class="hentry">
   <header>
     <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-07-30T00:00:00+08:00"><a href="/linux-expects/">July 30, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <span class="entry-date date published updated"><time datetime="2014-07-25T00:00:00+08:00"><a href="/varnish/">July 25, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
     
-      <h1 class="entry-title"><a href="/linux-expects/" rel="bookmark" title="linux expect详解" itemprop="url">linux expect详解</a></h1>
+      <h1 class="entry-title"><a href="/varnish/" rel="bookmark" title="使用varnish缓存静态内容" itemprop="url">使用varnish缓存静态内容</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>Expect是一个用来处理<strong>交互</strong>的命令。借助Expect，我们可以将交互过程写在一个脚本上，使之自动化完成。形象的说，ssh登录，ftp登录等都符合<strong>交互</strong>的定义。下文我们首先提出一个问题，然后介绍基础知四个命令，最后提出解决方法。</p>
+    <p>Varnish是一款高性能的开源HTTP加速器，一般用来和Nginx、Apache等搭配使用，组建一个高效率的Web服务器。varnish是一个cache型的HTTP反向代理。</p>
 
-<h2 id=">问题</h2>
+<p>常见的工作方式是：某个负责接受新HTTP连接的线程开始等待用户，如果有新的HTTP连接过来，它总负责接收，然后叫醒某个等待中的线程。Worker线程读入HTTP请求的URI，查找已有的object，如果命中则直接返回并回复用户。如果没有命中，则需要将所请求的内容，从后端服务器中取过来，存到缓存中，然后再回复。</p>
+
+<p>典型的结构如下：</p>
+
+<figure>
+    <img src="/images/varnish.jpg"/>
+</figure>
+
+<p>本文将简单介绍ubuntu server下安装和配置varnish的方法。</p>
+
+<h2 id="varnish">安装varnish</h2>
+
+<p>使用ubuntu软件包管理工具安装varnish。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">apt-get install varnish
+</code></pre></div>
+<h2 id="varnish">配置varnish</h2>
+
+<h3 id="1-etc-default-varnish">1. /etc/default/varnish</h3>
+<div class="highlight"><pre><code class="language-" data-lang="">DAEMON_OPTS="-a :80 \                                             
+             -T localhost:6082 \
+             -f /etc/varnish/default.vcl \
+             -S /etc/varnish/secret \
+             -s malloc,100m"
+</code></pre></div>
+<p>各个字段的含义如下：</p>
 
 <blockquote>
-<p>如何从机器A上ssh到机器B上，然后执行机器B上的命令？如何使之自动化完成？</p>
+<p><code>-a :80</code>表示监听端口为80,<code>-T
+ localhost:6082</code>表示控制端口为本机6082,即可以通过localhost:6802访问varnish的控制信息,
+ <code>-f /etc/varnish/default.vcl</code>表示将请求forword到由vcl配置的机器,
+ <code>-s malloc,100m</code> 表示使用100m的内存</p>
 </blockquote>
 
-<hr>
-
-<h2 id=">四个命令</h2>
-
-<p>Expect中最关键的四个命令是send,expect,spawn,interact。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">send：用于向进程发送字符串
-expect：从进程接收字符串
-spawn：启动新的进程
-interact：允许用户交互
+<h3 id="2-etc-varnish-default-vcl">2.  /etc/varnish/default.vcl</h3>
+<div class="highlight"><pre><code class="language-" data-lang="">backend default {
+    .host = "127.0.0.1";
+    .port = "8080";
+}
 </code></pre></div>
-<h3 id="1-send">1. send命令</h3>
+<p>backend default定义默认的后端服务器的ip和端口，也即nginx监听的端口。当然vcl可以定义各种复杂的转发策略，这个超出了本文的范围。配置好后可以重新启动varnish了</p>
+<div class="highlight"><pre><code class="language-" data-lang="">/etc/init.d/varnish restart
+ * Stopping HTTP accelerator varnishd      [ok]
+ * Starting HTTP accelerator varnishd      [ok]
 
-<p>send命令接收一个字符串参数，并将该参数发送到进程。</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect1</span><span class="p">.</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">send</span> <span class="s">"hello world</span><span class="se">\n</span><span class="s">"</span>
-<span class="n">hello</span> <span class="n">world</span></code></pre></figure>
-
-<h3 id="2-expect">2. expect命令</h3>
-
-<hr>
-
-<h4 id="1">(1)基础知识</h4>
-
-<p>expect命令和send命令正好相反，expect通常是用来等待一个进程的反馈。expect可以接收一个字符串参数，也可以接收正则表达式参数。和上文的send命令结合，现在我们可以看一个最简单的交互式的例子：</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">"hi</span><span class="se">\n</span><span class="s">"</span>
-<span class="n">send</span> <span class="s">"hello there!</span><span class="se">\n</span><span class="s">"</span></code></pre></figure>
-
-<p>这两行代码的意思是：从<strong>标准输入</strong>中等到hi和换行键后，向<strong>标准输出</strong>输出hello there。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">tips： $expect_out(buffer)存储了所有对expect的输入，&lt;$expect_out(0,string)&gt;存储了匹配到expect参数的输入。
 </code></pre></div>
-<p>比如如下程序：</p>
+<h2 id="varnish">测试varnish</h2>
 
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">"hi</span><span class="se">\n</span><span class="s">"</span>
-<span class="n">send</span> <span class="s">"you typed &lt;$expect_out(buffer)&gt;"</span>
-<span class="n">send</span> <span class="s">"but I only expected &lt;$expect_out(0,string)&gt;"</span></code></pre></figure>
-
-<p>当在标准输入中输入</p>
-<div class="highlight"><pre><code class="language-" data-lang="">test
-hi
+<p>配置好varnish后，浏览站点，发现HTTP Response头中多了:</p>
+<div class="highlight"><pre><code class="language-" data-lang="">X-Varnish   1666066465 1666066458
 </code></pre></div>
-<p>是，运行结果如下</p>
-<div class="highlight"><pre><code class="language-" data-lang="">you typed: test
-hi
-I only expect: hi
-</code></pre></div>
-<hr>
-
-<h4 id="2">(2)模式-动作</h4>
-
-<p>expect最常用的语法是来自tcl语言的模式-动作。这种语法极其灵活，下面我们就各种语法分别说明。</p>
-
-<p>单一分支模式语法：</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">"hi"</span> <span class="p">{</span><span class="n">send</span> <span class="s">"You said hi"</span><span class="p">}</span></code></pre></figure>
-
-<p>匹配到hi后，会输出&quot;you said hi&quot;</p>
-
-<p>多分支模式语法：</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="s">"hi"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"You said hi</span><span class="se">\n</span><span class="s">"</span> <span class="p">}</span> \
-<span class="s">"hello"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"Hello yourself</span><span class="se">\n</span><span class="s">"</span> <span class="p">}</span> \
-<span class="s">"bye"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"That was unexpected</span><span class="se">\n</span><span class="s">"</span> <span class="p">}</span></code></pre></figure>
-
-<p>匹配到hi,hello,bye任意一个字符串时，执行相应的输出。等同于如下写法：</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">expect</span> <span class="p">{</span>
-<span class="s">"hi"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"You said hi</span><span class="se">\n</span><span class="s">"</span><span class="p">}</span>
-<span class="s">"hello"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"Hello yourself</span><span class="se">\n</span><span class="s">"</span><span class="p">}</span>
-<span class="s">"bye"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"That was unexpected</span><span class="se">\n</span><span class="s">"</span><span class="p">}</span>
-<span class="p">}</span></code></pre></figure>
-
-<hr>
-
-<h3 id="3-spawn">3. spawn命令</h3>
-
-<p>上文的所有demo都是和标准输入输出进行交互，但是我们跟希望他可以和某一个进程进行交互。spawm命令就是用来启动新的进程的。spawn后的send和expect命令都是和spawn打开的进程进行交互的。结合上文的send和expect命令我们可以看一下更复杂的程序段了。</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">set</span> <span class="n">timeout</span> <span class="o">-</span><span class="mi">1</span>
-<span class="n">spawn</span> <span class="n">ftp</span> <span class="n">ftp</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">com</span>      <span class="c1">//打开新的进程，该进程用户连接远程ftp服务器
-</span><span class="n">expect</span> <span class="s">"Name"</span>             <span class="c1">//进程返回Name时
-</span><span class="n">send</span> <span class="s">"user</span><span class="se">\r</span><span class="s">"</span>        <span class="c1">//向进程输入anonymous\r
-</span><span class="n">expect</span> <span class="s">"Password:"</span>        <span class="c1">//进程返回Password:时
-</span><span class="n">send</span> <span class="s">"123456</span><span class="se">\r</span><span class="s">"</span>    <span class="c1">//向进程输入don@libes.com\r
-</span><span class="n">expect</span> <span class="s">"ftp&gt; "</span>            <span class="c1">//进程返回ftp&gt;时
-</span><span class="n">send</span> <span class="s">"binary</span><span class="se">\r</span><span class="s">"</span>           <span class="c1">//向进程输入binary\r
-</span><span class="n">expect</span> <span class="s">"ftp&gt; "</span>            <span class="c1">//进程返回ftp&gt;时
-</span><span class="n">send</span> <span class="s">"get test.tar.gz</span><span class="se">\r</span><span class="s">"</span>  <span class="o">//</span><span class="err">向进程输入</span><span class="n">get</span> <span class="n">test</span><span class="p">.</span><span class="n">tar</span><span class="p">.</span><span class="n">gz</span><span class="err">\</span><span class="n">r</span></code></pre></figure>
-
-<p>这段代码的作用是登录到ftp服务器ftp ftp.uu.net上，并以二进制的方式下载服务器上的文件test.tar.gz。程序中有详细的注释。</p>
-
-<hr>
-
-<h3 id="4-interact">4.interact</h3>
-
-<p>到现在为止，我们已经可以结合spawn、expect、send自动化的完成很多任务了。但是，如何让人在适当的时候干预这个过程了。比如下载完ftp文件时，仍然可以停留在ftp命令行状态，以便手动的执行后续命令。interact可以达到这些目的。下面的demo在自动登录ftp后，允许用户交互。</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">spawn</span> <span class="n">ftp</span> <span class="n">ftp</span><span class="p">.</span><span class="n">test</span><span class="p">.</span><span class="n">com</span>
-<span class="n">expect</span> <span class="s">"Name"</span>
-<span class="n">send</span> <span class="s">"user</span><span class="se">\r</span><span class="s">"</span>
-<span class="n">expect</span> <span class="s">"Password:"</span>
-<span class="n">send</span> <span class="s">"123456</span><span class="se">\r</span><span class="s">"</span>
-<span class="n">interact</span></code></pre></figure>
-
-<hr>
-
-<h3 id=">解决方法</h3>
-
-<p>上文中提到：</p>
-
-<blockquote>
-<p>如何从机器A上ssh到机器B上，然后执行机器B上的命令？如何使之自动化完成？</p>
-</blockquote>
-
-<p>下面一段脚本实现了从机器A登录到机器B，然后执行机器B上的pwd命令，并停留在B机器上，等待用户交互。具体含义请参考上文。</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"> <span class="cp">#!/home/tools/bin/64/expect -f
-</span> <span class="n">set</span> <span class="n">timeout</span> <span class="o">-</span><span class="mi">1</span>  
- <span class="n">spawn</span> <span class="n">ssh</span> <span class="err">$</span><span class="n">BUser</span><span class="err">@$</span><span class="n">BHost</span>
- <span class="n">expect</span>  <span class="s">"*password:"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"$password</span><span class="se">\r</span><span class="s">"</span> <span class="p">}</span>
- <span class="n">expect</span>  <span class="s">"$*"</span> <span class="p">{</span> <span class="n">send</span> <span class="s">"pwd</span><span class="se">\r</span><span class="s">"</span> <span class="p">}</span>
- <span class="n">interact</span></code></pre></figure>
+<p>上面的头信息表示varnish正常工作了。我们也可以使用varnish提供的命令行工具<code>varnishstat</code>分析varnish的缓存状态,可以使用<code>varnishlog</code>查看varnish的和客户端以及后端的通信信息。</p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -555,18 +439,6 @@ I only expect: hi
       <li>
         
           <a href="/page28">28</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page29">29</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page30">30</a>
         
       </li>
     

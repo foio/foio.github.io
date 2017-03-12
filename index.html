@@ -119,6 +119,210 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2017-02-28T00:00:00+08:00"><a href="/babel-try-catch/">February 28, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/babel-try-catch/" rel="bookmark" title="一种生产环境中高效定位JS异常的方案" itemprop="url">一种生产环境中高效定位JS异常的方案</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>在我的一篇文章中：<a href="http://foio.github.io/javascript-global-exceptions/">捕获页面中全局Javascript异常</a>，介绍了通过AST(抽象语法树)技术，借助于UglifyJs提供的AST的API，对源文件进行预处理，对每个函数自动地添加try catch包裹代码，从而捕获生产环境中的JS异常。通过使用<a href="https://github.com/foio/try-catch-global.js">try-catch-global.js</a>，可以简单的如下源代码：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">
+<span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'test'</span><span class="p">);</span>
+<span class="p">}</span>
+
+</code></pre></div>
+<p>转换成</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>             
+    <span class="k">try</span> <span class="p">{</span>                           
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"test"</span><span class="p">);</span>        
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>               
+        <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>          
+            <span class="c1">//your logic to handle error     </span>
+        <span class="p">})(</span><span class="nx">error</span><span class="p">);</span>                  
+    <span class="p">}</span>                               
+<span class="p">};</span>                 
+</code></pre></div>
+<p>但是由于我们发布到生产环境中的代码，往往都经过压缩和混淆，文件名、函数名、变量名已经不具有可读性了，捕获的异常堆栈信息的价值有限，简单的通过这些异常信息，我们依然很难定位到源文件中错误出处。本文我们就试图解决这个问题：依然基于AST(抽象语法树)对源代码进行try catch包裹，但会在catch语句中收集更多源文件的信息(包括文件名、函数名、函数起始行号等)，最后借助于babel和webpack的插件体系，提供一个工程化的解决方案。</p>
+
+<h3 id="1-babel-plugin-try-catch">1. 自定义babel-plugin实现try catch包裹</h3>
+
+<p>在文章<a href="http://foio.github.io/javascript-global-exceptions/">捕获页面中全局Javascript异常</a>中，我们使用的是UglifyJS提供的操作Javascript语法树的API，这套API比较底层，需要发力气才能啃透，不适合初学者使用。babel提供了抽象层次更高的操作语法树的API:<a href="https://github.com/babel/babylon">babylon</a>，并且提供了一系列工具<a href="https://www.npmjs.com/package/babel-template">babel-template</a>、<a href="https://www.npmjs.com/package/babel-helper-function-name">babel-helper-function-name</a>等。</p>
+
+<p><img src="/images//babel-plugin-ast.png" alt="babel插件转换AST"></p>
+
+<p>在使用Babel对Javascript源文件进行处理时，有三个主要步骤，分别是： 解析（parse），转换（transform），生成（generate）。Babel首先会将源文件转换为抽象语法树(AST)，然后对抽象语法树进行转换，最后由抽象语法树生成新的源代码。在转换（transform）阶段，Babel提供了非常便利的插件机制，开发者可以在插件中实现自己的AST转换。关于如何开发Babel插件，最好的教程就是<a href="https://github.com/thejameskyle/babel-handbook/blob/master/translations/en/plugin-handbook.md">官方文档</a>。</p>
+
+<p>在对AST的转换阶段，Babel使用babel-traverse对AST进行深度优先遍历，它的插件机制使得我们可以针对某个特定类型的语法树节点（比如，函数、条件语句等）注册钩子函数，从而完成我们对语法树的转换工作。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">  <span class="nx">visitor</span><span class="err">:</span> <span class="p">{</span>
+    <span class="nl">Function</span><span class="p">:</span> <span class="p">{</span>
+      <span class="c1">//遍历到函数时</span>
+    <span class="p">},</span>
+    <span class="nx">ClassMethod</span><span class="err">:</span> <span class="p">{</span>
+      <span class="c1">//遍历catch语句块时</span>
+    <span class="p">}</span>
+    <span class="p">......</span>
+  <span class="p">}</span>
+</code></pre></div>
+<p>通过插件机制，我们可以对所有的函数和类方法节点进行转换，插入try catch包裹代码；同时，在babel解析后的语法树中包含了详细的源文件的元信息，我们可以将这些源文件信息透传到自定义的错误处理函数中。对于函数，我们可以如下处理：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">visitor</span><span class="err">:</span> <span class="p">{</span>
+        <span class="c1">//只处理函数和类方法节点</span>
+        <span class="s2">"Function|ClassMethod"</span> <span class="p">{</span>
+            <span class="nl">exit</span><span class="p">:</span> <span class="kd">function</span> <span class="nx">exit</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span> <span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
+                <span class="c1">//深度优先搜索会遍历两次，需要避免重复</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">shouldSkip</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span> <span class="nx">state</span><span class="p">))</span> <span class="p">{</span>
+                    <span class="k">return</span><span class="p">;</span>
+                <span class="p">}</span>
+
+                <span class="c1">//如果函数体为空则不处理</span>
+                <span class="kd">var</span> <span class="nx">body</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">body</span><span class="p">;</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">body</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="k">return</span><span class="p">;</span>
+                <span class="p">}</span>
+
+                <span class="c1">//收集函数名</span>
+                <span class="kd">var</span> <span class="nx">functionName</span> <span class="o">=</span> <span class="s1">'anonymous function'</span><span class="p">;</span>
+                <span class="nx">babelHelperFunctionName2</span><span class="p">(</span><span class="nx">path</span><span class="p">);</span>
+                <span class="k">if</span> <span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">functionName</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">id</span><span class="p">.</span><span class="nx">name</span> <span class="o">||</span> <span class="s1">'anonymous function'</span><span class="p">;</span>
+                <span class="p">}</span>
+
+                <span class="c1">//收集类方法名</span>
+                <span class="k">if</span><span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">key</span><span class="p">){</span>
+                    <span class="nx">functionName</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nx">name</span> <span class="o">||</span> <span class="s1">'anonymous function'</span><span class="p">;</span>
+                <span class="p">}</span>
+
+                <span class="c1">//函数起始行号</span>
+                <span class="kd">var</span> <span class="nx">loc</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">loc</span><span class="p">;</span>
+
+                <span class="c1">//异常变量名</span>
+                <span class="kd">var</span> <span class="nx">errorVariableName</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">scope</span><span class="p">.</span><span class="nx">generateUidIdentifier</span><span class="p">(</span><span class="s1">'e'</span><span class="p">);</span>
+
+                <span class="c1">//使用函数模板进行try catch包裹，需要注意的是AST无法获取到文件名信息，需要外部传入</span>
+                <span class="nx">path</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'body'</span><span class="p">).</span><span class="nx">replaceWith</span><span class="p">(</span><span class="nx">wrapFunction</span><span class="p">({</span>
+                    <span class="na">BODY</span><span class="p">:</span> <span class="nx">body</span><span class="p">,</span>
+                    <span class="na">FILENAME</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">StringLiteral</span><span class="p">(</span><span class="nx">filename</span><span class="p">),</span>
+                    <span class="na">FUNCTION_NAME</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">StringLiteral</span><span class="p">(</span><span class="nx">functionName</span><span class="p">),</span>
+                    <span class="na">LINE</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">NumericLiteral</span><span class="p">(</span><span class="nx">loc</span><span class="p">.</span><span class="nx">start</span><span class="p">.</span><span class="nx">line</span><span class="p">),</span>
+                    <span class="na">COLUMN</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">NumericLiteral</span><span class="p">(</span><span class="nx">loc</span><span class="p">.</span><span class="nx">start</span><span class="p">.</span><span class="nx">column</span><span class="p">),</span>
+                    <span class="na">REPORT_ERROR</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">identifier</span><span class="p">(</span><span class="nx">reportError</span><span class="p">),</span>
+                    <span class="na">ERROR_VARIABLE_NAME</span><span class="p">:</span> <span class="nx">errorVariableName</span>
+                <span class="p">}));</span>
+            <span class="p">}</span>
+        <span class="p">},</span>
+</code></pre></div>
+<p>babel提供了非常便利的工具babel template，其中隐藏了AST转换的细节，简单的使用函数模板就可以对函数进行任意转换，如下代码我们使用template对函数进行try catch包裹：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">const</span> <span class="nx">wrapFunction</span> <span class="o">=</span> <span class="nx">template</span><span class="p">(</span><span class="err">`</span><span class="p">{</span>
+  <span class="k">try</span> <span class="p">{</span>
+    <span class="nx">BODY</span>
+  <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">ERROR_VARIABLE_NAME</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">REPORT_ERROR</span><span class="p">(</span><span class="nx">ERROR_VARIABLE_NAME</span><span class="p">,</span> <span class="nx">FILENAME</span><span class="p">,</span> <span class="nx">FUNCTION_NAME</span><span class="p">,</span> <span class="nx">LINE</span><span class="p">,</span> <span class="nx">COLUMN</span><span class="p">)</span>
+    <span class="k">throw</span> <span class="nx">ERROR_VARIABLE_NAME</span>
+  <span class="p">}</span>
+<span class="p">}</span><span class="err">`</span><span class="p">)</span>
+
+</code></pre></div>
+<p>通过使用babel插件，在babel对源代码进行处理时注册针对特定AST节点的钩子函数（本文我们只关心函数类型节点），使用bable-template对函数进行try catch包裹，并在catch语句中预埋入从AST中收集到的源文件信息。</p>
+
+<p>处理前的代码：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="kd">function</span> <span class="nx">testA</span><span class="p">(){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="p">}</span>
+
+
+<span class="kr">class</span> <span class="nx">A</span> <span class="p">{</span>
+    <span class="nx">testB</span><span class="p">(){</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">testD</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+<span class="p">}</span>
+
+</code></pre></div>
+<p>处理后的代码：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">testA</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">_e</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">reportError</span><span class="p">(</span><span class="nx">_e</span><span class="p">,</span> <span class="s2">"test.js"</span><span class="p">,</span> <span class="s2">"testA"</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kr">class</span> <span class="nx">A</span> <span class="p">{</span>
+    <span class="nx">testB</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">_e2</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">reportError</span><span class="p">(</span><span class="nx">_e2</span><span class="p">,</span> <span class="s2">"test.js"</span><span class="p">,</span> <span class="s2">"testB"</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">);</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">testD</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">testD</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">_e4</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">reportError</span><span class="p">(</span><span class="nx">_e4</span><span class="p">,</span> <span class="s2">"test.js"</span><span class="p">,</span> <span class="s2">"testD"</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">12</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">};</span>
+
+</code></pre></div>
+<p>转换后的代码通过后续的混淆、压缩后发布到生产环境，生产环境中的代码发生异常时，catch语句中的reportError会将异常上报到日志平台，上报的信息中包含了我们从AST中预埋入的变量名、函数名、函数函数起始行号、文件名等信息，通过这些信息我们就可以快速定位到源代码中的异常位置。</p>
+
+<h3 id="2-webpack-loader">2. 使用webpack loader进行工程化构建</h3>
+
+<p>上文讲到使用babel插件对Javascript源代码生成的AST进行转换，最终对所有的函数生成try catch包裹代码。本小节我们考虑将构建流程集成到webpack中。webpack首先使用loader对源代码进行处理，然后将入口文件以及其依赖打包到一个chunk中。在webpack的编译流程中，我们可以借助于自定义的loader来实现对源代码的AST转换。</p>
+
+<p>编写一个自定义的webpack的loader非常简单，简单的教程请参考<a href="https://webpack.github.io/docs/how-to-write-a-loader.html">官方文档</a>，下文是一个非常简单的loader，其接收源代码内容作为输入，并转转换后的源代码作为输出。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">source</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">//your logic to change source</span>
+  <span class="k">return</span> <span class="nx">source</span><span class="p">;</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>我们也实现了一个webpack的loader：<a href="https://github.com/foio/babel_try_catch_loader">babel_try_catch_loader</a>，它借助于babel插件<a href="https://github.com/foio/babel-plugin-try-catch-wrapper">babel-plugin-try-catch-wrapper</a>，通过AST技术对源代码进行处理。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">tryCatchWrapper</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'babel-plugin-try-catch'</span><span class="p">)</span>
+<span class="p">...</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">source</span><span class="p">,</span> <span class="nx">inputMap</span><span class="p">)</span> <span class="p">{</span>
+    <span class="p">......</span>
+    <span class="kd">var</span> <span class="nx">transOpts</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
+            <span class="p">[</span><span class="nx">tryCatchWrapper</span><span class="p">,</span> <span class="p">{</span>
+                <span class="na">filename</span><span class="p">:</span> <span class="nx">filename</span><span class="p">,</span>
+                <span class="na">reportError</span><span class="p">:</span> <span class="nx">userOptions</span><span class="p">.</span><span class="nx">reporter</span><span class="p">,</span>
+                <span class="na">rethrow</span><span class="p">:</span> <span class="nx">userOptions</span><span class="p">.</span><span class="nx">rethrow</span>
+            <span class="p">}]</span>
+        <span class="p">],</span>
+        <span class="na">sourceMaps</span><span class="p">:</span> <span class="kc">true</span>
+    <span class="p">};</span>
+    <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">babel</span><span class="p">.</span><span class="nx">transform</span><span class="p">(</span><span class="nx">source</span><span class="p">,</span> <span class="nx">transOpts</span><span class="p">);</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">callback</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">result</span><span class="p">.</span><span class="nx">code</span><span class="p">,</span> <span class="nx">result</span><span class="p">.</span><span class="nx">map</span><span class="p">);</span>
+    <span class="p">......</span>
+<span class="p">};</span>
+</code></pre></div>
+<p>只需要在webpack配置文件中使用<a href="https://github.com/foio/babel_try_catch_loader">babel_try_catch_loader</a>，我们就可以通过一行配置文件来将项目中源代码中所有的函数进行try catch包裹了。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">loaders</span><span class="err">:</span> <span class="p">[</span>
+            <span class="p">......</span>
+            <span class="p">{</span>
+                <span class="nl">test</span><span class="p">:</span> <span class="sr">/</span><span class="se">\.</span><span class="sr">jsx|</span><span class="se">\.</span><span class="sr">js$/</span><span class="p">,</span>
+                <span class="nx">loader</span><span class="err">:</span> <span class="nx">DEBUG</span> <span class="p">?</span> <span class="s1">'babel-loader'</span>
+                    <span class="p">:</span> <span class="s1">'babel-try-catch-loader?rethrow=true&amp;verbose&amp;reporter=reportError&amp;tempdir=.tryCatchResult'</span><span class="p">,</span>
+                <span class="nx">exclude</span><span class="err">:</span> <span class="o">/</span><span class="nx">node_modules</span><span class="o">/</span>
+            <span class="p">}</span>
+            <span class="p">......</span>
+        <span class="p">],</span>
+</code></pre></div>
+<p>上文中的配置文件，对测试环境中使用babel-loader；而对生产环境则使用babel-try-catch-loader处理项目中所有源代码，以保证经过后续的混淆、压缩并发布到线上环境的生产代码仍然具有较强的debug能力。详细的配置文件请参考<a href="https://github.com/foio/webpack-try-catch-demo">webpack-try-catch-demo</a>。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2017-01-02T00:00:00+08:00"><a href="/mobx-react/">January 02, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -512,253 +716,9 @@ table{
 
 <p><a href="https://mobxjs.github.io/mobx/best/store.html">https://mobxjs.github.io/mobx/best/store.html</a></p>
 
-<p><a href="https://github.com/sorrycc/blog/issues/5?utm_source=tuicool&amp;utm_medium=referral">https://github.com/sorrycc/blog/issues/5?utm_source=tuicool&amp;utm_medium=referral</a></p>
+<p><a href="https://github.com/sorrycc/blog/issues/5?utm_source=tuicool&utm_medium=referral">https://github.com/sorrycc/blog/issues/5?utm_source=tuicool&amp;utm_medium=referral</a></p>
 
 <p><a href="https://medium.com/@mweststrate/becoming-fully-reactive-an-in-depth-explanation-of-mobservable-55995262a254#.vaxmn2rek">https://medium.com/@mweststrate/becoming-fully-reactive-an-in-depth-explanation-of-mobservable-55995262a254#.vaxmn2rek</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-11-18T00:00:00+08:00"><a href="/wepack-code-spliting/">November 18, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/wepack-code-spliting/" rel="bookmark" title="webpack代码分割技巧" itemprop="url">webpack代码分割技巧</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <h2 id="1">1. 代码中定义分割点</h2>
-
-<p>webpack支持在代码中定义分割点。分割点指定的模块只有在真正使用时才加载，可以使用webpack提供的require.ensure语法:</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">'#okButton'</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-  <span class="nx">require</span><span class="p">.</span><span class="nx">ensure</span><span class="p">([</span><span class="s1">'./foo'</span><span class="p">],</span> <span class="kd">function</span><span class="p">(</span><span class="nx">require</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kd">var</span> <span class="nx">foo</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'./foo'</span><span class="p">);</span>
-    <span class="c1">//your code here</span>
-  <span class="p">});</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>也可以像RequireJS一样使用AMD语法：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="s1">'#okButton'</span><span class="p">).</span><span class="nx">click</span><span class="p">(</span><span class="kd">function</span><span class="p">(){</span>
-  <span class="nx">require</span><span class="p">([</span><span class="s1">'foo'</span><span class="p">],</span><span class="kd">function</span><span class="p">(</span><span class="nx">foo</span><span class="p">){</span>
-    <span class="c1">// your code here</span>
-  <span class="p">}]);</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>上面两种方式都会<code>以foo模块为入口将其依赖模块递归地打包到一个新的Chunk</code>，并在<code>#okButton</code>按钮点击时才异步地加载这个以foo模块为入口的新的chunk。</p>
-
-<h2 id="2-commonschunkplugin">2. 使用CommonsChunkPlugin分割代码</h2>
-
-<p>在理解CommonsChunkPlugin代码分割之前，我们需要熟悉webpack中chunk的概念，webpack将多个模块打包之后的代码集合称为chunk。根据不同webpack配置，chunk又有如下几种类型：</p>
-
-<blockquote>
-<p>Entry Chunk: 包含一系列模块代码，以及webpack的运行时(Runtime)代码，一个页面只能有一个Entry Chunk，并且需要先于Normal Chunk载入</p>
-
-<p>Normal Chunk: 只包含一系列模块代码，不包含运行时(Runtime)代码。</p>
-</blockquote>
-
-<p>作为webpack代码分割的利器，网络上有太多CommonsChunkPlugin的文章，但以某一使用场景的入门案例为主。本文我们根据不同场景下的使用方法，分别介绍。</p>
-
-<h3 id="2-1">2.1 提取库代码</h3>
-
-<p>假设我们需要将很少变化的常用库（react、lodash、redux）等与业务代码分割，可以在webpack.config.js采用如下配置：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
-    <span class="na">app</span><span class="p">:</span> <span class="s2">"./app.js"</span><span class="p">,</span>
-    <span class="na">vendor</span><span class="p">:</span> <span class="p">[</span><span class="s2">"lodash"</span><span class="p">,</span><span class="s2">"jquery"</span><span class="p">],</span>
-  <span class="p">},</span>
-  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
-    <span class="na">path</span><span class="p">:</span> <span class="s2">"release"</span><span class="p">,</span>
-    <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].[chunkhash].js"</span>
-  <span class="p">},</span>
-  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
-    <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">({</span><span class="na">names</span><span class="p">:</span> <span class="p">[</span><span class="s2">"vendor"</span><span class="p">]})</span>
-  <span class="p">]</span>
-<span class="p">};</span>
-
-</code></pre></div>
-<p>上述配置将常用库打包到一个vender命名的<code>Entry Chunk</code>，并将以app.js为入口的业务代码打包到一个以business命名的<code>Normal Chunk</code>。其中<code>Entry Chunk</code>包含了webpack的运行时(Runtime)代码，所以在页面中必须先于业务代码加载。</p>
-
-<h3 id="2-2">2.2 提取公有代码</h3>
-
-<p>假设我们有多个页面，为了优化网络加载性能，我们需要将多个页面共用的代码提取出来单独打包。可以在webpack.config.js进行如下配置：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="na">entry</span><span class="p">:</span> <span class="p">{</span> 
-          <span class="na">page1</span><span class="p">:</span> <span class="s2">"./page1.js"</span><span class="p">,</span> 
-          <span class="na">page2</span><span class="p">:</span> <span class="s2">"./page2.js"</span> 
-        <span class="p">},</span>
-    <span class="na">output</span><span class="p">:</span> <span class="p">{</span> 
-          <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].[chunkhash].js"</span> 
-        <span class="p">},</span>
-    <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span> <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">(</span><span class="s2">"common.[chunkhash].js"</span><span class="p">)</span> <span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>上述配置将两个页面中通用的代码抽取出来并打包到以common命名的<code>Entry Chunk</code>，并将以page1.js和page2.js为入口代码分别打包到以page1和page2命名的<code>Normal Chunk</code>。
-其中<code>Entry Chunk</code>包含了webpack的运行时(Runtime)代码，所以<code>common.[chunkhash].js</code>在两个页面中都必须在page1.[chunkhash].js和page2.[chunkhash].js前加载。</p>
-
-<p>在这种配置下，CommonsChunkPlugin的作用可以抽象：</p>
-
-<blockquote>
-<p>将多个入口中的公有代码和Runtime(运行时)抽取到父节点</p>
-</blockquote>
-
-<p>理解了CommonsChunkPlugin的本质后，我们看一个更复杂的例子：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
-        <span class="na">p1</span><span class="p">:</span> <span class="s2">"./page1"</span><span class="p">,</span>
-        <span class="na">p2</span><span class="p">:</span> <span class="s2">"./page2"</span><span class="p">,</span>
-        <span class="na">p3</span><span class="p">:</span> <span class="s2">"./page3"</span><span class="p">,</span>
-        <span class="na">ap1</span><span class="p">:</span> <span class="s2">"./admin/page1"</span><span class="p">,</span>
-        <span class="na">ap2</span><span class="p">:</span> <span class="s2">"./admin/page2"</span>
-    <span class="p">},</span>
-    <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
-        <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].js"</span>
-    <span class="p">},</span>
-    <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
-        <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">(</span><span class="s2">"admin-commons.js"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"ap1"</span><span class="p">,</span> <span class="s2">"ap2"</span><span class="p">]),</span>
-        <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">(</span><span class="s2">"commons.js"</span><span class="p">,</span> <span class="p">[</span><span class="s2">"p1"</span><span class="p">,</span> <span class="s2">"p2"</span><span class="p">,</span> <span class="s2">"admin-commons.js"</span><span class="p">])</span>
-    <span class="p">]</span>
-<span class="p">};</span>
-<span class="c1">// page1.html: commons.js, p1.js</span>
-<span class="c1">// page2.html: commons.js, p2.js</span>
-<span class="c1">// page3.html: p3.js</span>
-<span class="c1">// admin-page1.html: commons.js, admin-commons.js, ap1.js</span>
-<span class="c1">// admin-page2.html: commons.js, admin-commons.js, ap2.js</span>
-</code></pre></div>
-<p>我们可以用树结构描述上述配置的作用：</p>
-
-<p><img src="/images/common-chunk-tree.png" alt="commonchunk"></p>
-
-<p>每一次使用CommonsChunkPlugin都会将共有代码和runtime提取到父节点。上述例子中，通过两次CommonChunkPlugin的作用，runtime被提取到common.js中。通过这种树型结构，我们可以清晰的看出每个页面对各个chunk的依赖顺序。</p>
-
-<h3 id="2-3-runtime">2.3 提取Runtime(运行时)代码</h3>
-
-<p>使用CommonsChunkPlugins时，一个常见的问题就是：</p>
-
-<blockquote>
-<p>没有被修改过的公有代码或库代码打包出的Entry Chunk，会随着其他业务代码的变化而变化，导致页面上的长缓存机制失效。</p>
-</blockquote>
-
-<p><a href="https://github.com/webpack/webpack/issues/1315#issuecomment-155100976">github上有一个与此相关的问题</a>。本意就是在只修改业务代码时，而不改动库代码时，打包出的库代码的chunkhash也发生变化，导致浏览器端的长缓存机制失效。如图所示，app和vender的chunkhash都发生了变化。</p>
-
-<p><img src="/images/common-chunk-vender.png" alt="commonchunk"></p>
-
-<p><img src="/images/common-chunk-vender2.png" alt="commonchunk"></p>
-
-<p>这主要是因为使用CommonsChunkPlugin提取代码到新的chunk时，会将webpack运行时(Runtime)也提取到打包后的新的chunk。通过如下配置就可以将webpack的runtime单独提取出来：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"webpack"</span><span class="p">);</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
-    <span class="na">app</span><span class="p">:</span> <span class="s2">"./app.js"</span><span class="p">,</span>
-    <span class="na">vendor</span><span class="p">:</span> <span class="p">[</span><span class="s2">"lodash"</span><span class="p">,</span><span class="s2">"jquery"</span><span class="p">],</span>
-  <span class="p">},</span>
-  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
-    <span class="na">path</span><span class="p">:</span> <span class="s1">'release'</span><span class="p">,</span>
-    <span class="na">filename</span><span class="p">:</span> <span class="s2">"[name].[chunkhash].js"</span>
-  <span class="p">},</span>
-  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
-    <span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">optimize</span><span class="p">.</span><span class="nx">CommonsChunkPlugin</span><span class="p">({</span><span class="na">names</span><span class="p">:</span> <span class="p">[</span><span class="s1">'vendor'</span><span class="p">,</span><span class="s1">'runtime'</span><span class="p">]}),</span>
-  <span class="p">]</span>
-<span class="p">};</span>
-</code></pre></div>
-<p>这种情况下，当业务代码发送变化，而库代码没有改动时，vender的chunkhash不会变，这样才能最大化的利用浏览器的缓存机制。如下图所示：</p>
-
-<p><img src="/images/common-chunk-runtime.png" alt="commonchunk"></p>
-
-<p>修改业务代码后，vender的chunkhash不会变化，方便使用浏览器的缓存：</p>
-
-<p><img src="/images/common-chunk-runtime2.png" alt="commonchunk"></p>
-
-<p>由于webpack的runtime比较小，我们可以直接将该文件的内容inline到html中。</p>
-
-<h2 id="3-dllplugin-dllreferenceplugin">3. 使用DllPlugin和DllReferencePlugin分割代码</h2>
-
-<p>通过DllPlugin和DllReferencePlugin，webpack引入了另外一种代码分割的方案。我们可以将常用的库文件打包到dll包中，然后在webpack配置中引用。业务代码的可以像往常一样使用require引入依赖模块，比如require(&#39;react&#39;), webpack打包业务代码时会首先查找该模块是否已经包含在dll中了，只有dll中没有该模块时，webpack才将其打包到业务chunk中。</p>
-
-<p>首先我们使用DllPlugin将常用的库打包在一起：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'webpack'</span><span class="p">);</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
-    <span class="na">vendor</span><span class="p">:</span> <span class="p">[</span><span class="s1">'lodash'</span><span class="p">,</span><span class="s1">'react'</span><span class="p">],</span>
-  <span class="p">},</span>
-  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
-    <span class="na">filename</span><span class="p">:</span> <span class="s1">'[name].[chunkhash].js'</span><span class="p">,</span>
-    <span class="na">path</span><span class="p">:</span> <span class="s1">'build/'</span><span class="p">,</span>
-  <span class="p">},</span>
-  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span><span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">DllPlugin</span><span class="p">({</span>
-    <span class="na">name</span><span class="p">:</span> <span class="s1">'[name]_lib'</span><span class="p">,</span>
-    <span class="na">path</span><span class="p">:</span> <span class="s1">'./[name]-manifest.json'</span><span class="p">,</span>
-  <span class="p">})]</span>
-<span class="p">};</span>
-</code></pre></div>
-<p>该配置会产生两个文件，模块库文件：vender.[chunkhash].js和模块映射文件：vender-menifest.json。其中vender-menifest.json标明了模块路径和模块ID（由webpack产生）的映射关系，其文件内容如下：</p>
-<div class="highlight"><pre><code class="language-" data-lang=""><span class="p">{</span><span class="w">
-  </span><span class="nt">"name"</span><span class="p">:</span><span class="w"> </span><span class="s2">"vendor_lib"</span><span class="p">,</span><span class="w">
-  </span><span class="nt">"content"</span><span class="p">:</span><span class="w"> </span><span class="p">{</span><span class="w">
-    </span><span class="nt">"./node_modules/.npminstall/lodash/4.17.2/lodash/lodash.js"</span><span class="p">:</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w">
-    </span><span class="nt">"./node_modules/.npminstall/webpack/1.13.3/webpack/buildin/module.js"</span><span class="p">:</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w">
-    </span><span class="nt">"./node_modules/.npminstall/react/15.3.2/react/react.js"</span><span class="p">:</span><span class="w"> </span><span class="mi">3</span><span class="p">,</span><span class="w">
-    </span><span class="err">...</span><span class="w">
-    </span><span class="err">}</span><span class="w">
-</span><span class="p">}</span><span class="w">    
-</span></code></pre></div>
-<p><img src="/images/webpack-dll-vender.png" alt="commonchunk"></p>
-
-<p>在业务代码的webpack配置文件中使用DllReferencePlugin插件引用模块映射文件：vender-menifest.json后，我们可以正常的通过require引入依赖的模块，如果在vender-menifest.json中找到依赖模块的路径映射信息，webpack会直接使用dll包中的该依赖模块，否则将该依赖模块打包到业务chunk中。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">webpack</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'webpack'</span><span class="p">);</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="p">{</span>
-  <span class="na">entry</span><span class="p">:</span> <span class="p">{</span>
-    <span class="na">app</span><span class="p">:</span> <span class="p">[</span><span class="s1">'./app'</span><span class="p">],</span>
-  <span class="p">},</span>
-  <span class="na">output</span><span class="p">:</span> <span class="p">{</span>
-    <span class="na">filename</span><span class="p">:</span> <span class="s1">'[name].[chunkhash].js'</span><span class="p">,</span>
-    <span class="na">path</span><span class="p">:</span> <span class="s1">'build/'</span><span class="p">,</span>
-  <span class="p">},</span>
-  <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span><span class="k">new</span> <span class="nx">webpack</span><span class="p">.</span><span class="nx">DllReferencePlugin</span><span class="p">({</span>
-    <span class="na">context</span><span class="p">:</span> <span class="s1">'.'</span><span class="p">,</span>
-    <span class="na">manifest</span><span class="p">:</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'./vendor-manifest.json'</span><span class="p">),</span>
-  <span class="p">})]</span>
-<span class="p">};</span>
-
-</code></pre></div>
-<p>由于依赖的模块都在dll包中，所以例子中app打包后的chunk很小。</p>
-
-<p><img src="/images/webpack-dll-app.png" alt="commonchunk"></p>
-
-<p>需要注意的是：dll包的代码是不会执行的，需要在业务代码中通过require显示引入。相比于CommonChunkPlugin，使用DllReferencePlugin分割代码有两个明显的好处：</p>
-
-<blockquote>
-<p>（1）由于dll包和业务chunk包是分开进行打包的，每一次修改代码时只需要对业务chunk重新打包，webpack的编译速度得到极大的提升，因此相比于CommonChunkPlugin，DllPlugin进行代码分割可以显著的提升开发效率。</p>
-
-<p>（2）使用DllPlugin进行代码分割，dll包和业务chunk相互独立，其chunkhash互不影响，dll包很少变动，因此可以更充分的利用浏览器的缓存系统。而使用CommonChunk打包出的代码，由于公有chunk中包含了webpack的runtime(运行时)，公有chunk和业务chunk的chunkhash会互相影响，必须将runtime单独提取出来，才能对公有chunk充分地使用浏览器的缓存。</p>
-</blockquote>
-
-<p>本文所有demo代码均在github上：<a href="https://github.com/foio/webpack-code-splitting-demos">https://github.com/foio/webpack-code-splitting-demos</a></p>
-
-<hr>
-
-<p>参考文献</p>
-
-<p><a href="https://robertknight.github.io/posts/webpack-dll-plugins/">https://robertknight.github.io/posts/webpack-dll-plugins/</a></p>
-
-<p><a href="http://engineering.invisionapp.com/post/optimizing-webpack/">http://engineering.invisionapp.com/post/optimizing-webpack/</a></p>
-
-<p><a href="https://github.com/webpack/docs/wiki/optimization">https://github.com/webpack/docs/wiki/optimization</a></p>
-
-<p><a href="https://medium.com/@soederpop/webpack-plugins-been-we-been-keepin-on-the-dll-cdfdd6cb8cd7#.g79bu37wr">https://medium.com/@soederpop/webpack-plugins-been-we-been-keepin-on-the-dll-cdfdd6cb8cd7#.g79bu37wr</a></p>
-
-<p><a href="http://engineering.invisionapp.com/post/optimizing-webpack/">http://engineering.invisionapp.com/post/optimizing-webpack/</a></p>
-
-<p><a href="https://github.com/webpack/docs/wiki/optimization">https://github.com/webpack/docs/wiki/optimization</a></p>
-
-<p><a href="https://github.com/webpack/webpack/issues/1315#issuecomment-155100976">https://github.com/webpack/webpack/issues/1315#issuecomment-155100976</a></p>
-
-<p><a href="https://github.com/zhengweikeng/blog/issues/10">https://github.com/zhengweikeng/blog/issues/10</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -934,18 +894,6 @@ table{
       <li>
         
           <a href="/page28">28</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page29">29</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page30">30</a>
         
       </li>
     

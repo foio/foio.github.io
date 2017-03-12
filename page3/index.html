@@ -119,6 +119,238 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2016-09-04T00:00:00+08:00"><a href="/react-redux-performance-boost/">September 04, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/react-redux-performance-boost/" rel="bookmark" title="react+redux渲染性能优化原理" itemprop="url">react+redux渲染性能优化原理</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <style type="text/css">
+td, table {
+   border: solid gray 1px;
+   padding: 10px;
+}
+table{
+   margin: 0 auto;
+}
+</style>
+
+<blockquote>
+<p>React基本上成了前端的必备技能，redux更是对react的锦上添花。我在<a href="http://foio.github.io/redux-state-manage/">“redux,一种页面状态管理的优雅方案”</a>一文中介绍了react与redux结合的基本方法和高级技巧。</p>
+</blockquote>
+
+<p>大家都知道，react的一个痛点就是非父子关系的组件之间的通信，其官方文档对此也并不避讳：</p>
+
+<blockquote>
+<p>For communication between two components that don&#39;t have a parent-child relationship, you can set up your own global event system. Subscribe to events in componentDidMount(), unsubscribe in componentWillUnmount(), and call setState() when you receive an event. </p>
+</blockquote>
+
+<p>而redux就可以视为其中的“global event system”，使用redux可以使得我们的react应用有更加清晰的架构。</p>
+
+<p>本文我们来探讨，基于react和redux架构的前端应用，如何进行渲染性能优化。<code>对于小型react前端应用，最好的优化就是不优化</code>因为React本身就是通过比较虚拟DOM的差异，从而对真实DOM进行最小化操作，小型React应用的虚拟DOM结构简单，虚拟DOM比较的耗时可以忽略不计。而对于复杂的前端项目，我们所指的渲染性能优化，实际上是指，<code>在不需要更新DOM时，如何避免虚拟DOM的比较</code>。关于虚拟DOM的原理请参看我的另一篇博客<a href="http://foio.github.io/virtual-dom/">全面理解虚拟DOM，实现虚拟DOM</a> </p>
+
+<h3 id="1-react">1. react组件的生命周期</h3>
+
+<p>工欲善其事，必先利其器。理解react的组件的生命周期是优化其渲染性能的必备前提。我们可以将react组件的生命周期分为3个大循环：挂载到DOM、更新DOM、从DOM中卸载。React对三个大循环中每一步都暴露出钩子函数，使得我们可以细粒度地控制组件的生命周期。</p>
+
+<h4 id="1-dom">(1)挂载到DOM</h4>
+
+<p>组件首次插入到DOM时，会经历从属性和状态初始化到DOM渲染等基本流程，可以通过下图描述：</p>
+
+<figure style="width:300px;margin: 0 auto;">
+        <img src="/images/react-component-mount.png" alt="render flow">
+</figure>
+
+<p>必须注意的是，挂载到DOM流程在组件的整个生命周期只有一次，也就是组件第一次插入DOM文档流时。在挂载到DOM流程中的每一步也有相应的限制：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">getDefaultProps()和getInitialState()中不能获取和设置组件的state。
+render()方法中不能设置组件的state。
+</code></pre></div>
+<h4 id="2-dom">(2)更新DOM</h4>
+
+<p>组件挂载到DOM后，一旦其props和state有更新，就会进入更新DOM流程。同样我们也可以通过一张图清晰的描述该流程的各个步骤：</p>
+
+<figure style="width:300px;margin: 0 auto;">
+        <img src="/images/react-component-update.png" alt="render flow">
+</figure>
+
+<p>componentWillReceiveProps()提供了该流程中更新state的最后时机，后续的其他函数都不能再更新组件的state了。<code>我们尤其需要注意的是shouldComponentUpdate函数，它的结果直接影响该组件是不是需要进行虚拟DOM比较</code>，我们对组件渲染性能优化的基本思路就是：在非必要的时候将shouldComponentUpdate返回值设置为false，从而终止更新DOM流程中的后续步骤。</p>
+
+<h4 id="3-dom">(3)从DOM中卸载</h4>
+
+<p>从DOM中卸载的流程比较简单，React只暴漏出<code>componentWillUnmount</code>，该函数使得我们可以在DOM卸载的最后时机对其进行干预。</p>
+
+<h3 id="2-react">2. react组件渲染性能监控</h3>
+
+<p>在进行性能优化前，我们先来了解如何对React组件渲染性能进行监控。React官方提供了<a href="https://facebook.github.io/react/docs/perf.html">Performance Tools</a>，其使用起来也很简单，通过Perf.start启动一次性能分析，并通过Perf.stop结束一次性能分析。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">import</span> <span class="nx">Perf</span> <span class="nx">from</span> <span class="s1">'react-addons-perf'</span>
+<span class="nx">Perf</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span>
+<span class="p">....</span><span class="nx">your</span> <span class="nx">react</span> <span class="nx">code</span>
+<span class="nx">Perf</span><span class="p">.</span><span class="nx">stop</span><span class="p">();</span>
+</code></pre></div>
+<p>调用Perf.stop后，我们就可以通过Perf提供的API来获取本次性能分析的数据指标。其中最有用的API是<code>Perf.printWasted()</code>，其结果给出你在哪些组件上进行了无意义的(没有引起真实DOM的改变)虚拟DOM比较，比如如下结果表明我们在TodoItem组件上浪费了4ms进行无意义的虚拟DOM比较，我们可以从这里入手，进行性能优化。</p>
+
+<p><img src="/images/react-perf-wasted.png" alt="Alt text"></p>
+
+<p>而<code>Perf.printInclusive()</code>的结果则给出渲染各个组件的总体时间，通过它的结果我们可以找出哪个组件是页面渲染的性能瓶颈。</p>
+
+<p><img src="/images/react-perf-include.png" alt="Alt text"></p>
+
+<p>和<code>Perf.printInclusive()</code>相似的API还有<code>Perf.printExclusive()</code>，只是其结果是组件渲染的独占时间，即不包括花费于加载组件的时间： 处理 props, getInitialState, 调用 componentWillMount 及 componentDidMount, 等等。</p>
+
+<h3 id="3">3. 性能优化基本原理</h3>
+
+<p>使用上一小节的性能分析工具，我们可以轻易的定位出哪些组件是页面的性能瓶颈、哪些组件进行了无意义的虚拟DOM比较，本小节我们能探讨如何对基于react和redux架构的前端应用进行性能优化。强烈的建议你参考我的另一篇博文:<a href="http://foio.github.io/redux-state-manage/">redux,一种页面状态管理的优雅方案</a>，以便更好的理解本小节。</p>
+
+<h4 id="3-1-react">3.1 常规React组件性能优化</h4>
+
+<p>通过上文的React更新DOM流程，我们知道React提供了<code>shouldComponentUpdate</code>函数，它的结果直接影响组件是不是需要进行虚拟DOM比较以及后续的真实DOM渲染。而<code>shouldComponentUpdate</code>函数的默认返回值为true，这暗示着React总是会进行虚拟DOM比较，无论真实DOM是否需要重新渲染。我们可以通过根据自己的业务特性，重载<code>shouldComponentUpdate</code>，只在确认真实DOM需要改变时，再返回true。一般的做法是比较组件的props和state是否真的发生变化，如果发生变化则返回true，否则返回false。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">return</span> <span class="o">!</span><span class="nx">isDeepEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span><span class="nx">nextProps</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isDeepEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span><span class="nx">nextState</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div>
+<p>进行深度比较(isDeepEqual)来确定props和state是否发生变化是最常见的做法，其是否有性能问题呢？如果一个容器型组件有很多的子节点，而子节点又有其他子节点，对这种复杂的嵌套对象进行深度比较(isDeepEqual)是很耗时的，甚至会抵消由避免虚拟DOM比较所带来的性能收益。React官方推荐使用<a href="https://facebook.github.io/react/docs/advanced-performance.html">immutable的组件状态</a>，以便更高效的实现shouldComponentUpdate函数。</p>
+
+<p>immutable的状态有何优势呢？假设我们要修改一个列表中，某个列表项的状态，使用非immutable的方式：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">item</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="na">id</span><span class="p">:</span><span class="mi">1</span><span class="p">,</span>
+    <span class="na">text</span><span class="p">:</span><span class="s1">'todo1'</span><span class="p">,</span>
+    <span class="na">status</span><span class="p">:</span><span class="s1">'doing'</span>
+<span class="p">}</span>
+<span class="kd">var</span> <span class="nx">oldTodoList</span> <span class="o">=</span> <span class="p">[</span><span class="nx">item1</span><span class="p">,</span><span class="nx">item2</span><span class="p">,....,</span><span class="nx">itemn</span><span class="p">];</span>
+<span class="nx">oldTodoList</span><span class="p">[</span><span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">].</span><span class="nx">status</span> <span class="o">=</span> <span class="s1">'done'</span><span class="p">;</span>
+<span class="kd">var</span> <span class="nx">newTodoList</span> <span class="o">=</span> <span class="nx">oldTotoList</span><span class="p">;</span>
+</code></pre></div>
+<p>当我们需要确认oldTodoList和newTodoList的数据是否相同时，只能遍历列表(复杂度为O(n))，依次比较:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">oldTodoList</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">isItemEqual</span><span class="p">(</span><span class="nx">oldTodoList</span><span class="p">[</span><span class="nx">i</span><span class="p">],</span><span class="nx">newTodoList</span><span class="p">[</span><span class="nx">i</span><span class="p">])){</span>
+        <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
+</code></pre></div>
+<p>而如果使用immutable的方式：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">newTotoList</span> <span class="o">=</span> <span class="nx">oldTodoList</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">item</span><span class="p">){</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">item</span><span class="p">.</span><span class="nx">id</span> <span class="o">==</span> <span class="nx">n</span><span class="o">-</span><span class="mi">1</span><span class="p">){</span>
+        <span class="k">return</span> <span class="nb">Object</span><span class="p">.</span><span class="nx">assign</span><span class="p">({},</span><span class="nx">item</span><span class="p">,{</span><span class="na">status</span><span class="p">:</span><span class="s1">'done'</span><span class="p">})</span>
+    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+        <span class="k">return</span> <span class="nx">item</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>因为每一次变动，都会创建新的对象，因此比较oldTodoList和newTodoList是否有变化时，只需要比较其对象引用即可(复杂度O(1))：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">return</span> <span class="nx">oldTodoList</span> <span class="o">==</span> <span class="nx">newTodoList</span><span class="p">;</span>
+</code></pre></div>
+<p><code>我们优化的方向就是将</code>shouldComponentUpdate<code>中所有的props和state的比较算法复杂度降到最低</code>，而浅层对比(isShallowEqual)就是复杂度最低的对象比较算法:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">return</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span><span class="nx">nextProps</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span><span class="nx">nextState</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div>
+<p>当组件的prop设state都是immutable时，<code>shouldComponentUpdate</code>的实现就非常简单了，我们可以直接使用facebook官方提供了<code>PureRenderMixin</code>，它就是对组件的props和state进行浅层比较的。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">PureRenderMixin</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'react-addons-pure-render-mixin'</span><span class="p">);</span>
+<span class="nx">React</span><span class="p">.</span><span class="nx">createClass</span><span class="p">({</span>
+  <span class="na">mixins</span><span class="p">:</span> <span class="p">[</span><span class="nx">PureRenderMixin</span><span class="p">],</span>
+
+  <span class="na">render</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">className</span><span class="p">}</span><span class="o">&gt;</span><span class="nx">foo</span><span class="o">&lt;</span><span class="sr">/div&gt;</span><span class="err">;
+</span>  <span class="p">}</span>
+<span class="p">});</span>
+</code></pre></div>
+<p>自己实现immutable化，还是很有挑战的，我们可以借助于第三方库<a href="https://facebook.github.io/immutable-js/">ImmutableJS</a>，它是一个重型库，适合于大型复杂项目；如果你的项目复杂度不是很高，可以使用<a href="https://github.com/rtfeldman/seamless-immutable">seamless-immutable</a>，它是一个更轻量级的库，基于ES5的新特性Object.freeze来避免对象的修改，因此其只能兼容实现ES5标准的浏览器。</p>
+
+<h4 id="3-2-redux">3.2 理解Redux状态传播路径</h4>
+
+<p>Redux使用一个对象存储整个应用的状态(<code>global state</code>)，当<code>global state</code>发生变化时，状态是如何传递的呢？这个问题的答案对我们理解基于redux的react应用的渲染性能优化至关重要。</p>
+
+<p>Redux将React组件分为容器型组件和展示型组件。容器型组件一般通过connet函数生成，它订阅了全局状态的变化，通过mapStateToProps函数，我们可以对全局状态进行过滤，只返回该容器型组件关注的局部状态：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">mapStateToProps</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="p">{</span><span class="na">todos</span><span class="p">:</span> <span class="nx">state</span><span class="p">.</span><span class="nx">todos</span><span class="p">};</span>
+<span class="p">}</span>
+<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">mapStateToProps</span><span class="p">)(</span><span class="nx">TodoApp</span><span class="p">);</span>
+</code></pre></div>
+<p><code>每一次全局状态变化都会调用所有容器型组件的mapStateToProps方法</code>，该方法返回一个常规的Javascript对象，并将其合并到容器型组件的props上。</p>
+
+<p>而展示型组件不直接从<code>global state</code>获取数据，其数据来源于父组件。当容器型组件对应<code>global state</code>有变化时，它会将变化传播到其所有的子组件(一般为展示型组件)。简单来说容器型组件与展示型组件是父子关系：</p>
+
+<table><thead>
+<tr>
+<th style="text-align: left">组件类型</th>
+<th style="text-align: center">数据来源</th>
+<th style="text-align: center">变化通知</th>
+</tr>
+</thead><tbody>
+<tr>
+<td style="text-align: left">展示型组件</td>
+<td style="text-align: center">父组件</td>
+<td style="text-align: center">父组件通知</td>
+</tr>
+<tr>
+<td style="text-align: left">容器型组件</td>
+<td style="text-align: center">全局状态</td>
+<td style="text-align: center">监听全局状态</td>
+</tr>
+</tbody></table>
+
+<p>组件的状态传递路径，可以用一个树形结构描述：</p>
+
+<p><img src="/images/redux-component-tree.png" alt="Alt text"></p>
+
+<h4 id="3-3-redux">3.3 理解Redux的默认性能优化</h4>
+
+<p>Redux官方对容器型组件和全局状态树有两个基本的假设，违背这些假设将使得Redux的默认性能优化无法起作用：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">1. 容器型组件必须为Pure Component，即组件只依赖于state和props
+2. 全局状态树(global state)的任何变动都是immutable的
+</code></pre></div>
+<blockquote>
+<p>这种规范是有理由的：上文中我们提到过，每一次全局状态发生变化，所有的容器型组件都会得到通知，而各个容器型组件需要通过shouldComponentUpdate函数来确实自己关注的局部状态是否发生变化、自身是否需要重新渲染，默认情况下，React组件的shouldComponentUpdate总返回true，这里貌似有一个严重的性能问题：全局状态的任何变动都会使页面中的所有组件进入<code>更新DOM</code>的流程</p>
+</blockquote>
+
+<p>幸运的是，用Redux官方API函数connect生成的容器型组件，默认会提供一个shouldComponentUpdate函数，其中对props和state进行了浅层比较`。如果我们不遵从Redux的immutable状态的规范和Pure Component规范，则容器型组件默认的shouldComponentUpdate函数就是无效的了。</p>
+
+<p>在遵从Redux的immutable状态规范的情况下，当一个容器型组件的默认shouldComponentUpdate函数返回true时，则表明其对应的局部状态发生变化，需要将状态传播到各个子组件，相应的所有子组件也都会进行虚拟DOM比较，以确定是否需要重新渲染。如下图所示，<code>容器型组件#1</code>的状态发生变化后，所有的子组件都会进行虚拟DOM比较：</p>
+
+<p><img src="/images/redux-performance-loose.png" alt="Alt text"></p>
+
+<p><code>由于展示型组件对全局状态没有感知，我们就可以使用React的常规方法对展示型进行渲染性能优化了</code>。使用小节3.1中所提到的<code>常规React组件性能优化</code>方案，对每一个展示型组件实现shouldComponentUpdate函数：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
+     <span class="k">return</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span><span class="nx">nextProps</span><span class="p">)</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isShallowEqual</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">,</span><span class="nx">nextState</span><span class="p">);</span>
+ <span class="p">}</span>
+</code></pre></div>
+<p>我们就可以避免展示型组件多余的虚拟DOM比较。比如当只有<code>展示型组件#1.1</code>需要重新渲染时，其他同级别的组件不会进行虚拟DOM比较。比如当只有<code>展示型组件#1.1</code>需要重新渲染时，其他同级别的组件不会进行虚拟DOM比较了</p>
+
+<p><img src="/images/redux-performance-best.png" alt="Alt text"></p>
+
+<p>综上所述: 在容器型组件层面，Redux为我们提供了默认的性能优化方案；在展示型组件层面，我们可以使用常规React组件性能优化方案。</p>
+
+<hr>
+
+<p>参考文献：</p>
+
+<p><a href="https://facebook.github.io/react/docs/component-specs.html">https://facebook.github.io/react/docs/component-specs.html</a></p>
+
+<p><a href="https://facebook.github.io/react/docs/perf.html">https://facebook.github.io/react/docs/perf.html</a></p>
+
+<p><a href="http://benchling.engineering/performance-engineering-with-react/">http://benchling.engineering/performance-engineering-with-react/</a></p>
+
+<p><a href="http://jlongster.com/Using-Immutable-Data-Structures-in-JavaScript">http://jlongster.com/Using-Immutable-Data-Structures-in-JavaScript</a></p>
+
+<p><a href="https://github.com/rtfeldman/seamless-immutable">https://github.com/rtfeldman/seamless-immutable</a></p>
+
+<p><a href="https://facebook.github.io/react/docs/pure-render-mixin.html">https://facebook.github.io/react/docs/pure-render-mixin.html</a></p>
+
+<p><a href="https://facebook.github.io/react/docs/advanced-performance.html">https://facebook.github.io/react/docs/advanced-performance.html</a></p>
+
+<p><a href="https://www.toptal.com/react/react-redux-and-immutablejs">https://www.toptal.com/react/react-redux-and-immutablejs</a></p>
+
+<p><a href="https://facebook.github.io/react/docs/advanced-performance.html">https://facebook.github.io/react/docs/advanced-performance.html</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2016-08-15T00:00:00+08:00"><a href="/node-memory/">August 15, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -348,7 +580,7 @@ table{
     <span class="nx">pool</span><span class="p">.</span><span class="nx">used</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 <span class="p">}</span>
 </code></pre></div>
-<h3 id="6-1-lt-4kb">6.1 小内存(&lt;4kB)的分配</h3>
+<h3 id="6-1-4kb">6.1 小内存(&lt;4kB)的分配</h3>
 
 <p>一个slab的大小为8KB(Buffer.poolSize)，node中通过Buffer.poolSize定义。当我们需要创建一个长度小于4kB的Buffer对象时，会首先判断当前slab的剩余空间是否足够，如果剩余空间足够，则在当前slab上为Buffer对象分配内存，否则创建一个新的slab块，并在新的slab上为Buffer对象分配内存。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">pool</span> <span class="o">||</span> <span class="nx">pool</span><span class="p">.</span><span class="nx">lengh</span> <span class="o">-</span> <span class="nx">pool</span><span class="p">.</span><span class="nx">used</span> <span class="o">&lt;</span> <span class="k">this</span><span class="p">.</span><span class="nx">length</span><span class="p">){</span>
@@ -371,7 +603,7 @@ table{
 
 <p>在写本文时，node官方已经不建议使用<code>new Buffer()</code>创建buffer对象了，官方提供了更新的<code>Buffer.alloc()</code>和<code>Buffer.allocUnsafe()</code>。其中<code>Buffer.alloc()</code>在创建Buffer对象时会对内存进行初始化，并且不会使用slab策略；而<code>Buffer.allocUnsafe()</code>则是使用slab算法分配一块未初始化的内存，因此其性能要比<code>Buffer.alloc()</code>高很多。因此我们应该使用<code>Buffer.allocUnsafe()</code>替换来的<code>new Buffer()</code>。</p>
 
-<h3 id="6-2-gt-4kb">6.2 大内存(&gt;4kB)的分配</h3>
+<h3 id="6-2-4kb">6.2 大内存(&gt;4kB)的分配</h3>
 
 <p>对于大于4KB的Buffer对象，其大小甚至可能超过一个slab的大小，系统就无法使用固定大小的slab分配算法了。值得注意的是，node对单个Buffer大小是有上限的(buffer.kMaxLength)，在32系统上其上限接近1GB(2<sup>30-1)，而在64位系统上其上限则接近2GB(2<sup>31-1)。</sup></sup></p>
 
@@ -429,359 +661,6 @@ table{
 <p><a href="http://stackoverflow.com/questions/14009048/what-makes-node-js-slowbuffers-slow">http://stackoverflow.com/questions/14009048/what-makes-node-js-slowbuffers-slow</a></p>
 
 <p><a href="https://github.com/nodejs/node-v0.x-archive/issues/4525">https://github.com/nodejs/node-v0.x-archive/issues/4525</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-07-01T00:00:00+08:00"><a href="/redux-state-manage/">July 01, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/redux-state-manage/" rel="bookmark" title="redux,一种页面状态管理的优雅方案" itemprop="url">redux,一种页面状态管理的优雅方案</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <style type="text/css">
-td, table {
-   border: solid gray 1px;
-   padding: 10px;
-}
-</style>
-
-<blockquote>
-<p>前端是工程能力比技术能力更重要的领域，而最近一两年，前端在构建流程、组件化、同构渲染等方面有了深入的发展，其入行门槛也在逐步提高。</p>
-</blockquote>
-
-<p>前端社区的活跃程度让人惊叹，各种工具层出不穷，比如grunt、gulp、webpack、fis等，即便你没有全部用过，也该了解过它们中的大部分，这些工具极大的解放了前端的生产力，解决了前端的构建流程问题。而React的出现将前端引入新的境界，它优雅的解决了前端UI层组件化的问题，使得组件化也成了前端项目的标配。为了提高页面渲染速度，页面首屏由后端直出，也已经有了很多解决方案。这里我们探讨一下容易被大家忽略的领域：页面状态的管理。</p>
-
-<h2 id="1">1. 页面状态</h2>
-
-<p>页面上所有UI层的显示都可以用对应的状态描述，比如，比如当前的列表项、当前被选中的标签等。如下图所示：</p>
-
-<p><img src="/images/ui-state.png" alt="Alt text"></p>
-
-<p>可以简单的将前端项目抽象为对UI的管理和对状态的管理，UI和状态之间相互作用，处理它们之间的相互关系很复杂，行业内有不同的解决方案，比如以angularJS为代表的双向绑定、以及flux提出的单向数据流。本文我们将抽象的理解facebook提出单项数据流方案flux，以及它的具体实现redux。</p>
-
-<h2 id="2-flux">2. 单向数据流flux</h2>
-
-<p>flux是facebook提出的一种应用程序框架，其基本架构如下入所示，其核心理念是单向数据流，它完善了React对应用状态的管理。</p>
-
-<p><img src="/images/flux-data-flow.png" alt="Alt text"></p>
-
-<p>上图描述了页面的启动和运行原理：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1.通过dispatcher派发action，并利用store中的action处理逻辑更新状态和view
-
-2.而view也可以触发新的action，从而进入新的步骤1
-</code></pre></div>
-<p>其中的<code>action</code>是用于描述动作的简单对象，通常通过用户对view的操作产生，包括动作类型和动作所携带的所需参数，比如描述删除列表项的action:</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span>
-    <span class="nl">type</span><span class="p">:</span> <span class="nx">types</span><span class="p">.</span><span class="nx">DELETE_ITEM</span><span class="p">,</span>
-    <span class="nx">id</span><span class="err">:</span> <span class="nx">id</span>
-<span class="p">};</span>
-</code></pre></div>
-<p>而<code>dispatcher</code>用于对<code>action</code>进行分发，分发的目标就是注册在<code>store</code>里的事件处理函数:</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">dispatcher</span><span class="p">.</span><span class="nx">register</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">action</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">switch</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">case</span> <span class="s1">'DELETE_ITEM'</span><span class="err">:</span>
-      <span class="nx">sotre</span><span class="p">.</span><span class="nx">deleteItem</span><span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">id</span><span class="p">);</span> <span class="c1">//更新状态</span>
-      <span class="nx">store</span><span class="p">.</span><span class="nx">emitItemDeleted</span><span class="p">();</span> <span class="c1">//通知视图更新</span>
-      <span class="k">break</span><span class="p">;</span>
-    <span class="nl">default</span><span class="p">:</span>
-      <span class="c1">// no op</span>
-  <span class="p">}</span>
-<span class="p">})</span>
-</code></pre></div>
-<p><code>store</code>包含了应用的所有状态和逻辑，它有点像传统的MVC模型中的model层，但又与之有明显的区别，<code>store</code>包括的是一个应用特定功能的全部状态和逻辑，它代表了应用的整个逻辑层；而不是像Model一样包含的是数据库中的一些记录和与之对应的逻辑。</p>
-
-<h2 id="3-flux-redux">3. 一种对flux的实现，redux</h2>
-
-<p>随着前端应用的复杂性指数级的提升，前端页面需要管理的状态也越来越多，flux给出了管理状态的基本数据流，而redux对flux就是对它最好的实现之一，而且其对flux的理念进行了更进一步的扩展。</p>
-
-<p>redux倡导三大原则：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1.一个对象存储整个应用的状态
-2.状态对象是只读的，只能通过action触发改变
-3.通过普通函数处理action的逻辑
-</code></pre></div>
-<p>其基本流程如下：</p>
-
-<p><img src="/images/redux-data-flow.png" alt="Alt text"></p>
-
-<p>其相对于flux有如下不同之处：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1. redux没有dispacher，其通过普通函数处理action逻辑，并改变应用状态
-2. redux的状态对象是immutable的，每一个action都会局部地创建新的状态对象
-</code></pre></div>
-<p>需要强调的是，<code>redux不一定要和react搭配，它是一种应用状态管理方案，不涉及UI层</code>，你可以任意选择自己的UI层；正因为redux脱离UI层，提供了整个应用状态的管理，使得我们的开发流程有了颠覆性的改变。</p>
-
-<p>我们可以在UI层ready之前，完成应用的逻辑设计和实现。比如我们将应用的逻辑设计如下：</p>
-
-<p><img src="/images/redux-logic-flow.png" alt="Alt text"></p>
-
-<p>ADD_ITEM的action触发todos列表状态的改变，SET_FILTER的action触发filter状态的改变。因为每一个action都是简单对象，我们可以轻易的模拟。这也就使得我们可以在UI层ready之前，对前端全部逻辑写单独的测试用例。</p>
-
-<p>然后，在UI层ready之后，将UI层或网络层的事件映射为redux的action。比如将表单提交事件映射为ADD_ITEM，将标签页切换按钮点击事件映射为SET_FILTER。UI层和逻辑层相互独立，并仅仅通过事件与action的映射来建立联系，这种方案使得复杂的前端项目有了更清晰的架构。</p>
-
-<h2 id="4-redux-react">4.redux与react的配合</h2>
-
-<p>redux只负责应用的逻辑层，而通过使用<code>react-redux</code>模块，其可以天衣无缝的和react配合。</p>
-
-<h3 id="4-1">4.1 经典案例</h3>
-
-<p>我们简单了解一下，如何使用react+redux实现经典的todolist案例。<a href="https://github.com/foio/react-redux-isomorphic-todolist">案例的源代码在此</a>。最终的界面如下：</p>
-
-<p><img src="/images/todo-demo.png" alt="Alt text"></p>
-
-<hr>
-
-<h4 id="1">(1) 逻辑层设计</h4>
-
-<p>前端应用本质上是：通过事件触发应用状态的改变。而redux包办了应用状态(state)、事件(action)、和事件处理函数(reducer)，使得我们可以抛开UI层，先设计应用的逻辑层。redux使用单一对象存储整个应用的状态，todolist应用的状态(state)树如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span>
-  <span class="nl">filter</span><span class="p">:</span> <span class="s1">'show_all'</span>
-  <span class="nl">todos</span><span class="p">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-    <span class="err">　</span><span class="na">id</span><span class="p">:</span> <span class="mi">1</span><span class="p">,</span>
-      <span class="na">text</span><span class="p">:</span> <span class="s1">'todo1'</span><span class="p">,</span>
-      <span class="na">marked</span><span class="p">:</span> <span class="kc">true</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>其中filter为列表过滤策略，用于标志底部三个按钮选中的状态，而todos作为代办事项列表。上文提到过state是immutable的，只能通过action触发对state的改变，一个编辑todo条目的action如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">
-<span class="kd">var</span> <span class="nx">editTodo</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">id</span><span class="p">,</span> <span class="nx">text</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="p">{</span>
-        <span class="na">type</span><span class="p">:</span> <span class="nx">types</span><span class="p">.</span><span class="nx">EDIT_TODO</span><span class="p">,</span>
-        <span class="na">id</span><span class="p">:</span> <span class="nx">id</span><span class="p">,</span>
-        <span class="na">text</span><span class="p">:</span> <span class="nx">text</span>
-    <span class="p">};</span>
-<span class="p">}</span>
-
-</code></pre></div>
-<p>相应的，redux提倡用使用简单函数(又称作reducer)处理action，如下为EDIT_TODO的处理逻辑：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">module</span><span class="p">.</span><span class="nx">todo</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">state</span><span class="p">,</span> <span class="nx">action</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">state</span> <span class="o">=</span> <span class="nx">state</span> <span class="o">||</span> <span class="p">[];</span>
-    <span class="k">switch</span> <span class="p">(</span><span class="nx">action</span><span class="p">.</span><span class="nx">type</span><span class="p">)</span> <span class="p">{</span>
-
-        <span class="k">case</span> <span class="nx">types</span><span class="p">.</span><span class="nx">EDIT_TODO</span><span class="err">:</span>
-            <span class="k">return</span> <span class="nx">state</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">todo</span><span class="p">)</span> <span class="p">{</span>
-                <span class="k">return</span> <span class="nx">todo</span><span class="p">.</span><span class="nx">id</span> <span class="o">===</span> <span class="nx">action</span><span class="p">.</span><span class="nx">id</span> <span class="p">?</span>
-                    <span class="nx">assign</span><span class="p">({},</span> <span class="nx">todo</span><span class="p">,</span> <span class="p">{</span> <span class="na">text</span><span class="p">:</span> <span class="nx">action</span><span class="p">.</span><span class="nx">text</span> <span class="p">})</span> <span class="p">:</span>
-                    <span class="nx">todo</span>
-            <span class="p">});</span>
-
-        <span class="nl">default</span><span class="p">:</span>
-            <span class="k">return</span> <span class="nx">state</span><span class="p">;</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-</code></pre></div>
-<p>每一个action处理函数都是将action作用在old state上，从而产生new state。state、action、reducer太零散，通过createStore可以将它统一在store中，而store则代表了整个应用的逻辑。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">var store = createStore(reducer);
-</code></pre></div>
-<h4 id="2-ui">(2) UI层设计</h4>
-
-<p>本案例采用react作为UI层的组件化方案，在这里不再详述。需要注意的是为了配合redux，在写react组件时，我们需要对组件类别进行划分，将其划分为<a href="https://medium.com/@dan_abramov/smart-and-dumb-components-7ca2f9a7c7d0">展示型组件和容器型组件</a>。redux只需要和容器型组件通信，而不用管理展示型组件。用一个表格可以很好的说明它们和区别：</p>
-
-<table><thead>
-<tr>
-<th></th>
-<th style="text-align: center">展示型组件</th>
-<th style="text-align: right">容器型组件</th>
-</tr>
-</thead><tbody>
-<tr>
-<td>组件设计目标</td>
-<td style="text-align: center">纯粹的UI(标签、样式)</td>
-<td style="text-align: right">管理页面逻辑，和展示型组件</td>
-</tr>
-<tr>
-<td>对redux是否可见</td>
-<td style="text-align: center">不可见</td>
-<td style="text-align: right">可见</td>
-</tr>
-<tr>
-<td>数据来源</td>
-<td style="text-align: center">从props中读取数据</td>
-<td style="text-align: right">通过redux的state获取数据</td>
-</tr>
-<tr>
-<td>改变数据的方式</td>
-<td style="text-align: center">调用通过props获取的回调函数</td>
-<td style="text-align: right">派发redux的actions</td>
-</tr>
-<tr>
-<td>组件生成方式</td>
-<td style="text-align: center">手动写组件</td>
-<td style="text-align: right">通过react redux动态生成</td>
-</tr>
-</tbody></table>
-
-<h4 id="3-ui">(3) 组合逻辑层与UI层</h4>
-
-<p>上文提到，redux只关注react的容器型组件，而且容器型组件可以由react-redux动态生成，以防止state注入容器型组件时的硬编码。比如我们使用如下代码将应用状态注入一个容器型组件TodoApp中：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">App</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">createClass</span><span class="p">({</span>
-    <span class="na">render</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="o">&lt;</span><span class="nx">Provider</span> <span class="nx">store</span><span class="o">=</span><span class="p">{</span><span class="nx">store</span><span class="p">}</span><span class="o">&gt;</span>
-                <span class="p">{</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="o">&lt;</span><span class="nx">TodoApp</span> <span class="o">/&gt;</span><span class="p">;</span> <span class="p">}}</span>
-            <span class="o">&lt;</span><span class="sr">/Provider</span><span class="err">&gt;
-</span>        <span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">});</span>
-
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">App</span><span class="p">;</span>
-</code></pre></div>
-<p>上述代码通过Provider将store注入容器型组件TodoApp中。在TodoApp组件中，我们可以通过<code>this.props</code>来获取store中存储的应用状态了：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">TodoApp</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">createClass</span><span class="p">({</span>
-    <span class="na">render</span><span class="p">:</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">todos</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">todos</span><span class="p">;</span>
-        <span class="kd">var</span> <span class="nx">filter</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">filter</span><span class="p">;</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
-                <span class="p">......</span>
-            <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
-</span>        <span class="p">);</span>
-    <span class="p">},</span>
-<span class="p">});</span>
-<span class="kd">function</span> <span class="nx">mapStateToProps</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">state</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">mapStateToProps</span><span class="p">)(</span><span class="nx">TodoApp</span><span class="p">);</span>
-</code></pre></div>
-<p>其中connect函数用于动态的创建容器型组件。借助于Provider和容器型组件，我们就将应用的逻辑层和UI层组合在一起了。</p>
-
-<h3 id="4-2">4.2 高级特性</h3>
-
-<p>了解了react和redux结合的基本思路以后，让我们一起看一看redux的高级特性。</p>
-
-<h4 id="1">(1) 状态树分治</h4>
-
-<p>redux提倡用一个对象存储整个应用的状态，而复杂应用的状态对象是很大的，这样会不会有性能问题？各个容器型组件都对整个应用状态对象进行操作，会不会引起混乱？对此redux有充分的考虑。首选在逻辑层设计时，我们就应该充分的考虑到状态树的分治，比如在设计action的处理函数(reducer)时，针对状态树的不同部分，将其对应的actions处理函数存储在不同的文件中，redux通过combineReducers对此提供了支持。比如</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">todos</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'../reducers/todos'</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">filter</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'../reducers/filter'</span><span class="p">);</span>
-<span class="nx">combineReducers</span><span class="p">({</span><span class="na">filter</span><span class="p">:</span> <span class="nx">filter</span><span class="p">,</span> <span class="na">todos</span><span class="p">:</span> <span class="nx">todos</span><span class="p">});</span>
-</code></pre></div>
-<p>其次，在UI层我们也可以很方便的只将部分状态树注入某个容器型组件,redux在使用connect生成容器型组件时，接收一个函数(mapStateToProps)作为参数，该函数可以只返回整个状态树的部分状态，因此，connect生成的容器型组件也就只能感知到部分状态树。这种方式，避免了应用状态树过大的混乱，通过分治降低了复杂度。如下代码，创建了一个只关注整个状态树中state.todos的容器型组件:</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">TodoApp</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">createClass</span><span class="p">({</span>
-    <span class="na">render</span><span class="p">:</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">todos</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">todos</span><span class="p">;</span>
-        <span class="k">return</span> <span class="p">(</span>
-            <span class="o">&lt;</span><span class="nx">div</span><span class="o">&gt;</span>
-                <span class="p">......</span>
-            <span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
-</span>        <span class="p">);</span>
-    <span class="p">},</span>
-<span class="p">});</span>
-
-<span class="kd">function</span> <span class="nx">mapStateToProps</span><span class="p">(</span><span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">state</span><span class="p">.</span><span class="nx">todos</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="nx">connect</span><span class="p">(</span><span class="nx">mapStateToProps</span><span class="p">)(</span><span class="nx">TodoApp</span><span class="p">);</span>
-
-</code></pre></div>
-<h4 id="2-action">(2) 异步action</h4>
-
-<p>一般来说，异步action并不能算是高级特性，因为它太常见了。比如发送一个网络请求，这是再寻常不过的需求了。只是用redux触发异步action并不是那么直接。我们需要首先了解redux的中间件概念，它可以用于在action被触发和action到达处理函数reducer之前，对action进行处理。</p>
-
-<p><img src="/images/redux-middleware.png" alt="Alt text"></p>
-
-<p>可以在创建store时，通过applyMiddleware函数提供redux的中间件：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">createStore</span><span class="p">(</span> <span class="nx">todosApp</span><span class="p">,</span><span class="nx">applyMiddleware</span><span class="p">(</span><span class="nx">someMiddleWare</span><span class="p">))</span>
-</code></pre></div>
-<p>一个典型的redux中间件是<a href="https://github.com/evgenyrodionov/redux-logger">redux-logger</a>，它在控制台中记录每一次action作用前后的应用状态变化，非常适合在开发阶段进行调试。</p>
-
-<p><img src="/images/redux-logger.png" alt="Alt text"></p>
-
-<p>redux官方提供了<code>thunkMiddleware</code>的中间件，用于处理异步action，它使得redux可以派发一个函数而不是一个普通action对象，在该函数中我们可以进行异步网络请求：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">fetchTodos</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">dispatch</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">fetch</span><span class="p">(</span><span class="s1">'/todos'</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>我们可以使用dispach函数像派发普通action一样，派发异步函数，异步函数的返回值还可以是Promise，其返回值会透传过dispch函数。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">dispach</span><span class="p">(</span><span class="nx">fetchTodos</span><span class="p">)</span>
-  <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">json</span><span class="p">){</span>
-      <span class="c1">//handle response</span>
-  <span class="p">})</span>
-  <span class="p">.</span><span class="k">catch</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">){</span>
-      <span class="c1">//handle error</span>
-  <span class="p">});</span>
-</code></pre></div>
-<p>通过网络加载数据，并在数据到达时更新应用状态是一种比较常见的应用场景，对于这种场景，一种最优雅的方案：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1. 派发异步函数，用于进行网络请求
-2. 在网络请求完成时，派发同步action用于更新应用状态
-</code></pre></div>
-<p>可以用如下代码表示：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">fetchTodos</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">dispatch</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">fetch</span><span class="p">(</span><span class="s1">'/todos'</span><span class="p">)</span>
-            <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">json</span><span class="p">)</span> <span class="p">{</span>
-                <span class="c1">//派发同步aciton，用于更新应用状态，初始化todo列表</span>
-                <span class="nx">dispatch</span><span class="p">(</span><span class="nx">initTodos</span><span class="p">(</span><span class="nx">json</span><span class="p">.</span><span class="nx">data</span> <span class="o">||</span> <span class="p">[]));</span>
-            <span class="p">}).</span><span class="k">catch</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-                <span class="c1">//派发同步action，用于更新应用状态，设置加载失败标志</span>
-                <span class="nx">dispatch</span><span class="p">(</span><span class="nx">failLoadedTodos</span><span class="p">());</span>
-            <span class="p">});</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</code></pre></div>
-<h4 id="3">(3) 同构渲染</h4>
-
-<p>前后端同构，应用首屏由后端直出是近年来比较流行的性能优化方案，redux对此也有完善的支持。基本流程是：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1. 服务端初始化state
-2. 将服务端state传递到应用的页面端
-3. 页面端用服务端传递的状态初始化应用state
-</code></pre></div>
-<p>在遵从这个基本流程的情况下，服务端和页面端的使用方法开发方法基本一致，如下是服务端代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="nx">store</span><span class="p">.</span><span class="nx">dispatch</span><span class="p">(</span><span class="nx">todoActions</span><span class="p">.</span><span class="nx">loadInitTodos</span><span class="p">()).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">contentHtml</span> <span class="o">=</span> <span class="nx">React</span><span class="p">.</span><span class="nx">renderToString</span><span class="p">(</span>
-            <span class="o">&lt;</span><span class="nx">Provider</span> <span class="nx">store</span><span class="o">=</span><span class="p">{</span><span class="nx">store</span><span class="p">}</span><span class="o">&gt;</span>
-                <span class="p">{</span><span class="kd">function</span> <span class="p">()</span> <span class="p">{</span>
-                    <span class="k">return</span> <span class="o">&lt;</span><span class="nx">TodoApp</span> <span class="o">/&gt;</span><span class="p">;</span>
-                <span class="p">}}</span>
-            <span class="o">&lt;</span><span class="sr">/Provider</span><span class="err">&gt;
-</span>        <span class="p">);</span>
-        <span class="kd">var</span> <span class="nx">initialState</span> <span class="o">=</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">store</span><span class="p">.</span><span class="nx">getState</span><span class="p">());</span>
-        <span class="nx">res</span><span class="p">.</span><span class="nx">render</span><span class="p">(</span><span class="s1">'index.ejs'</span><span class="p">,</span> <span class="p">{</span><span class="na">contentHtml</span><span class="p">:</span> <span class="nx">contentHtml</span><span class="p">,</span> <span class="na">initialState</span><span class="p">:</span> <span class="nx">initialState</span><span class="p">});</span>
-    <span class="p">}).</span><span class="k">catch</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">){</span>
-        <span class="nx">res</span><span class="p">.</span><span class="nx">json</span><span class="p">({</span><span class="na">errMsg</span><span class="p">:</span> <span class="s1">'internal error'</span><span class="p">})</span>
-    <span class="p">});</span>
-</code></pre></div>
-<p>上述服务端代码通过派发初始化异步函数更新应用状态，该异步函数返回一个Promise，Promise对象会透传过dispach函数。在Promise处理完成后，我们得到应用的最新状态。最后我们将由React输出的HTML字符串contentHtml和初始化应用状态initialState，传递到模板文件index.ejs中，模板文件如下：</p>
-<div class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;html&gt;</span>
-  <span class="nt">&lt;head&gt;</span>
-    <span class="nt">&lt;title&gt;</span>Redux TodoMVC<span class="nt">&lt;/title&gt;</span>
-  <span class="nt">&lt;/head&gt;</span>
-  <span class="nt">&lt;body&gt;</span>
-    <span class="nt">&lt;div</span> <span class="na">class=</span><span class="s">"todoapp"</span> <span class="na">id=</span><span class="s">"root"</span><span class="nt">&gt;</span><span class="err">&lt;</span>%-contentHtml%&gt;<span class="nt">&lt;/div&gt;</span>
-  <span class="nt">&lt;/body&gt;</span>
-  <span class="nt">&lt;script&gt;</span>
-    <span class="nb">window</span><span class="p">.</span><span class="nx">__INITIAL_STATE__</span> <span class="o">=</span>  <span class="o">&lt;%-</span><span class="nx">initialState</span><span class="o">%&gt;</span><span class="p">;</span>
-  <span class="nt">&lt;/script&gt;</span>
-<span class="nt">&lt;/html&gt;</span>
-</code></pre></div>
-<p>通过浏览器的window对象，我们将服务端的初始状态传递到了页面端。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">todosApp</span> <span class="o">=</span> <span class="nx">combineReducers</span><span class="p">({</span><span class="na">filter</span><span class="p">:</span> <span class="nx">filter</span><span class="p">,</span> <span class="na">todos</span><span class="p">:</span> <span class="nx">todos</span><span class="p">});</span>
-<span class="kd">var</span> <span class="nx">store</span> <span class="o">=</span> <span class="nx">createStore</span><span class="p">(</span>  <span class="nx">todosApp</span><span class="p">,</span>
-                          <span class="nb">window</span><span class="p">.</span><span class="nx">__INITIAL_STATE__</span><span class="p">,</span>
-                          <span class="nx">applyMiddleware</span><span class="p">(</span><span class="nx">thunkMiddleware</span><span class="p">,</span> <span class="nx">reduxLogger</span><span class="p">())</span>
-                        <span class="p">);</span>
-</code></pre></div>
-<p>本文案例源代码：
-<a href="https://github.com/foio/react-redux-isomorphic-todolist">https://github.com/foio/react-redux-isomorphic-todolist</a></p>
-
-<p>参考文献：
-<a href="http://redux.js.org/">http://redux.js.org/</a></p>
-
-<p><a href="https://facebook.github.io/flux/docs/overview.html">https://facebook.github.io/flux/docs/overview.html</a></p>
-
-<p><a href="https://github.com/gaearon/redux-devtools">https://github.com/gaearon/redux-devtools</a></p>
-
-<p><a href="https://github.com/foio/react-redux-isomorphic-todolist">https://github.com/foio/react-redux-isomorphic-todolist</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -959,18 +838,6 @@ td, table {
       <li>
         
           <a href="/page28">28</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page29">29</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page30">30</a>
         
       </li>
     

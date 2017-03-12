@@ -119,97 +119,150 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-10-19T00:00:00+08:00"><a href="/php-hash/">October 19, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <span class="entry-date date published updated"><time datetime="2014-10-05T00:00:00+08:00"><a href="/php-internal-function/">October 05, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
     
-      <h1 class="entry-title"><a href="/php-hash/" rel="bookmark" title="理解PHP的Hash冲突漏洞" itemprop="url">理解PHP的Hash冲突漏洞</a></h1>
+      <h1 class="entry-title"><a href="/php-internal-function/" rel="bookmark" title="php内核之函数执行过程" itemprop="url">php内核之函数执行过程</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>Hash表对PHP的重要性是每个phper都非常清楚地。但是PHP却有一个与Hash表相关的致命漏洞，我们完全可以通过PHP的Hash冲突漏洞进行DDoS攻击，可以轻易的搞挂一台服务器。那么是什么导致PHP的Hash冲突呢？如何构造Hash冲突？</p>
+    <p>在php内核中，用户定义函数使用下面的结构体表示：</p>
 
-<h3 id="1-php-hashtab">1. PHP的Hashtab实现方式</h3>
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">union</span> <span class="n">_zend_function</span> <span class="p">{</span>
+    <span class="n">zend_uchar</span> <span class="n">type</span><span class="p">;</span>    
+    <span class="k">struct</span> <span class="p">{</span>
+        <span class="n">zend_uchar</span> <span class="n">type</span><span class="p">;</span>  <span class="cm">/* never used */</span>
+        <span class="kt">char</span> <span class="o">*</span><span class="n">function_name</span><span class="p">;</span>    <span class="c1">//函数名称
+</span>        <span class="n">zend_class_entry</span> <span class="o">*</span><span class="n">scope</span><span class="p">;</span> <span class="c1">//函数所在的类作用域
+</span>        <span class="n">zend_uint</span> <span class="n">fn_flags</span><span class="p">;</span>     <span class="c1">// 作为方法时的访问类型等，如ZEND_ACC_STATIC等  
+</span>        <span class="k">union</span> <span class="n">_zend_function</span> <span class="o">*</span><span class="n">prototype</span><span class="p">;</span> <span class="c1">//函数原型
+</span>        <span class="n">zend_uint</span> <span class="n">num_args</span><span class="p">;</span>     <span class="c1">//参数数目
+</span>        <span class="n">zend_uint</span> <span class="n">required_num_args</span><span class="p">;</span> <span class="c1">//需要的参数数目
+</span>        <span class="n">zend_arg_info</span> <span class="o">*</span><span class="n">arg_info</span><span class="p">;</span>  <span class="c1">//参数信息指针
+</span>        <span class="n">zend_bool</span> <span class="n">pass_rest_by_reference</span><span class="p">;</span>
+        <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">return_reference</span><span class="p">;</span>  <span class="c1">//返回值 
+</span>    <span class="p">}</span> <span class="n">common</span><span class="p">;</span> 
+    <span class="n">zend_op_array</span> <span class="n">op_array</span><span class="p">;</span>   <span class="c1">//函数中的操作
+</span>    <span class="n">zend_internal_function</span> <span class="n">internal_function</span><span class="p">;</span>  
+<span class="p">}</span> <span class="n">zend_function</span><span class="p">;</span></code></pre></figure>
 
-<p>PHP中的哈希表实现在源代码的Zend/zend_hash.c中，Zend/zend_hash.h中描述了Hashtab的结构体，从中我们可以大概了解Hashtab的实现机制。</p>
+<p>在结构体_zend_function中，最重要的字段就是op_array了，一个函数的执行过程，就是顺序地执行该opcode数组中的opcode。每一个opcode对应一组C函数。opcode和C函数的对应关系在zend_vm_execute.h的<code>zend_vm_get_opcode_handler</code>中设置，</p>
 
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">typedef</span> <span class="k">struct</span> <span class="n">_hashtable</span> <span class="p">{</span> 
-    <span class="n">uint</span> <span class="n">nTableSize</span><span class="p">;</span>        <span class="c1">// hash Bucket的大小，最小为8，以2x增长。
-</span>    <span class="n">uint</span> <span class="n">nTableMask</span><span class="p">;</span>        <span class="c1">// nTableSize-1 ， 索引取值的优化
-</span>    <span class="n">uint</span> <span class="n">nNumOfElements</span><span class="p">;</span>    <span class="c1">// hash Bucket中当前存在的元素个数，count()函数会直接返回此值 
-</span>    <span class="n">ulong</span> <span class="n">nNextFreeElement</span><span class="p">;</span> <span class="c1">// 下一个数字索引的位置
-</span>    <span class="n">Bucket</span> <span class="o">*</span><span class="n">pInternalPointer</span><span class="p">;</span>   <span class="c1">// 当前遍历的指针（foreach比for快的原因之一）
-</span>    <span class="n">Bucket</span> <span class="o">*</span><span class="n">pListHead</span><span class="p">;</span>          <span class="c1">// 存储数组头元素指针
-</span>    <span class="n">Bucket</span> <span class="o">*</span><span class="n">pListTail</span><span class="p">;</span>          <span class="c1">// 存储数组尾元素指针
-</span>    <span class="n">Bucket</span> <span class="o">**</span><span class="n">arBuckets</span><span class="p">;</span>         <span class="c1">// 存储hash数组
-</span>    <span class="n">dtor_func_t</span> <span class="n">pDestructor</span><span class="p">;</span>    <span class="c1">// 在删除元素时执行的回调函数，用于资源的释放
-</span>    <span class="n">zend_bool</span> <span class="n">persistent</span><span class="p">;</span>       <span class="c1">//指出了Bucket内存分配的方式。如果persisient为TRUE，则使用操作系统本身的内存分配函数为Bucket分配内存，否则使用PHP的内存分配函数。
-</span>    <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">nApplyCount</span><span class="p">;</span> <span class="c1">// 标记当前hash Bucket被递归访问的次数（防止多次递归）
-</span>    <span class="n">zend_bool</span> <span class="n">bApplyProtection</span><span class="p">;</span><span class="c1">// 标记当前hash桶允许不允许多次访问，不允许时，最多只能递归3次
-</span><span class="cp">#if ZEND_DEBUG
-</span>    <span class="kt">int</span> <span class="n">inconsistent</span><span class="p">;</span>
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="n">opcode_handler_t</span> <span class="nf">zend_vm_get_opcode_handler</span><span class="p">(</span><span class="n">zend_uchar</span> <span class="n">opcode</span><span class="p">,</span> <span class="n">zend_op</span><span class="o">*</span> <span class="n">op</span><span class="p">)</span>
+<span class="p">{</span>
+        <span class="k">static</span> <span class="k">const</span> <span class="kt">int</span> <span class="n">zend_vm_decode</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 0              */</span>
+            <span class="n">_CONST_CODE</span><span class="p">,</span>  <span class="cm">/* 1 = IS_CONST   */</span>
+            <span class="n">_TMP_CODE</span><span class="p">,</span>    <span class="cm">/* 2 = IS_TMP_VAR */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 3              */</span>
+            <span class="n">_VAR_CODE</span><span class="p">,</span>    <span class="cm">/* 4 = IS_VAR     */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 5              */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 6              */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 7              */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 8 = IS_UNUSED  */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 9              */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 10             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 11             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 12             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 13             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 14             */</span>
+            <span class="n">_UNUSED_CODE</span><span class="p">,</span> <span class="cm">/* 15             */</span>
+            <span class="n">_CV_CODE</span>      <span class="cm">/* 16 = IS_CV     */</span>
+        <span class="p">};</span>
+        <span class="k">return</span> <span class="n">zend_opcode_handlers</span><span class="p">[</span><span class="n">opcode</span> <span class="o">*</span> <span class="mi">25</span> 
+                <span class="o">+</span> <span class="n">zend_vm_decode</span><span class="p">[</span><span class="n">op</span><span class="o">-&gt;</span><span class="n">op1</span><span class="p">.</span><span class="n">op_type</span><span class="p">]</span> <span class="o">*</span> <span class="mi">5</span> 
+                <span class="o">+</span> <span class="n">zend_vm_decode</span><span class="p">[</span><span class="n">op</span><span class="o">-&gt;</span><span class="n">op2</span><span class="p">.</span><span class="n">op_type</span><span class="p">]];</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>从<code>zend_vm_get_opcode_handler</code>中我们可以看出，操作码和操作数的类型共同决定了对应的C函数。每一个操作码最多对应25个C函数，php5.4的全部159个操作码对应的C函数在zend_vm_execute.h的的第36585行到第40560行。</p>
+
+<p>了解了操作码数组相关知识后，让我们来看看php内核是如何执行一个用户定义函数的。</p>
+
+<p>函数调用对应的C函数为ZEND_DO_FCALL_BY_NAME_SPEC_HANDLER，而最终的实现在zend_do_fcall_common_helper_SPEC中。zend_do_fcall_common_helper_SPEC主要对全局执行结构体_zend_executor_globals进行相应的设置，比如设置当前执行的操作码数组等，然后执行op_array。相关代码片段如下：</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">EX</span><span class="p">(</span><span class="n">original_return_value</span><span class="p">)</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">);</span>
+<span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="c1">//设置_zend_executor_globals结构体的active_op_array为当前函数的op_array
+</span><span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">fbc</span><span class="o">-&gt;</span><span class="n">op_array</span><span class="p">;</span>
+<span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="n">RETURN_VALUE_USED</span><span class="p">(</span><span class="n">opline</span><span class="p">))</span> <span class="p">{</span>
+    <span class="n">temp_variable</span> <span class="o">*</span><span class="n">ret</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">EX_T</span><span class="p">(</span><span class="n">opline</span><span class="o">-&gt;</span><span class="n">result</span><span class="p">.</span><span class="n">var</span><span class="p">);</span>
+    <span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">ptr</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">ptr</span><span class="p">;</span>
+    <span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">ptr_ptr</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">ptr</span><span class="p">;</span>
+    <span class="n">ret</span><span class="o">-&gt;</span><span class="n">var</span><span class="p">.</span><span class="n">fcall_returned_reference</span> <span class="o">=</span> <span class="p">(</span><span class="n">fbc</span><span class="o">-&gt;</span><span class="n">common</span><span class="p">.</span><span class="n">fn_flags</span> <span class="o">&amp;</span> <span class="n">ZEND_ACC_RETURN_REFERENCE</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="c1">//如果已经设置zend_execute == execute这返回2，否则调用zend_execute执行当前函数的op_array
+</span><span class="k">if</span> <span class="p">(</span><span class="n">EXPECTED</span><span class="p">(</span><span class="n">zend_execute</span> <span class="o">==</span> <span class="n">execute</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">EXPECTED</span><span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">exception</span><span class="p">)</span> <span class="o">==</span> <span class="nb">NULL</span><span class="p">))</span> <span class="p">{</span>
+        <span class="n">ZEND_VM_ENTER</span><span class="p">();</span>
+    <span class="p">}</span> 
+<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="n">zend_execute</span><span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+<span class="p">}</span> </code></pre></figure>
+
+<p>执行op_array的execute函数的函数定义在zend_vm_execute.h中。execute首先为op_array对应的函数在内核函数调用栈中分配一个新的栈帧。然后初始化相关的执行数据。</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="nl">zend_vm_enter:</span>
+    <span class="c1">//为当前函数分配栈帧
+</span>    <span class="n">execute_data</span> <span class="o">=</span> <span class="p">(</span><span class="n">zend_execute_data</span> <span class="o">*</span><span class="p">)</span><span class="n">zend_vm_stack_alloc</span><span class="p">(</span>
+        <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">zend_execute_data</span><span class="p">))</span> <span class="o">+</span>
+        <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">zval</span><span class="o">**</span><span class="p">)</span> <span class="o">*</span> <span class="n">op_array</span><span class="o">-&gt;</span><span class="n">last_var</span> <span class="o">*</span> <span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">)</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="mi">2</span><span class="p">))</span> <span class="o">+</span>
+        <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">temp_variable</span><span class="p">))</span> <span class="o">*</span> <span class="n">op_array</span><span class="o">-&gt;</span><span class="n">T</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+     <span class="c1">//初始化执行数据
+</span>    <span class="n">EX</span><span class="p">(</span><span class="n">CVs</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">zval</span><span class="o">***</span><span class="p">)((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">execute_data</span> <span class="o">+</span> <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">zend_execute_data</span><span class="p">)));</span>
+    <span class="n">memset</span><span class="p">(</span><span class="n">EX</span><span class="p">(</span><span class="n">CVs</span><span class="p">),</span> <span class="mi">0</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">zval</span><span class="o">**</span><span class="p">)</span> <span class="o">*</span> <span class="n">op_array</span><span class="o">-&gt;</span><span class="n">last_var</span><span class="p">);</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">Ts</span><span class="p">)</span> <span class="o">=</span> <span class="p">(</span><span class="n">temp_variable</span> <span class="o">*</span><span class="p">)(((</span><span class="kt">char</span><span class="o">*</span><span class="p">)</span><span class="n">EX</span><span class="p">(</span><span class="n">CVs</span><span class="p">))</span> <span class="o">+</span> <span class="n">ZEND_MM_ALIGNED_SIZE</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">zval</span><span class="o">**</span><span class="p">)</span> <span class="o">*</span> <span class="n">op_array</span><span class="o">-&gt;</span><span class="n">last_var</span> <span class="o">*</span>
+<span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">)</span> <span class="o">?</span> <span class="mi">1</span> <span class="o">:</span> <span class="mi">2</span><span class="p">)));</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">fbc</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">called_scope</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">object</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">old_error_reporting</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">op_array</span><span class="p">)</span> <span class="o">=</span> <span class="n">op_array</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">symbol_table</span><span class="p">)</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">);</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">prev_execute_data</span><span class="p">)</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">current_execute_data</span><span class="p">);</span>
+    <span class="n">EG</span><span class="p">(</span><span class="n">current_execute_data</span><span class="p">)</span> <span class="o">=</span> <span class="n">execute_data</span><span class="p">;</span>
+    <span class="n">EX</span><span class="p">(</span><span class="n">nested</span><span class="p">)</span> <span class="o">=</span> <span class="n">nested</span><span class="p">;</span></code></pre></figure>
+
+<p>完成上述初始化工作后，将在一个while循环中执行当前op_array的每一个opcode。</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c">    <span class="k">while</span> <span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">ret</span><span class="p">;</span>
+<span class="cp">#ifdef ZEND_WIN32
+</span>        <span class="k">if</span> <span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">timed_out</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">zend_timeout</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+        <span class="p">}</span>
 <span class="cp">#endif
-</span><span class="p">}</span> <span class="n">HashTable</span><span class="p">;</span></code></pre></figure>
+</span>        <span class="k">if</span> <span class="p">((</span><span class="n">ret</span> <span class="o">=</span> <span class="n">OPLINE</span><span class="o">-&gt;</span><span class="n">handler</span><span class="p">(</span><span class="n">execute_data</span> <span class="n">TSRMLS_CC</span><span class="p">))</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">switch</span> <span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">case</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">EG</span><span class="p">(</span><span class="n">in_execution</span><span class="p">)</span> <span class="o">=</span> <span class="n">original_in_execution</span><span class="p">;</span>
+                    <span class="k">return</span><span class="p">;</span>
+                <span class="k">case</span> <span class="mi">2</span><span class="p">:</span>
+                    <span class="n">op_array</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">);</span>
+                    <span class="k">goto</span> <span class="n">zend_vm_enter</span><span class="p">;</span>
+                <span class="k">case</span> <span class="mi">3</span><span class="p">:</span>
+                    <span class="n">execute_data</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">current_execute_data</span><span class="p">);</span>
+                <span class="k">default</span><span class="o">:</span>
+                    <span class="k">break</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
 
-<p>从结构体_hashtable中我们可以看出，PHP内核是使用常用的拉链法实现Hash表的，其中Bucket **arBuckets存储了实际的数据。</p>
+    <span class="p">}</span></code></pre></figure>
 
-<p><img src="http://www.php-internals.com/images/book/chapt03/03-01-02-zend_hashtable.png" alt="php内核hash表数据结构"></p>
+<p>opcode通过<code>OPLINE-&gt;handler(execute_data TSRMLS_CC)</code>执行，一个opcode的执行结果有四种状态，根据四种状态分别执行不同的流程。这里我们主要看状态为2的情况，opcode的执行结构状态为2表示该opcode是一个函数调用操作码，这种情况下，首先替换当前的op_array，<code>op_array = EG(active_op_array)</code>，然后跳转到zend_vm_enter处，为新函数分配堆栈并初始化执行环境。</p>
 
-<p>其实PHP的Hash冲突漏洞就是利用在极端情况下，拉链法的Hashtab会退化为单链表的漏洞。由于Hash函数是公开的，因此经过精心的构造，是可以构造出导致Hash退化为链表的数据的。</p>
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="cp">#define ZEND_VM_CONTINUE()         return 0
+#define ZEND_VM_RETURN()           return 1
+#define ZEND_VM_ENTER()            return 2
+#define ZEND_VM_LEAVE()            return 3</span></code></pre></figure>
 
-<p><img src="http://cms.csdnimg.cn/article/201410/16/543fda7865385.jpg" alt="php hash表退化为单链表"></p>
+<p>我们在execute函数中看到了为函数调用分配堆栈相关的操作，但是为什么没有函数调用完毕后的释放堆栈相关的操作呢？</p>
 
-<h3 id="2-php-hash">2. 本地实现PHP的Hash漏洞攻击</h3>
+<p>php用户定义函数，无论是否有返回值，其对应的op_array都会有RETURN操作码，而RETURN操作码就是负责释放堆栈的。具体的实现在zend_vm_execute.h文件的<code>zend_leave_helper_SPEC</code>函数中,。</p>
 
-<p>在我们使用数组时，PHP内核都是通过把数组内容插入到一个Hash表实现的，但对于关联数组(字符串下标)和索引数组(整数下标)的处理方法是不同的。关联数组使用如下函数将数据添加的Hash表:</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">ZEND_API</span> <span class="kt">int</span> <span class="n">_zend_hash_add_or_update</span><span class="p">(</span><span class="n">HashTable</span> <span class="o">*</span><span class="n">ht</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">arKey</span><span class="p">,</span> <span class="n">uint</span> <span class="n">nKeyLength</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">pData</span><span class="p">,</span> <span class="n">uint</span> <span class="n">nDataSize</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">pDest</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span> <span class="n">ZEND_FILE_LINE_DC</span><span class="p">){</span>
-<span class="p">...</span>
- <span class="n">h</span> <span class="o">=</span> <span class="n">zend_inline_hash_func</span><span class="p">(</span><span class="n">arKey</span><span class="p">,</span> <span class="n">nKeyLength</span><span class="p">);</span><span class="c1">//根据字符串计算Hash值
-</span> <span class="n">nIndex</span> <span class="o">=</span> <span class="n">h</span> <span class="o">&amp;</span> <span class="n">ht</span><span class="o">-&gt;</span><span class="n">nTableMask</span><span class="p">;</span>
-<span class="p">...</span>
-<span class="p">}</span></code></pre></figure>
-
-<p>从上述代码中我们可以看出，关联数组需要使用Hash函数根据字符串计算Hash值。而索引数组却直接使用整数下标作为Hash值：</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">ZEND_API</span> <span class="kt">int</span> <span class="n">_zend_hash_index_update_or_next_insert</span><span class="p">(</span><span class="n">HashTable</span> <span class="o">*</span><span class="n">ht</span><span class="p">,</span> <span class="n">ulong</span> <span class="n">h</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">pData</span><span class="p">,</span> <span class="n">uint</span> <span class="n">nDataSize</span><span class="p">,</span> <span class="kt">void</span> <span class="o">**</span><span class="n">pDest</span><span class="p">,</span> <span class="kt">int</span> <span class="n">flag</span>
-<span class="n">ZEND_FILE_LINE_DC</span><span class="p">){</span>
-<span class="p">...</span>
-<span class="n">nIndex</span> <span class="o">=</span> <span class="n">h</span> <span class="o">&amp;</span> <span class="n">ht</span><span class="o">-&gt;</span><span class="n">nTableMask</span><span class="p">;</span> <span class="c1">//直接使用下标作为hash值
-</span><span class="p">...</span>
-<span class="p">}</span></code></pre></figure>
-
-<p>由于实现较为简单，大部分攻击是通过构造索引数组来实现的，只要使 公式<code>h &amp; ht-&gt;nTableMask</code>得到同样的值即可，其中<code>ht-&gt;nTableMask</code>在<code>zend_hash_init</code>函数中赋值：<code>ht-&gt;nTableMask = ht-&gt;nTableSize - 1</code>。</p>
-
-<p>有了以上基础知识，我们就可以构利用Hash冲突漏洞了。先直接上代码：</p>
-
-<figure class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
- <span class="nv">$size</span> <span class="o">=</span> <span class="nb">pow</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span><span class="mi">16</span><span class="p">);</span>
- <span class="nv">$startTime</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
- <span class="nv">$array</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
- <span class="k">for</span> <span class="p">(</span><span class="nv">$key</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nv">$maxKey</span> <span class="o">=</span> <span class="p">(</span><span class="nv">$size</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">*</span> <span class="nv">$size</span><span class="p">;</span> <span class="nv">$key</span> <span class="o">&lt;=</span> <span class="nv">$maxKey</span><span class="p">;</span> <span class="nv">$key</span> <span class="o">+=</span> <span class="nv">$size</span><span class="p">)</span> <span class="p">{</span>
-         <span class="nv">$array</span><span class="p">[</span><span class="nv">$key</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
- <span class="p">}</span>
- <span class="nv">$endTime</span> <span class="o">=</span> <span class="nb">microtime</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
- <span class="k">echo</span> <span class="nv">$endTime</span> <span class="o">-</span> <span class="nv">$startTime</span> <span class="p">,</span><span class="nx">PHP_EOL</span><span class="p">;</span></code></pre></figure>
-
-<p>这段代码创建了一个包含216 个元素的索引数组，下标依次为:</p>
-
-<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="mi">0</span><span class="p">,</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="p">,</span><span class="mi">2</span><span class="o">*</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="p">,......,</span><span class="n">n</span><span class="o">*</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="p">,......,(</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span><span class="o">*</span><span class="mi">2</span><span class="o">^</span><span class="mi">16</span></code></pre></figure>
-
-<p>这时<code>ht-&gt;nTableMask=2^16-1</code>，转换为二进制就是<code>1111 1111 1111 1111</code>。而以上数组中的任意一个下标h和<code>ht-&gt;nTableMask</code>进行与运算都得0，<code>nIndex = h &amp; ht-&gt;nTableMask = 0</code>。即所有的下标都得到同样的Hash值，这时Hash表就退化为链表了。事实上，这段代码在我的电脑里运行耗时40多秒。多恐怖啊。</p>
-
-<h3 id="3-hash">3.常见的Hash冲突攻击形式</h3>
-
-<blockquote>
-<p>POST攻击： PHP会自动把HTTP包中POST的数据解析成数组$_POST，如果我们构造一个无限大的哈希冲突的值，则可以拖垮服务器。</p>
-</blockquote>
-
-<p>PHP5.3.9以后的版本可以通过php.ini设置GET/POST/COOKIE 的最大输入变量数。默认为1000。但这种方法是无法完全避免攻击的，我们也可以在POST的变量值上做手脚，即反序列化攻击。</p>
-
-<blockquote>
-<p>反序列化攻击： 如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。 到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据</p>
-</blockquote>
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">zend_vm_stack_free</span><span class="p">(</span><span class="n">execute_data</span> <span class="n">TSRMLS_CC</span><span class="p">);</span></code></pre></figure>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -217,38 +270,114 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-10-07T00:00:00+08:00"><a href="/solr-ik/">October 07, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <span class="entry-date date published updated"><time datetime="2014-10-04T00:00:00+08:00"><a href="/docker-tutorial/">October 04, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
     
-      <h1 class="entry-title"><a href="/solr-ik/" rel="bookmark" title="solr4.7配置中文分词器IKAnalyzer踩到的坑" itemprop="url">solr4.7配置中文分词器IKAnalyzer踩到的坑</a></h1>
+      <h1 class="entry-title"><a href="/docker-tutorial/" rel="bookmark" title="docker初探" itemprop="url">docker初探</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>在为solr4.10配置ik-analyzer中文分词器时我参考<a href="http://www.solrcn.com/?tag=ik%E5%88%86%E8%AF%8D%E5%99%A8">这篇文章</a>，
-schema.xml中配置如下：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">&lt;fieldType name="text_ik" class="solr.TextField"
-sortMissingLast="true" omitNorms="true"&gt;
-    &lt;analyzer type="index" isMaxWordLength="false" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
-    &lt;analyzer type="query" isMaxWordLength="true" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
-&lt;/fieldType&gt;
-</code></pre></div>
-<p>但是同样的配置在solr4.7上却无法出现了奇怪的现象。首先在solr4.7的Analyse面板中，中文是可以正确分词的。如下图：
-<figure style="margin:0 auto;width:620px">
-    <img src="/images/solr_ik.jpg"/>
-</figure></p>
+    <p>Docker 是一个开源的应用容器引擎，让开发者可以打包他们的应用以及依赖环境到一个可移植的容器中，然后发布到任何流行的 Linux 机器上。接下来我首先简单的解释一下docker的原理，然后了解一下docker镜像的构建基本操作，最后演示如何运行docker镜像。</p>
 
-<p>但是使用solr4.7搜索时，却只能搜索出完全匹配的结构。查了网络上的很多资料，才发现问题出在fieldType的autogeneratephrasequeries属性上。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">autoGeneratePhraseQueries=true|false (in schema version 1.4 and later this now defaults to false)
-</code></pre></div>
-<p>这个属性只能用于文本域。如果在查询文本分析时产生了多个词元，比如 Wi-Fi 分词为 Wi 和 Fi ，当 autoGeneratePhraseQueries 被设置为true时，这两个词元就构造了一个词组查询，即“ WiFi ”，所以索引中“ WiFi ”必须相邻才能被查询到；而autoGeneratePhraseQueries被设置成false时，他们只是两个不同的搜索词，它们没有位置上的关系。schema的版本小于1.4时，autoGeneratePhraseQueries默认为true，所以我们需要将autoGeneratePhraseQueries设置为false。</p>
+<hr>
 
-<p>所以solr4.7下正确的配置应该是</p>
-<div class="highlight"><pre><code class="language-" data-lang="">&lt;fieldType name="text_ik" class="solr.TextField" sortMissingLast="true"  omitNorms="true" autoGeneratePhraseQueries="false"&gt;
-    &lt;analyzer type="index" isMaxWordLength="false" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
-    &lt;analyzer type="query" isMaxWordLength="true" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
-&lt;/fieldType&gt;
+<h3 id="1">1.原理篇</h3>
+
+<p>Docker可以把应用程序和它所依赖的从操作系统到软件包的环境打包成一个镜像文件。听起来好像一个典型的虚拟机，但是Docker要比虚拟机轻量的多。那么，Docker和一个完全的虚拟机有何区别？Docker是如何做到提供一个完整的文件系统，独立的网络环境等等这些功能，同时还没有如此庞大？</p>
+
+<p>一个功能完整的虚拟机要在宿主机器上重新运行一个Guest Os已达到隔离环境的作用，在Docker的哲学里，这是严重的资源浪费。下图基本上描述了Docker容器和虚拟机的区别。</p>
+
+<p><img src="http://infoqstatic.com/resource/articles/docker-core-technology-preview/zh/resources/0731013.jpg" alt="enter image description here"></p>
+
+<p>Docker核心是一个操作系统级虚拟化方法, 理解起来可能并不像VM那样直观。我们从虚拟化方法的四个方面：隔离性、资源限制性、便携性、安全性来详细介绍Docker的技术细节。</p>
+
+<h4 id="1">(1).隔离性</h4>
+
+<p>传统的vm用一个操作系统实现隔离性，而Docker基于LXC(linux container)实现隔离性。LXC是通过kernel namespace实现隔离性的。简单说就是同一个linux操作系统中可以存在多个不同的命名空间(容器)，不同namesapce中可以存在相同的pid、net、ipc、mnt、uts等。</p>
+
+<h4 id="2">(2).资源限制性</h4>
+
+<p>Docker通过使用cgroups 实现了对资源的配额和度量。 cgroups 的使用非常简单，可实现对单个进程(容器)的资源控制。groups可以限制blkio、cpu、cpuacct、cpuset、devices、freezer、memory、net_cls、ns九大子系统的资源</p>
+
+<h4 id="3">(3).便携性</h4>
+
+<p>Docker通过使用AUFS (AnotherUnionFS)实现便携性。AUFS(AnotherUnionFS) 是一种 Union FS, 简单来说就是支持将不同目录挂载到同一个虚拟文件系统下(unite several directories into a single virtual filesystem)的文件系统,  AUFS 里有一个类似分层的概念, 通过将一个 readonly 的 branch 和一个 writeable 的 branch 联合在一起，就可以实现对 readonly 权限的 branch 进行增量的进行修改(不影响 readonly 部分的)。</p>
+
+<p>在Docker利用 union mount 的方式将一个 readwrite 文件系统挂载在 readonly 的rootfs之上，并且允许再次将下层的 FS(file system) 设定为readonly 并且向上叠加, 这样一组readonly和一个writeable的结构构成一个container的运行时态, 每一个FS被称作一个FS层。如下图:</p>
+
+<p><img src="http://infoqstatic.com/resource/articles/docker-core-technology-preview/zh/resources/0731016.png" alt="enter image description here"></p>
+
+<h4 id="4">(4).安全性</h4>
+
+<p>关于安全性相关文章请参考<a href="http://docs.docker.com/articles/security/">Docker官方文档</a>。</p>
+
+<hr>
+
+<h3 id="2">2.构建镜像</h3>
+
+<p>Docker需要linux kernel 3.8以上，安装过程非常简单，在此不再赘述，详细步骤参考<a href="http://docs.docker.com/installation/ubuntulinux/">官方安装文档</a>。</p>
+
+<p>在Docker中开发者可以打包他们的应用以及依赖环境到一镜像中，并可以在任意docke容器中运行这个镜像。在docker的<a href="https://registry.hub.docker.com/">官方register</a>中，有各种操作系统的镜像，我们可以基于这些镜像构建自己的镜像。构建镜像的有两种方法。</p>
+
+<h4 id="1-dockerfile">(1).通过Dockerfile创建镜像</h4>
+
+<p>Dockerfile基本上是自解释的，从一个基础镜像开始，通过RUN命令在基本镜像上安装环境，然后通过CMD命令指定镜像启动的命令。下面的Dockerfile从ubuntu14.04镜像开始，安装并配置好sshd服务。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">FROM     ubuntu:14.04
+MAINTAINER Thatcher R. Peskens "thatcher@dotcloud.com"
+RUN apt-get update &amp;&amp; apt-get install -y openssh-server
+RUN mkdir /var/run/sshd
+RUN echo 'root:screencast' | chpasswd
+RUN sed -i 's/PermitRootLogin without-password/PermitRootLogin yes/' /etc/ssh/sshd_config
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D"]
 </code></pre></div>
+<p>编辑好Dockerfile后，可以通过docker build命令生成image。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker build -t test_sshd .
+</code></pre></div>
+<p>然后可以通过如下命令查看刚才生成的镜像。运行image的命令请参考docker<a href="http://docs.docker.com/reference/commandline/cli/">官方文档</a>。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker images
+</code></pre></div>
+<h4 id="2-commit">(2).通过commit创建镜像</h4>
+
+<p>我们可以先以交互的方式启动一个操作系统镜像，然后在其中做各种修改，最后通过commit命令提交。具体步骤如下：
+首先通过交互的方式启动一个镜像，这样会进入镜像操作系统shell中：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker run -t -i utuntu
+</code></pre></div>
+<p>然后在镜像操作系统中做各种修改，退出镜像操作系统。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">root@040acbb6c8c:/# exit
+</code></pre></div>
+<p>记下镜像标志：040acbb6c8c，最后通过commit命令提交刚才所做的修改。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker commit -m 'your commit message' -a 'your author info' 040acbb6c8c your-image-name
+</code></pre></div>
+<p>这样一个新的image就生成了。通过以下命令就可以查看刚才生成的镜像了。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker images
+</code></pre></div>
+<hr>
+
+<h3 id="3">3.运行镜像</h3>
+
+<p>镜像的运行还是比较简单的，比如如下命令运行ubuntu镜像并用echo输出hello world。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker run ubuntu echo 'hello world'
+</code></pre></div>
+<p>这条命令使用ubuntu镜像，如果本地docker镜像库中没有ubuntu镜像，会首先从docker的官方register中下载ubuntu镜像。echo输出完成后，改镜像就执行完成并退出了。</p>
+
+<p>如何让一个镜像在docker容器中长期运行呢？比如如下命令启动一个带有sshd服务的镜像，并长期运行。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker run -d ubuntu-sshd /bin/bash -c ‘sshd -D’
+</code></pre></div>
+<p>两个方面保证了该镜像在容器中长期运行，第一是run命令的-d参数，表示容器以detach的方式运行；第二是镜像初始化脚本中sshd的-D参数，-D参数表示sshd以非daemonized，非detach的方式运行。镜像运行后，可以通过</p>
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker ps
+</code></pre></div>
+<p>查看运行的容器实例。并通过</p>
+<div class="highlight"><pre><code class="language-" data-lang="">sudo docker inspect
+</code></pre></div>
+<p>查看容器的ip地址等信息。docker运行image相关的参数有很多，包括容器和宿主机器之间的端口映射等参数，本文都没有涉及，请参考官方手册。</p>
+
+<hr>
+
+<p>关于docker的虚拟化相关讨论问题可参考<a href="http://www.geekbus.cn/docker-core-technology-preview/">这篇文章</a>。</br></p>
+
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
@@ -425,18 +554,6 @@ sortMissingLast="true" omitNorms="true"&gt;
       <li>
         
           <a href="/page28">28</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page29">29</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page30">30</a>
         
       </li>
     

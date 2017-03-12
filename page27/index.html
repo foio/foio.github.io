@@ -119,22 +119,41 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-06-10T00:00:00+08:00"><a href="/mysql-stridx/">June 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <span class="entry-date date published updated"><time datetime="2013-12-01T00:00:00+08:00"><a href="/svn-post/">December 01, 2013</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
     
-      <h1 class="entry-title"><a href="/mysql-stridx/" rel="bookmark" title="mysql字符串索引问题" itemprop="url">mysql字符串索引问题</a></h1>
+      <h1 class="entry-title"><a href="/svn-post/" rel="bookmark" title="svn常用命令" itemprop="url">svn常用命令</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>事情的起因是线上日志发现的mysql慢查询。100万数据量的标准，联合查询全部走索引的情况下，尽然要600多毫秒。很不解，但是将索引列由varchar(50)型改为bigint型后，数据提升了30倍。究其原因就索引树上搜索时要进行大量的比较操作，而字符串的比较比整数的比较耗时的多。</p>
+    <p>发现很多人，包括很多同事对svn的命令只停留在checkout、commit、revert等基本的操作。其实svn还有其他一些更高级的用法，下面是3种最常用的命令。</p>
 
-<p>所以建议一般情况下不要在字符串列建立索引，如果非要使用字符串索引，可以采用以下两种方法：</p>
+<hr>
+
+<h2 id="1-svn">1.查看某个svn模块/文件提交记录</h2>
+<div class="highlight"><pre><code class="language-" data-lang="">基于日期: svn log -r {2012-04-01}:{2012-04-05} Test.java
+基于版本号: svn log -r 1001:1003 Test.java
+</code></pre></div>
+<p>其中<strong>参数-r</strong>后面可以是日期，也可以是svn版本号</p>
+
+<hr>
+
+<h2 id="2-svn">2.比较某个svn模块/文件的各个版本</h2>
+<div class="highlight"><pre><code class="language-" data-lang="">基于版本号: svn diff -r 1001:1003 Test.java
+基于常量: svn diff -r PREV:COMMITTED Test.java
+</code></pre></div>
+<hr>
+
+<h2 id="3-copy">3.将当前工作copy的模块/文件恢复到历史版本</h2>
+<div class="highlight"><pre><code class="language-" data-lang="">基于版本号: svn merge -r 1003:1001 Test.java
+</code></pre></div>
+<p>merge的意思可以简单的理解为<strong>将diff的差异应用到本地工作copy</strong></p>
+
+<hr>
 
 <blockquote>
-<p>1.只是用字符串的最左边n个字符建立索引，推荐n&lt;=10;比如index left(address,8),但是需要知道前缀索引不能在order by中使用，也不能用在索引覆盖上。</p>
-
-<p>2.对字符串使用hash方法将字符串转化为整数，address_key=hashToInt(address)，对address_key建立索引，查询时可以用如下查询where address_key = hashToInt(‘beijing,china’) and address = ‘beijing,china’;</p>
+<p><strong>这里有svn的更多资料</strong>  <a href="http://svndoc.iusesvn.com/svnbook/">click</a>.</p>
 </blockquote>
 
   </div><!-- /.entry-content -->
@@ -143,93 +162,65 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-05-30T00:00:00+08:00"><a href="/firefox-addon/">May 30, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      <span class="entry-date date published updated"><time datetime="2013-09-01T00:00:00+08:00"><a href="/shalemei-post/">September 01, 2013</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
     
-      <h1 class="entry-title"><a href="/firefox-addon/" rel="bookmark" title="firefox扩展开发之Add-ons SDK" itemprop="url">firefox扩展开发之Add-ons SDK</a></h1>
+      <h1 class="entry-title"><a href="/shalemei-post/" rel="bookmark" title="西方文化中的千变莎乐美" itemprop="url">西方文化中的千变莎乐美</a></h1>
     
   </header>
   <div class="entry-content">
-    <p>firefox扩展开发主要有两种模式：</p>
+    <p>莎乐美原型最早见于《圣经·新约》福音书，讲述了施洗约翰之死：</p>
 
 <blockquote>
-<p>1.Add-ons SDK扩展，sdk的特点是简单，适合初级玩家。这种开发方式最快的入门方法就是阅读<a href="https://developer.mozilla.org/en-US/Add-ons/SDK">mozilla的官方文档</a>。</p>
-
-<p>2.bootstrap扩展，这种扩展开发方式从无到有完全手动，需要学习firefox的界面描述语言，适合高级玩家。 可以参考<a href="http://www.ibm.com/developerworks/cn/web/wa-lo-firefox-ext/">IMB developwoker上的一篇入门文章</a></p>
+<p>约翰责难希律王娶兄弟之妻希罗底，此事有悖于《摩西五经》中的婚姻律法。希罗底怀恨在心，挑唆希律王杀约翰以解心头之恨，王心怀不忍。在王的生日宴会上，希罗底之女起舞以娱宾客，王高兴之下答应她可以提出任何条件以为奖赏。不意希罗底之女在母亲授意下竟要求以约翰人头为赏，王不得已而将约翰斩首。</p>
 </blockquote>
 
-<p>本人属于初级玩家，所以本文主要描述使用Add-ons SDK建立一个具有基本功能的扩展。</p>
+<p>该故事意在彰显施洗约翰以身殉教的高尚事迹，而此时的莎乐美不过是《圣经》故事中一个缺乏主体意识的陪衬人物，蒙昧中成为母亲借刀杀人的工具。</p>
 
-<hr>
+<p>福楼拜、拉佛格、王尔德等刻画出多个莎乐美形象。</p>
 
-<h1 id="1">1.环境篇</h1>
+<p>法国作家福楼拜（1821—1880）在短篇小说《希罗底亚》（Herodias，1877）以极富感染力的笔触描绘了莎乐美摄人心魄的舞蹈：<strong>她婆娑起舞，热情四溢，点燃了在场所有男性的情欲之焰</strong>。</p>
 
-<p>下载python2.5、2.6或者2.7，firefox，<a href="https://ftp.mozilla.org/pub/mozilla.org/labs/jetpack/addon-sdk-1.16.zip">Add-ons SDK</a> 。确保python在系统的path中。解压下载的sdk的zip文件，在命令行模式下运行：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">cd add-ons 
-bin\active
-#如果active(主要是初始化一些变量)运行成功，会改变当前的命令行前缀，类似如下:
-(C:\Users\mozilla\sdk\addon-sdk) C:\Users\Work\sdk\addon-sdk&gt;
-#接下来继续在当前命令行测试环境是否ok，运行如下命令
-cfg
-#第一行的输出应该是：Usage: cfx [options] [command]
-</code></pre></div>
-<p>到此为止，扩展开发环境就算ok了。如果遇到问题，请浏览<a href="https://developer.mozilla.org/en-US/Add-ons/SDK/Tutorials/Installation">官方文档</a></p>
+<p>象征主义诗人朱尔斯·拉佛格（Jules Laforgue）在《道德寓言》中说：<strong>“莎乐美不是死于无知，而是死于对精致优雅生活的欲望”</strong>。</p>
 
-<hr>
+<p>英国作家奥斯卡·王尔德在1893年发表了法语独幕剧《莎乐美》，该剧堪称莎乐美形象流变史上的巅峰之作，也曾被视为一度被视为“半异教和半淫秽”的邪魅之作。热烈迷乱的情欲与赤裸冷酷的暴虐交织其中。</p>
 
-<h1 id="2">2.工具篇</h1>
+<figure>
+    <img src="http://sztqb.sznews.com/res/1/641/2010-11/04/C04/res01_attpic_brief.jpg"/>
+    <figcaption>王尔德肖像</figcaption>
+</figure>
 
-<h1 id="1-cfx-init">(1) 用cfx init产生扩展的基本框架</h1>
+<p>莎乐美在视觉艺术领域内的形象与文学作品交互作用，并对后世产生了重要影响。</p>
 
-<p>工欲善其事，必先利其器，好的工具能够大幅度提高开发效率。我要介绍的工具是cfx。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">mkdir my-addon
-cd my-addon 
-cfx init
-* lib directory created
-* data directory created
-* test directory created
-* doc directory created
-* README.md written
-* package.json written
-* test/test-main.js written
-* lib/main.js written
-* doc/main.md written
-Your sample add-on is now ready for testing:
-try "cfx test" and then "cfx run". Have fun!"
-</code></pre></div>
-<hr>
+<p>文艺复兴早期画家贝诺佐·哥佐利（Benozzo Gozzoli）的《莎乐美之舞》描绘了莎乐美的另一种姿态。莎乐美青春年少，衣袂轻扬，为众人起舞，跪捧约翰头颅献给希罗底，她仰视母亲的目光微微上扬，看上去恭敬而柔顺。</p>
 
-<h1 id="2">(2)实现扩展的具体逻辑</h1>
+<figure>
+    <img src="http://img.qkzz.net/images/m/zs/115185-1.jpg"/>
+    <figcaption>莎乐美之舞</figcaption>
+</figure>
 
-<p>扩展的具体逻辑在lib/main.js中。假如我们的想在浏览器的工具栏上实现一个button，点击后在新的tab页面中打开www.baidu.com。具体的逻辑代码如下：</p>
+<p>威尼斯画派色彩大师提香·韦切利奥（Tiziano Vecellio）也多次刻画过莎乐美的形象。画中少女丰腴美丽，栩栩如生，含情斜视手中银盘里约翰头颅，左边男孩的仰视则透露出对莎乐美的倾慕之意，整个画面充满了暧昧的隐喻。</p>
 
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">widgets</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"sdk/widget"</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">tabs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"sdk/tabs"</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">widget</span> <span class="o">=</span> <span class="nx">widgets</span><span class="p">.</span><span class="nx">Widget</span><span class="p">({</span>
-  <span class="na">id</span><span class="p">:</span> <span class="s2">"mozilla-link"</span><span class="p">,</span>
-  <span class="na">label</span><span class="p">:</span> <span class="s2">"Mozilla website"</span><span class="p">,</span>
-  <span class="na">contentURL</span><span class="p">:</span> <span class="nx">require</span><span class="p">(</span><span class="s2">"sdk/self"</span><span class="p">).</span><span class="nx">data</span><span class="p">.</span><span class="nx">url</span><span class="p">(</span><span class="s2">"icon-16.png"</span><span class="p">),</span>
-  <span class="na">onClick</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">tabs</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s2">"http://developer.mozilla.org/"</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="p">});</span></code></pre></figure>
+<figure>
+    <img src="http://img25.artxun.com/sdc/oldimg/3473/347341e36b4995fe7b10c2da37171cd0.jpg"/>
+    <figcaption>莎乐美与约翰首级盘</figcaption>
+</figure>
 
-<p>当然你也可以自定义button的icon，只需要替换data目录下的icon-16.png，icon-32.png，icon-64.png</p>
+<p>法国象征主义画家居斯塔夫·莫罗的《舞中莎乐美》莎乐美成为象征欲念与诱惑的“恶之花”</p>
 
-<hr>
+<figure>
+    <img src="http://img1.cache.netease.com/catchpic/A/A3/A34B360D5096181E7C227C9EA08F58C5.jpg"/>
+    <figcaption>莎乐美与约翰首级盘</figcaption>
+</figure>
 
-<h1 id="3">(3)浏览器中测试</h1>
+<p>英国著名艺术家奥布里·比亚兹莱（Aubrey Beardsley）因为王尔德《莎乐美》绘制了系列插图而闻名于世。在其短暂的26岁生命中，比亚兹莱向我们展示了一个激情与颓废并存一身的莎乐美形象。其一系列的莎乐美相关作品包括，《肚皮舞》，《莎乐美的梳洗室1》，《莎乐美的梳洗室2》，《舞者的报酬》，《莎乐美葬礼》等。</p>
 
-<p>使用cfx run在firefox中测试开发中扩展，cfx run命令会启动firefox并安装该插件。</p>
-
-<hr>
-
-<h1 id="4">(4)打包</h1>
-
-<p>使用cfx xpi打包插件为xpi包。打包后的xpi文件就可以直接使用浏览器安装了。</p>
-
-<hr>
+<figure class="half">
+    <img src="http://ww2.sinaimg.cn/mw600/778ffeefjw1dl44uphrx4j.jpg" alt="肚皮舞">
+    <img src="http://bbscache.artron.net/forum/day_070627/20070627_723c0d48bfd0817c4bddedvpF6FGd4MO.jpg" alt="莎乐美梳洗室">
+    <figcaption>奥布里·比亚兹莱</figcaption>
+</figure>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -407,18 +398,6 @@ try "cfx test" and then "cfx run". Have fun!"
       <li>
         
           <a href="/page28">28</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page29">29</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page30">30</a>
         
       </li>
     

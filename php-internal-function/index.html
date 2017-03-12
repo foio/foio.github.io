@@ -141,7 +141,7 @@ rel="stylesheet" type="text/css" -->
 </span>    <span class="n">zend_internal_function</span> <span class="n">internal_function</span><span class="p">;</span>  
 <span class="p">}</span> <span class="n">zend_function</span><span class="p">;</span></code></pre></figure>
 
-<p>在结构体<em>zend_function中，最重要的字段就是op_array了，一个函数的执行过程，就是顺序地执行该opcode数组中的opcode。每一个opcode对应一组C函数。opcode和C函数的对应关系在zend</em>vm_execute.h的<code>zend_vm_get_opcode_handler</code>中设置，</p>
+<p>在结构体_zend_function中，最重要的字段就是op_array了，一个函数的执行过程，就是顺序地执行该opcode数组中的opcode。每一个opcode对应一组C函数。opcode和C函数的对应关系在zend_vm_execute.h的<code>zend_vm_get_opcode_handler</code>中设置，</p>
 
 <figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="n">opcode_handler_t</span> <span class="nf">zend_vm_get_opcode_handler</span><span class="p">(</span><span class="n">zend_uchar</span> <span class="n">opcode</span><span class="p">,</span> <span class="n">zend_op</span><span class="o">*</span> <span class="n">op</span><span class="p">)</span>
 <span class="p">{</span>
@@ -173,7 +173,7 @@ rel="stylesheet" type="text/css" -->
 
 <p>了解了操作码数组相关知识后，让我们来看看php内核是如何执行一个用户定义函数的。</p>
 
-<p>函数调用对应的C函数为ZEND_DO_FCALL_BY_NAME_SPEC_HANDLER，而最终的实现在zend_do_fcall_common_helper_SPEC中。zend_do_fcall_common_helper_SPEC主要对全局执行结构体<em>zend_executor_globals进行相应的设置，比如设置当前执行的操作码数组等，然后执行op</em>array。相关代码片段如下：</p>
+<p>函数调用对应的C函数为ZEND_DO_FCALL_BY_NAME_SPEC_HANDLER，而最终的实现在zend_do_fcall_common_helper_SPEC中。zend_do_fcall_common_helper_SPEC主要对全局执行结构体_zend_executor_globals进行相应的设置，比如设置当前执行的操作码数组等，然后执行op_array。相关代码片段如下：</p>
 
 <figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="n">EX</span><span class="p">(</span><span class="n">original_return_value</span><span class="p">)</span> <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">);</span>
 <span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">)</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
@@ -278,20 +278,20 @@ rel="stylesheet" type="text/css" -->
           <a href="/docker-tutorial/" class="read-more-btn">Read More</a>
         </div><!-- /.read-more-header -->
         <div class="read-more-content">
-          <h3><a href="/mobx-react/" title="使用mobx开发高性能react应用">使用mobx开发高性能react应用</a></h3>
-          <p>mobx与react性能优化，mobx最佳实践，mobx与redux对比 <a href="/mobx-react/">Continue reading</a></p>
+          <h3><a href="/babel-try-catch/" title="一种生产环境中高效定位JS异常的方案">一种生产环境中高效定位JS异常的方案</a></h3>
+          <p>babel try catch，AST，webpack loader，global try catch <a href="/babel-try-catch/">Continue reading</a></p>
         </div><!-- /.read-more-content -->
       
       <div class="read-more-list">
         
           <div class="list-item">
-            <h4><a href="/wepack-code-spliting/" title="webpack代码分割技巧">webpack代码分割技巧</a></h4>
-            <span>Published on November 18, 2016</span>
+            <h4><a href="/mobx-react/" title="使用mobx开发高性能react应用">使用mobx开发高性能react应用</a></h4>
+            <span>Published on January 02, 2017</span>
           </div><!-- /.list-item -->
         
           <div class="list-item">
-            <h4><a href="/javascript-global-exceptions/" title="捕获页面中全局Javascript异常">捕获页面中全局Javascript异常</a></h4>
-            <span>Published on October 11, 2016</span>
+            <h4><a href="/wepack-code-spliting/" title="webpack代码分割技巧">webpack代码分割技巧</a></h4>
+            <span>Published on November 18, 2016</span>
           </div><!-- /.list-item -->
         
       </div><!-- /.read-more-list -->
