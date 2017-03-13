@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2017-03-12T19:53:52+08:00</updated>
+<updated>2017-03-13T09:33:42+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -49,9 +49,9 @@
 
 &lt;p&gt;在文章&lt;a href=&quot;http://foio.github.io/javascript-global-exceptions/&quot;&gt;捕获页面中全局Javascript异常&lt;/a&gt;中，我们使用的是UglifyJS提供的操作Javascript语法树的API，这套API比较底层，需要发力气才能啃透，不适合初学者使用。babel提供了抽象层次更高的操作语法树的API:&lt;a href=&quot;https://github.com/babel/babylon&quot;&gt;babylon&lt;/a&gt;，并且提供了一系列工具&lt;a href=&quot;https://www.npmjs.com/package/babel-template&quot;&gt;babel-template&lt;/a&gt;、&lt;a href=&quot;https://www.npmjs.com/package/babel-helper-function-name&quot;&gt;babel-helper-function-name&lt;/a&gt;等。&lt;/p&gt;
 
-&lt;p&gt;&lt;img src=&quot;/images//babel-plugin-ast.png&quot; alt=&quot;babel插件转换AST&quot;&gt;&lt;/p&gt;
+&lt;p&gt;在使用Babel对Javascript源文件进行处理时，有三个主要步骤，分别是： 解析（parse），转换（transform），生成（generate）。Babel首先会将源文件转换为抽象语法树(AST)，然后对抽象语法树进行转换，最后由抽象语法树生成新的源代码，如下图所示。在转换（transform）阶段，Babel提供了非常便利的插件机制，开发者可以在插件中实现自己的AST转换。关于如何开发Babel插件，最好的教程就是&lt;a href=&quot;https://github.com/thejameskyle/babel-handbook/blob/master/translations/en/plugin-handbook.md&quot;&gt;官方文档&lt;/a&gt;。&lt;/p&gt;
 
-&lt;p&gt;在使用Babel对Javascript源文件进行处理时，有三个主要步骤，分别是： 解析（parse），转换（transform），生成（generate）。Babel首先会将源文件转换为抽象语法树(AST)，然后对抽象语法树进行转换，最后由抽象语法树生成新的源代码。在转换（transform）阶段，Babel提供了非常便利的插件机制，开发者可以在插件中实现自己的AST转换。关于如何开发Babel插件，最好的教程就是&lt;a href=&quot;https://github.com/thejameskyle/babel-handbook/blob/master/translations/en/plugin-handbook.md&quot;&gt;官方文档&lt;/a&gt;。&lt;/p&gt;
+&lt;p&gt;&lt;img src=&quot;/images//babel-plugin-ast.png&quot; alt=&quot;babel插件转换AST&quot;&gt;&lt;/p&gt;
 
 &lt;p&gt;在对AST的转换阶段，Babel使用babel-traverse对AST进行深度优先遍历，它的插件机制使得我们可以针对某个特定类型的语法树节点（比如，函数、条件语句等）注册钩子函数，从而完成我们对语法树的转换工作。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;  &lt;span class=&quot;nx&quot;&gt;visitor&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
