@@ -308,7 +308,7 @@ rel="stylesheet" type="text/css" -->
             <span class="p">......</span>
         <span class="p">],</span>
 </code></pre></div>
-<p>上文中的配置文件，对测试环境中使用babel-loader；而对生产环境则使用babel-try-catch-loader处理项目中所有源代码，以保证经过后续的混淆、压缩并发布到线上环境的生产代码仍然具有较强的debug能力。详细的配置文件请参考<a href="https://github.com/foio/webpack-try-catch-demo">webpack-try-catch-demo</a>。</p>
+<p>上文中的配置文件，对项目中的所有源代码使用babel-try-catch-loader处理后，再使用babel-loader处理，保证了经过后续的混淆、压缩并发布到线上环境的生产代码仍然具有较强的debug能力。详细的配置文件请参考<a href="https://github.com/foio/webpack-try-catch-demo">webpack-try-catch-demo</a>。</p>
 
       <footer class="entry-meta">
         <span class="entry-tags"><a href="/tags/#babel" title="Pages tagged babel" class="tag">babel</a><a href="/tags/#AST" title="Pages tagged AST" class="tag">AST</a><a href="/tags/#try catch" title="Pages tagged try catch" class="tag">try catch</a></span>
