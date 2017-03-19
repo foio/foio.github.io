@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2017-03-19T17:16:13+08:00</updated>
+<updated>2017-03-19T17:32:09+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -214,7 +214,7 @@
 
 &lt;span class=&quot;nx&quot;&gt;devtool&lt;/span&gt;&lt;span class=&quot;err&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;'source-map'&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
-&lt;p&gt;上文中的配置文件，对项目中的所有源代码使用babel-loader进行转换，然后使用babel-try-catch-loader处理babel-loader产生的代码和source map，保证了经过后续的混淆、压缩并发布到线上环境的生产代码仍然具有较强的debug能力。详细的配置文件请参考&lt;a href=&quot;https://github.com/foio/webpack-try-catch-demo&quot;&gt;webpack-try-catch-demo&lt;/a&gt;。实现原理请参考[babel-try-catch-loader(&lt;a href=&quot;https://github.com/foio/babel_try_catch_loader&quot;&gt;https://github.com/foio/babel_try_catch_loader&lt;/a&gt;).&lt;/p&gt;
+&lt;p&gt;上文中的配置文件，对项目中的所有源代码使用babel-loader进行转换，然后使用babel-try-catch-loader处理babel-loader产生的代码和source map，保证了经过后续的混淆、压缩并发布到线上环境的生产代码仍然具有较强的debug能力。详细的配置文件请参考&lt;a href=&quot;https://github.com/foio/webpack-try-catch-demo&quot;&gt;webpack-try-catch-demo&lt;/a&gt;。实现原理请参考&lt;a href=&quot;https://github.com/foio/babel_try_catch_loader&quot;&gt;babel-try-catch-loader&lt;/a&gt;.&lt;/p&gt;
 
   &lt;p&gt;&lt;a href=&quot;/babel-try-catch/&quot;&gt;一种生产环境中高效定位JS异常的方案&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on February 28, 2017.&lt;/p&gt;</content>
 </entry>
