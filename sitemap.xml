@@ -145,7 +145,15 @@
         <loc>/page28/</loc>
     </url>
     
+    <url>
+        <loc>/page29/</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/service-worker-cache/</loc>
+    </url>
     
     <url>
         <loc>/babel-try-catch/</loc>

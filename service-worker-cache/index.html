@@ -5,25 +5,25 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>积木村の研究所</title>
-<meta name="description" content="this is a tech blog by foio">
-<meta name="keywords" content="tech, blog, modern">
+<title>PWA轻度实践：使用service worker对静态资源进行全缓存 &#8211; 积木村の研究所</title>
+<meta name="description" content="Service Worker，PWA，静态资源缓存">
+<meta name="keywords" content="Service Worker, PWA, 缓存">
 
 
 
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="积木村の研究所">
-<meta property="og:description" content="this is a tech blog by foio">
-<meta property="og:url" content="/">
+<meta property="og:title" content="PWA轻度实践：使用service worker对静态资源进行全缓存">
+<meta property="og:description" content="Service Worker，PWA，静态资源缓存">
+<meta property="og:url" content="/service-worker-cache/">
 <meta property="og:site_name" content="积木村の研究所">
 
 
 
 
 
-<link rel="canonical" href="/">
+<link rel="canonical" href="/service-worker-cache/">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
 
 
@@ -59,9 +59,13 @@ rel="stylesheet" type="text/css" -->
 
 
 
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
 </head>
 
-<body id="post-index" >
+<body id="post" >
 
 <!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
 <nav id="dl-menu" class="dl-menuwrapper" role="navigation">
@@ -103,31 +107,21 @@ rel="stylesheet" type="text/css" -->
 </nav><!-- /.dl-menuwrapper -->
 
 
-<div class="entry-header">
-  
-  
-  <div class="header-title">
-    <div class="header-title-wrap">
-      <h1>积木村の研究所</h1>
-      <h2></h2>
-    </div><!-- /.header-title-wrap -->
-  </div><!-- /.header-title -->
-</div><!-- /.entry-header -->
+
 
 <div id="main" role="main">
-  
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2017-05-01T00:00:00+08:00"><a href="/service-worker-cache/">May 01, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/service-worker-cache/" rel="bookmark" title="PWA轻度实践：使用service worker对静态资源进行全缓存" itemprop="url">PWA轻度实践：使用service worker对静态资源进行全缓存</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>Web应用加载性能的优化， 一直围绕着对静态资源地缓存。实现手段也从最初的<a href="http://foio.github.io/cache-negotiate/">浏览器和服务器缓存协商</a>，到<a href="http://foio.github.io/html5-application-cache/">HTML5离线缓存机制</a>和<a href="http://foio.github.io/localstorage-webview/">使用localstorage缓存js和css</a>。Google提出<a href="https://developers.google.com/web/progressive-web-apps/">PWA(Progress Web Apps)</a>的方案后，更证明了缓存的价值。</p>
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/service-worker-cache/" rel="bookmark" title="PWA轻度实践：使用service worker对静态资源进行全缓存">PWA轻度实践：使用service worker对静态资源进行全缓存</a></h1>
+        
+        <h2>May 01, 2017</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>Web应用加载性能的优化， 一直围绕着对静态资源地缓存。实现手段也从最初的<a href="http://foio.github.io/cache-negotiate/">浏览器和服务器缓存协商</a>，到<a href="http://foio.github.io/html5-application-cache/">HTML5离线缓存机制</a>和<a href="http://foio.github.io/localstorage-webview/">使用localstorage缓存js和css</a>。Google提出<a href="https://developers.google.com/web/progressive-web-apps/">PWA(Progress Web Apps)</a>的方案后，更证明了缓存的价值。</p>
 
 <p>PWA被Google称为下一代web应用技术，对比传统的Web应用技术，其主要有如下特点：借助于Service Worker提供的可编程式缓存，实现更可靠地(不同网络状态下)、速度更快地用户体验；借助于Web App Manifest将Web应用像原生应用一样安装到系统主屏。由于各个浏览器对PWA的兼容实现进度不一，我们暂时无法大规模实施PWA方案；真正应该引起我们注意的是其背后的技术方案：Service Worker。本文我们借助于Service Worker对PWA进行部分实践，将静态资源的缓存技术提升一个维度。</p>
 
@@ -397,401 +391,48 @@ rel="stylesheet" type="text/css" -->
 
 <p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Response/type">https://developer.mozilla.org/en-US/docs/Web/API/Response/type</a></p>
 
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#Service Worker" title="Pages tagged Service Worker" class="tag">Service Worker</a><a href="/tags/#PWA" title="Pages tagged PWA" class="tag">PWA</a><a href="/tags/#缓存" title="Pages tagged 缓存" class="tag">缓存</a></span>
+        <span><a href="/service-worker-cache/" rel="bookmark" title="PWA轻度实践：使用service worker对静态资源进行全缓存">PWA轻度实践：使用service worker对静态资源进行全缓存</a> was published on <span class="entry-date date published updated"><time datetime="2017-05-01T00:00:00+08:00">May 01, 2017</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2017-01-02">01/02/2017</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2017-02-28T00:00:00+08:00"><a href="/babel-try-catch/">February 28, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+    
+	        
+
+    
+    
+    <div class="read-more">
       
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/babel-try-catch/" rel="bookmark" title="一种生产环境中高效定位JS异常的方案" itemprop="url">一种生产环境中高效定位JS异常的方案</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>在我的一篇文章中：<a href="http://foio.github.io/javascript-global-exceptions/">捕获页面中全局Javascript异常</a>，介绍了通过AST(抽象语法树)技术，借助于UglifyJs提供的AST的API，对源文件进行预处理，对每个函数自动地添加try catch包裹代码，从而捕获生产环境中的JS异常。通过使用<a href="https://github.com/foio/try-catch-global.js">try-catch-global.js</a>，可以简单的如下源代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">
-<span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'test'</span><span class="p">);</span>
-<span class="p">}</span>
-
-</code></pre></div>
-<p>转换成</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>             
-    <span class="k">try</span> <span class="p">{</span>                           
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"test"</span><span class="p">);</span>        
-    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>               
-        <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>          
-            <span class="c1">//your logic to handle error     </span>
-        <span class="p">})(</span><span class="nx">error</span><span class="p">);</span>                  
-    <span class="p">}</span>                               
-<span class="p">};</span>                 
-</code></pre></div>
-<p>但是由于我们发布到生产环境中的代码，往往都经过压缩和混淆，文件名、函数名、变量名已经不具有可读性了，捕获的异常堆栈信息的价值有限，简单的通过这些异常信息，我们依然很难定位到源文件中错误出处。本文我们就试图解决这个问题：依然基于AST(抽象语法树)对源代码进行try catch包裹，但会在catch语句中收集更多源文件的信息(包括文件名、函数名、函数起始行号等)，最后借助于babel和webpack的插件体系，提供一个工程化的解决方案。</p>
-
-<h3 id="1-babel-plugin-try-catch">1. 自定义babel-plugin实现try catch包裹</h3>
-
-<p>在文章<a href="http://foio.github.io/javascript-global-exceptions/">捕获页面中全局Javascript异常</a>中，我们使用的是UglifyJS提供的操作Javascript语法树的API，这套API比较底层，需要发力气才能啃透，不适合初学者使用。babel提供了抽象层次更高的操作语法树的API:<a href="https://github.com/babel/babylon">babylon</a>，并且提供了一系列工具<a href="https://www.npmjs.com/package/babel-template">babel-template</a>、<a href="https://www.npmjs.com/package/babel-helper-function-name">babel-helper-function-name</a>等。</p>
-
-<p>在使用Babel对Javascript源文件进行处理时，有三个主要步骤，分别是： 解析（parse），转换（transform），生成（generate）。Babel首先会将源文件转换为抽象语法树(AST)，然后对抽象语法树进行转换，最后由抽象语法树生成新的源代码，如下图所示。在转换（transform）阶段，Babel提供了非常便利的插件机制，开发者可以在插件中实现自己的AST转换。关于如何开发Babel插件，最好的教程就是<a href="https://github.com/thejameskyle/babel-handbook/blob/master/translations/en/plugin-handbook.md">官方文档</a>。</p>
-
-<p><img src="/images//babel-plugin-ast.png" alt="babel插件转换AST"></p>
-
-<p>在对AST的转换阶段，Babel使用babel-traverse对AST进行深度优先遍历，它的插件机制使得我们可以针对某个特定类型的语法树节点（比如，函数、条件语句等）注册钩子函数，从而完成我们对语法树的转换工作。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">  <span class="nx">visitor</span><span class="err">:</span> <span class="p">{</span>
-    <span class="nl">Function</span><span class="p">:</span> <span class="p">{</span>
-      <span class="c1">//遍历到函数时</span>
-    <span class="p">},</span>
-    <span class="nx">ClassMethod</span><span class="err">:</span> <span class="p">{</span>
-      <span class="c1">//遍历catch语句块时</span>
-    <span class="p">}</span>
-    <span class="p">......</span>
-  <span class="p">}</span>
-</code></pre></div>
-<p>通过插件机制，我们可以对所有的函数和类方法节点进行转换，插入try catch包裹代码；同时，在babel解析后的语法树中包含了详细的源文件的元信息，我们可以将这些源文件信息透传到自定义的错误处理函数中。对于函数，我们可以如下处理：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">visitor</span><span class="err">:</span> <span class="p">{</span>
-        <span class="c1">//只处理函数和类方法节点</span>
-        <span class="s2">"Function|ClassMethod"</span> <span class="p">{</span>
-            <span class="nl">exit</span><span class="p">:</span> <span class="kd">function</span> <span class="nx">exit</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span> <span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
-                <span class="c1">//深度优先搜索会遍历两次，需要避免重复</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">shouldSkip</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span> <span class="nx">state</span><span class="p">))</span> <span class="p">{</span>
-                    <span class="k">return</span><span class="p">;</span>
-                <span class="p">}</span>
-
-                <span class="c1">//如果函数体为空则不处理</span>
-                <span class="kd">var</span> <span class="nx">body</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">body</span><span class="p">;</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">body</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="k">return</span><span class="p">;</span>
-                <span class="p">}</span>
-
-                <span class="c1">//收集函数名</span>
-                <span class="kd">var</span> <span class="nx">functionName</span> <span class="o">=</span> <span class="s1">'anonymous function'</span><span class="p">;</span>
-                <span class="nx">babelHelperFunctionName2</span><span class="p">(</span><span class="nx">path</span><span class="p">);</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="nx">functionName</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">id</span><span class="p">.</span><span class="nx">name</span> <span class="o">||</span> <span class="s1">'anonymous function'</span><span class="p">;</span>
-                <span class="p">}</span>
-
-                <span class="c1">//收集类方法名</span>
-                <span class="k">if</span><span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">key</span><span class="p">){</span>
-                    <span class="nx">functionName</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nx">name</span> <span class="o">||</span> <span class="s1">'anonymous function'</span><span class="p">;</span>
-                <span class="p">}</span>
-
-                <span class="c1">//函数起始行号</span>
-                <span class="kd">var</span> <span class="nx">loc</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">loc</span><span class="p">;</span>
-
-                <span class="c1">//异常变量名</span>
-                <span class="kd">var</span> <span class="nx">errorVariableName</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">scope</span><span class="p">.</span><span class="nx">generateUidIdentifier</span><span class="p">(</span><span class="s1">'e'</span><span class="p">);</span>
-
-                <span class="c1">//使用函数模板进行try catch包裹，需要注意的是AST无法获取到文件名信息，需要外部传入</span>
-                <span class="nx">path</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'body'</span><span class="p">).</span><span class="nx">replaceWith</span><span class="p">(</span><span class="nx">wrapFunction</span><span class="p">({</span>
-                    <span class="na">BODY</span><span class="p">:</span> <span class="nx">body</span><span class="p">,</span>
-                    <span class="na">FILENAME</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">StringLiteral</span><span class="p">(</span><span class="nx">filename</span><span class="p">),</span>
-                    <span class="na">FUNCTION_NAME</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">StringLiteral</span><span class="p">(</span><span class="nx">functionName</span><span class="p">),</span>
-                    <span class="na">LINE</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">NumericLiteral</span><span class="p">(</span><span class="nx">loc</span><span class="p">.</span><span class="nx">start</span><span class="p">.</span><span class="nx">line</span><span class="p">),</span>
-                    <span class="na">COLUMN</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">NumericLiteral</span><span class="p">(</span><span class="nx">loc</span><span class="p">.</span><span class="nx">start</span><span class="p">.</span><span class="nx">column</span><span class="p">),</span>
-                    <span class="na">REPORT_ERROR</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">identifier</span><span class="p">(</span><span class="nx">reportError</span><span class="p">),</span>
-                    <span class="na">ERROR_VARIABLE_NAME</span><span class="p">:</span> <span class="nx">errorVariableName</span>
-                <span class="p">}));</span>
-            <span class="p">}</span>
-        <span class="p">},</span>
-</code></pre></div>
-<p>babel提供了非常便利的工具babel template，其中隐藏了AST转换的细节，简单的使用函数模板就可以对函数进行任意转换，如下代码我们使用template对函数进行try catch包裹：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">const</span> <span class="nx">wrapFunction</span> <span class="o">=</span> <span class="nx">template</span><span class="p">(</span><span class="err">`</span><span class="p">{</span>
-  <span class="k">try</span> <span class="p">{</span>
-    <span class="nx">BODY</span>
-  <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">ERROR_VARIABLE_NAME</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">REPORT_ERROR</span><span class="p">(</span><span class="nx">ERROR_VARIABLE_NAME</span><span class="p">,</span> <span class="nx">FILENAME</span><span class="p">,</span> <span class="nx">FUNCTION_NAME</span><span class="p">,</span> <span class="nx">LINE</span><span class="p">,</span> <span class="nx">COLUMN</span><span class="p">)</span>
-    <span class="k">throw</span> <span class="nx">ERROR_VARIABLE_NAME</span>
-  <span class="p">}</span>
-<span class="p">}</span><span class="err">`</span><span class="p">)</span>
-
-</code></pre></div>
-<p>通过使用babel插件，在babel对源代码进行处理时注册针对特定AST节点的钩子函数（本文我们只关心函数类型节点），使用bable-template对函数进行try catch包裹，并在catch语句中预埋入从AST中收集到的源文件信息。</p>
-
-<p>处理前的代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="kd">function</span> <span class="nx">testA</span><span class="p">(){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-<span class="p">}</span>
-
-
-<span class="kr">class</span> <span class="nx">A</span> <span class="p">{</span>
-    <span class="nx">testB</span><span class="p">(){</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">testD</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="p">}</span>
-
-</code></pre></div>
-<p>处理后的代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">testA</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">try</span> <span class="p">{</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">_e</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">reportError</span><span class="p">(</span><span class="nx">_e</span><span class="p">,</span> <span class="s2">"test.js"</span><span class="p">,</span> <span class="s2">"testA"</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kr">class</span> <span class="nx">A</span> <span class="p">{</span>
-    <span class="nx">testB</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">try</span> <span class="p">{</span>
-            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">_e2</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">reportError</span><span class="p">(</span><span class="nx">_e2</span><span class="p">,</span> <span class="s2">"test.js"</span><span class="p">,</span> <span class="s2">"testB"</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">testD</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">testD</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">try</span> <span class="p">{</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">_e4</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">reportError</span><span class="p">(</span><span class="nx">_e4</span><span class="p">,</span> <span class="s2">"test.js"</span><span class="p">,</span> <span class="s2">"testD"</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">12</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">};</span>
-
-</code></pre></div>
-<p>转换后的代码通过后续的混淆、压缩后发布到生产环境，生产环境中的代码发生异常时，catch语句中的reportError会将异常上报到日志平台，上报的信息中包含了我们从AST中预埋入的变量名、函数名、函数函数起始行号、文件名等信息，通过这些信息我们就可以快速定位到源代码中的异常位置。</p>
-
-<h3 id="2-webpack-loader">2. 使用webpack loader进行工程化构建</h3>
-
-<p>上文讲到使用babel插件对Javascript源代码生成的AST进行转换，最终对所有的函数生成try catch包裹代码。本小节我们考虑将构建流程集成到webpack中。webpack首先使用loader对源代码进行处理，然后将入口文件以及其依赖打包到一个chunk中。在webpack的编译流程中，我们可以借助于自定义的loader来实现对源代码的AST转换。</p>
-
-<p>编写一个自定义的webpack的loader非常简单，简单的教程请参考<a href="https://webpack.github.io/docs/how-to-write-a-loader.html">官方文档</a>，下文是一个非常简单的loader，其接收源代码内容作为输入，并转转换后的源代码作为输出。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">source</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">//your logic to change source</span>
-  <span class="k">return</span> <span class="nx">source</span><span class="p">;</span>
-<span class="p">};</span>
-</code></pre></div>
-<p>我们也实现了一个webpack的loader：<a href="https://github.com/foio/babel_try_catch_loader">babel_try_catch_loader</a>，它借助于babel插件<a href="https://github.com/foio/babel-plugin-try-catch-wrapper">babel-plugin-try-catch-wrapper</a>，通过AST技术对源代码进行处理。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">tryCatchWrapper</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'babel-plugin-try-catch'</span><span class="p">)</span>
-<span class="p">...</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">source</span><span class="p">,</span> <span class="nx">inputMap</span><span class="p">)</span> <span class="p">{</span>
-    <span class="p">......</span>
-    <span class="kd">var</span> <span class="nx">transOpts</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">[</span><span class="nx">tryCatchWrapper</span><span class="p">,</span> <span class="p">{</span>
-                <span class="na">filename</span><span class="p">:</span> <span class="nx">filename</span><span class="p">,</span>
-                <span class="na">reportError</span><span class="p">:</span> <span class="nx">userOptions</span><span class="p">.</span><span class="nx">reporter</span><span class="p">,</span>
-                <span class="na">rethrow</span><span class="p">:</span> <span class="nx">userOptions</span><span class="p">.</span><span class="nx">rethrow</span>
-            <span class="p">}]</span>
-        <span class="p">],</span>
-        <span class="na">sourceMaps</span><span class="p">:</span> <span class="kc">true</span>
-    <span class="p">};</span>
-    <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">babel</span><span class="p">.</span><span class="nx">transform</span><span class="p">(</span><span class="nx">source</span><span class="p">,</span> <span class="nx">transOpts</span><span class="p">);</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">callback</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">result</span><span class="p">.</span><span class="nx">code</span><span class="p">,</span> <span class="nx">result</span><span class="p">.</span><span class="nx">map</span><span class="p">);</span>
-    <span class="p">......</span>
-<span class="p">};</span>
-</code></pre></div>
-<p>只需要在webpack配置文件中使用<a href="https://github.com/foio/babel_try_catch_loader">babel_try_catch_loader</a>，我们就可以通过一行配置文件来将项目中源代码中所有的函数进行try catch包裹了。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">loaders</span><span class="err">:</span> <span class="p">[</span>
-            <span class="p">......</span>
-            <span class="p">{</span>
-                <span class="nl">test</span><span class="p">:</span> <span class="sr">/</span><span class="se">\.</span><span class="sr">jsx|</span><span class="se">\.</span><span class="sr">js$/</span><span class="p">,</span>
-                <span class="nx">loader</span><span class="err">:</span> <span class="s1">'babel-try-catch-loader?rethrow=true&amp;verbose&amp;reporter=reportError&amp;tempdir=.tryCatchResult!babel-loader'</span><span class="p">,</span>
-                <span class="nx">exclude</span><span class="err">:</span> <span class="o">/</span><span class="nx">node_modules</span><span class="o">/</span>
-            <span class="p">}</span>
-            <span class="p">......</span>
-        <span class="p">],</span>
-
-<span class="nx">devtool</span><span class="err">:</span> <span class="s1">'source-map'</span>
-</code></pre></div>
-<p>上文中的配置文件，对项目中的所有源代码使用babel-loader进行转换，然后使用babel-try-catch-loader处理babel-loader产生的代码和source map，保证了经过后续的混淆、压缩并发布到线上环境的生产代码仍然具有较强的debug能力。详细的配置文件请参考<a href="https://github.com/foio/webpack-try-catch-demo">webpack-try-catch-demo</a>。实现原理请参考<a href="https://github.com/foio/babel_try_catch_loader">babel-try-catch-loader</a>.</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-
-<div class="pagination">
-  
-    Previous
-  
-  <ul class="inline-list">
-    <li>
+        <div class="read-more-header">
+          <a href="/babel-try-catch/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/babel-try-catch/" title="一种生产环境中高效定位JS异常的方案">一种生产环境中高效定位JS异常的方案</a></h3>
+          <p>babel try catch，AST，webpack loader，global try catch <a href="/babel-try-catch/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
       
-        <span class="current-page">1</span>
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/mobx-react/" title="使用mobx开发高性能react应用">使用mobx开发高性能react应用</a></h4>
+            <span>Published on January 02, 2017</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/wepack-code-spliting/" title="webpack代码分割技巧">webpack代码分割技巧</a></h4>
+            <span>Published on November 18, 2016</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
       
-    </li>
-    
-      <li>
-        
-          <a href="/page2">2</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page3">3</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page4">4</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page5">5</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page6">6</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page7">7</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page8">8</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page9">9</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page10">10</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page11">11</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page12">12</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page13">13</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page14">14</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page15">15</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page16">16</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page17">17</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page18">18</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page19">19</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page20">20</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page21">21</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page22">22</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page23">23</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page24">24</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page25">25</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page26">26</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page27">27</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page28">28</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page29">29</a>
-        
-      </li>
-    
-  </ul>
-  
-    <a href="/page2" class="btn">Next</a>
-  
-</div><!-- /.pagination -->
-
+    </div><!-- /.read-more -->
+  </article>
 </div><!-- /#main -->
+
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
@@ -811,7 +452,6 @@ rel="stylesheet" type="text/css" -->
 </script>
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-          
-
+	        
 </body>
 </html>

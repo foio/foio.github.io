@@ -119,6 +119,323 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2016-08-15T00:00:00+08:00"><a href="/node-memory/">August 15, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/node-memory/" rel="bookmark" title="node内存基础知识" itemprop="url">node内存基础知识</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <style type="text/css">
+td, table {
+   border: solid gray 1px;
+   padding: 10px;
+}
+table{
+   margin: 0 auto;
+}
+</style>
+
+<p>开始之前，先来个段子，博君一笑:</p>
+
+<blockquote>
+<p>虽然go成为了世界上最并发的语言，但是， 这并不妨碍php成为世界上最好的语言，也不妨碍java成为世界上最有模式的语言，更不会妨碍c++成为21 天就能学会了的语言...但是JavaScript终将统治世界,而V8将成为世界的基石!</p>
+</blockquote>
+
+<h2 id="1-node">1. node内存分配基础</h2>
+
+<p>在V8中所有的JavaScript对象都是通过堆来分配的。为了提高垃圾回收的效率，V8将堆分为新生代和老生代两个部分，其中新生代为存活时间较短的对象(需要经常进行垃圾回收)，而老生代为存活时间较长的对象(垃圾回收的频率较低)。</p>
+
+<p><img src="/images/v8-memory.png" alt="Alt text"></p>
+
+<p>新生代和老生代的默认内存限制在启动的时候就确定了，没办法根据应用使用内存情况自动扩充，当应用分配过多内存时，就会引起OOM(Out Of Memory，内存溢出)进程错误。64位系统和32位系统的内存限制不同，分别如下：</p>
+
+<table><thead>
+<tr>
+<th>类型</th>
+<th style="text-align: center">64位系统</th>
+<th style="text-align: right">32位系统</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>新生代</td>
+<td style="text-align: center">32MB x 2</td>
+<td style="text-align: right">16MB x 2</td>
+</tr>
+<tr>
+<td>老生代</td>
+<td style="text-align: center">1400MB</td>
+<td style="text-align: right">700MB</td>
+</tr>
+<tr>
+<td>实际可用内存</td>
+<td style="text-align: center">1432MB</td>
+<td style="text-align: right">716MB</td>
+</tr>
+</tbody></table>
+
+<p>在node启动时，通过<code>--max-new-space-size</code>和<code>--max-old-space-size</code>可分别设置新生代和老生代的默认内存限制。V8为什么要对内存做如此限制呢？最终的原因还是V8的垃圾回收机制所限制的，在较大的内存上进行垃圾回收是很耗时地。下面我们就来了解一下V8的垃圾回收机制。</p>
+
+<h2 id="2-node">2. node垃圾回收原理</h2>
+
+<h3 id="2-1">2.1 常用垃圾回收基本算法</h3>
+
+<p>垃圾回收机制有多种，但最常用的就是以下几种：</p>
+
+<table><thead>
+<tr>
+<th>类型</th>
+<th>方法</th>
+<th style="text-align: center">是否停止程序</th>
+</tr>
+</thead><tbody>
+<tr>
+<td>引用计数(Reference Counting)</td>
+<td>每个对象配置一个计数器即可,每当引用它的对象被删除时，就将其引用数减1，当其引用计数为0时，即可清除</td>
+<td style="text-align: center">否</td>
+</tr>
+<tr>
+<td>标记-清除(Mark-Sweep)</td>
+<td>标记阶段标记活对象，清除阶段清除未被标记的对象</td>
+<td style="text-align: center">是</td>
+</tr>
+<tr>
+<td>停止-复制(Stop-Copy)</td>
+<td>内存分为两块，并将正在使用的内存中的存活对象复制到未被使用的内存块中，之后，清除正在使用的内存块中的所有对象，交换两个内存的角色</td>
+<td style="text-align: center">是</td>
+</tr>
+<tr>
+<td>标记-压缩(Mark-Compact)</td>
+<td>对所有可达对象做一次标记，将所有的存活对象压缩到内存的一端，以减少内存碎片</td>
+<td style="text-align: center">是</td>
+</tr>
+<tr>
+<td>增量算法(Incremental Collecting)</td>
+<td>每次，垃圾收集线程只收集一小片区域的内存空间，接着切换到应用程序线程。依次反复，直到垃圾收集完成。</td>
+<td style="text-align: center">否</td>
+</tr>
+</tbody></table>
+
+<h3 id="2-2-v8">2.2 V8的分代垃圾回收</h3>
+
+<p>上面提到过，V8将内存分为新生代和老生代，新生代中对象存活时间较短，老生代中对象存活时间较长。为了最大程度的提升垃圾回收效率，V8使用了一种综合性的方法，其在新生代和老生代中分别使用上文提到的不同的基本垃圾回收算法。</p>
+
+<h4 id="1-scavenge">[1] 新生代垃圾回收算法Scavenge</h4>
+
+<p>在新生代中，由于内存较小(64位系统为64MB)且存活对象较少，V8采取了一种以空间换时间的方案，即停止-复制算法 (Stop-Copy)。它将新生代分为两个半区域(semi-space)，分别称为from空间和to空间。一次垃圾回收分为两步：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">(1) 将from空间中的活对象复制到to空间
+(2) 切换from和to空间
+</code></pre></div>
+<p>V8将新生代中的一次垃圾回收过程，称为Scavenge。</p>
+
+<p><img src="/images/scavenge.png" alt="Alt text"></p>
+
+<h4 id="2">[2] 老生代垃圾回收算法</h4>
+
+<p>老生代的内存空间较大且存活对象较多，因此其垃圾回收算法也就没有新生代那么简单了。为此V8使用了标记-清除算法 (Mark-Sweep)进行垃圾回收，并使用标记-压缩算法 (Mark-Compact)整理内存碎片，提高内存的利用率。老生代的垃圾回收算法步骤如下：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">(1).对老生代进行第一遍扫描，标记存活的对象
+(2).对老生代进行第二次扫描，清除未被标记的对象
+(3).将存活对象往内存的一端移动
+(4).清除掉存活对象边界外的内存
+</code></pre></div>
+<p><img src="/images/full-gc.png" alt="Alt text"></p>
+
+<p>从上面的表格可以看出，停止-复制(Stop-Copy)、标记-清除(Mark-Sweep)和标记-压缩(Mark-Compact)都需要停止应用逻辑，我们将之称为stop-the-world。但因为新生代内存较小且存活对象较少，即便stop-the-world，对应用的性能影响也不大；而老生代的内存很大，stop-the-world就不能接受了，为此V8引入了增量标记。增量标记使得应用逻辑和垃圾回收交替运行，减少了垃圾回收对应用逻辑的干扰。</p>
+
+<h3 id="2-3">2.3 分代垃圾回收的代价</h3>
+
+<p>在讨论新生代中的垃圾回收算法Scavenge时，我们忽略了许多细节。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">真的仅仅扫描新生代的内存空间，就能确定新生代的活动对象吗？
+</code></pre></div>
+<p>当然不是，老生代的对象也可能引用新生代的对象啊。如果每次运行Scavenge算法时，都要扫描老生代空间的话，这种操作带来的性能损耗就完全抵消了分代式垃圾回收所带来的性能提升。为此<code>V8使用写屏障技术</code>解决了这个问题：</p>
+
+<blockquote>
+<p>V8使用一个列表(我们称之为CrossRefList)记录所有老生代对象指向新生代的情况，当有老生代中的对象出现指向新生代对象的指针时，便记录下来这样的跨区指向。由于这种记录行为总是发生在写操作时，因此被称为写屏障。</p>
+</blockquote>
+
+<p><img src="/images/cross-ref-list.png" alt="Alt text"></p>
+
+<p>每个写操作都要经历这样一关，性能上必然有损失，这是分代垃圾回收的代价之一。通过使用写屏障技术，我们在对新生代进行垃圾回收时，只需要扫描新生代From空间和CrossRefList列表就可以确定活动对象了。</p>
+
+<h2 id="3">3.垃圾回收监控</h2>
+
+<p>理解了垃圾回收的基本原理以后，我们来看一看如何监控node的垃圾回收情况。查看垃圾回收方式的最方便的方法是通过在启动时使用--trace-gc参数：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">node --trace-gc app.js
+1254 ms: Scavenge 413.1 (460.9) -&gt; 413.1 (460.9) MB, 0.5 
+        / 0 ms (+ 3.0 ms in 14 steps since last GC)
+1258 ms: Mark-sweep 413.5 (461.9) -&gt; 412.6 (461.9) MB, 1.0 
+        / 0 ms (+ 255.0 ms in 2050 steps since start of marking, biggest step 1.0 ms)
+         [GC interrupt] [GC in old space requested]
+</code></pre></div>
+<p>从控制台日志中可以轻易的看出node的垃圾回收动作，包括新生代垃圾回收(Scavenge)和老生代垃圾回收(Mark-sweep)。</p>
+
+<p>而一种更加程序化的方式是使用<a href="https://www.npmjs.com/package/memwatch-next">memwatch-next</a>模块，该模块在node每一次进行全量垃圾(full-gc,包括标记-清除和标记-压缩)回收时触发相应的事件：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">memwatch</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'memwatch-next'</span><span class="p">);</span>
+<span class="nx">memwatch</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">'stats'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">stats</span><span class="p">)</span> <span class="p">{</span> 
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">stats</span><span class="p">);</span>
+<span class="p">});</span>
+
+</code></pre></div>
+<p>上述代码监控每一次全量垃圾回收动作，并打印出相应垃圾回收统计信息：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">{</span>
+  <span class="s2">"num_full_gc"</span><span class="err">:</span> <span class="mi">8</span><span class="p">,</span>            <span class="c1">//目前为止进行全量GC的次数</span>
+  <span class="s2">"num_inc_gc"</span><span class="err">:</span> <span class="mi">18</span><span class="p">,</span>             <span class="c1">//目前为止进行增量GC的次数</span>
+  <span class="s2">"heap_compactions"</span><span class="err">:</span> <span class="mi">8</span><span class="p">,</span>        <span class="c1">//目前为止进行的内存压缩的次数</span>
+  <span class="s2">"usage_trend"</span><span class="err">:</span> <span class="mi">0</span><span class="p">,</span>             <span class="c1">//内存增长趋势，如果一直大于0，则可能有内存泄露</span>
+  <span class="s2">"estimated_base"</span><span class="err">:</span> <span class="mi">2592568</span><span class="p">,</span>    
+  <span class="s2">"current_base"</span><span class="err">:</span> <span class="mi">2592568</span><span class="p">,</span>
+  <span class="s2">"min"</span><span class="err">:</span> <span class="mi">2499912</span><span class="p">,</span>
+  <span class="s2">"max"</span><span class="err">:</span> <span class="mi">2592568</span>
+<span class="p">}</span>                 
+</code></pre></div>
+<h2 id="4">4.内存泄露定位</h2>
+
+<p>使用上文提到的垃圾回收监控方法，我们可以知道程序是否有内存泄露，那么具体在什么地方有内存泄露呢？我们需要借助于新的工具。<a href="https://github.com/bnoordhuis/node-heapdump">node-heapdump</a>提供了v8的堆内存快照抓取工具。</p>
+
+<h3 id="4-1">4.1 抓取对内存镜像</h3>
+
+<p>我们可以在程序中直接通过它提供的函数抓取内存快照：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">heapdump</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'heapdump'</span><span class="p">);</span>
+<span class="nx">heapdump</span><span class="p">.</span><span class="nx">writeSnapshot</span><span class="p">(</span><span class="s1">'/tmp/'</span> <span class="o">+</span> <span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">()</span> <span class="o">+</span> <span class="s1">'.heapsnapshot'</span><span class="p">);</span>
+</code></pre></div>
+<p>在linux下，我们还可以通过向node进程发送信号来抓取内存快照：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">kill -USR2 pid
+</code></pre></div>
+<p>有了内存快照后，我们就可以借助chrome的Profile工具，具体的分析内存泄露发生在什么地方了。</p>
+
+<h3 id="4-2">4.2 三次快照法</h3>
+
+<p>利用chrome的Profile工具分析内存泄露的经典方法是<code>三次快照法</code>，我们需要首选准备3个内存快照文件：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">(1) 第一次获取正常情况下内存快照
+(2) 第二次获取发生内存泄露时的内存快照
+(3) 第三次获取继续发生内存泄露时的内存快照
+</code></pre></div>
+<p>三次快照要求第一次必须在没有出现内存泄露时，是为了过滤一些无用的信息，使得分析结果可读性更强。</p>
+
+<h2 id="5-case">5.常见的内存泄露case</h2>
+
+<p>了解了node内存的基本原理后，我们一起来看一看常见的内存泄露case。</p>
+
+<p>5.1 使用对象作为缓存</p>
+
+<p>使用javascript键值对作为缓存，我们几乎必然要承担内存泄露的风险，因为严格意义的缓存有完善的过期策略，而普通的javascript对象显然不具备这个功能：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">cache</span> <span class="o">=</span> <span class="p">{};</span>
+<span class="kd">function</span> <span class="nx">getFromCache</span><span class="p">(</span><span class="nx">key</span><span class="p">){</span>
+    <span class="k">if</span><span class="p">(</span><span class="nx">cache</span><span class="p">[</span><span class="nx">key</span><span class="p">]){</span>
+        <span class="k">return</span> <span class="nx">cache</span><span class="p">[</span><span class="nx">key</span><span class="p">];</span>
+    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+        <span class="nx">cache</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">CacheItem</span><span class="p">();</span>
+        <span class="k">return</span> <span class="nx">cache</span><span class="p">[</span><span class="nx">key</span><span class="p">];</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div>
+<p>上述cache里缓存的item永远得不到释放，尽管没有任何引用。那么如果我们确实需要使用缓存呢？有两种方案：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">(1) 使用外部缓存服务，比如memcahe
+(2) 使用es6的WeakMap作为程序内缓存数据结构
+</code></pre></div>
+<p><a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">WeakMap</a>是ES6标准中新引入的一种类似字典的数据结构，和普通字典数据结构不同的是，当WeakMap中key没有其他引用，并且value也没有除key之外的引用时，value可以被垃圾回收，这是一种程序内缓存的理想选择。</p>
+
+<h2 id="6">6.堆外内存</h2>
+
+<p>在node中，我们不可避免的需要操作大内存，而堆内内存大小的限制显然无法满足我们的要求。为此，node通过内置的全局Buffer模块提供堆外的内存使用方法。Buffer是一个C++与Javascript结合的模块，其内存分配策略，也非常值得我们研究。我们知道大部分Javascript对象所使用的内存都是很小的，如果每一次都向操作系统申请，就必须频繁地进行系统调用；为了解决这个问题，node使用C++层面申请一大块内存，然后按需分配给Javascript的策略；也就是*nix系统常用的slab内存分配策略，这是一种典型的对时间和空间的折衷算法(time/space trade-off)。</p>
+
+<p>slab是一块提前申请好地固定大小的内存，一个slab有三种状态：full、partial、empty。node层面提供了一个SlowBuffer类，封装C++的api，用于申请真实的物理内存，可以简单地将一个slab理解为一个SlowBuffer对象。node中维护着一个名为pool的指针，它指向当前slab(SlowBuffer对象)。向系统申请slab的过程可用如下伪代码表示：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">pool</span><span class="p">;</span>
+<span class="kd">function</span> <span class="nx">allocateSlab</span><span class="p">(){</span>
+    <span class="nx">pool</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">SlowBuffer</span><span class="p">();</span>
+    <span class="nx">pool</span><span class="p">.</span><span class="nx">used</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="6-1-4kb">6.1 小内存(&lt;4kB)的分配</h3>
+
+<p>一个slab的大小为8KB(Buffer.poolSize)，node中通过Buffer.poolSize定义。当我们需要创建一个长度小于4kB的Buffer对象时，会首先判断当前slab的剩余空间是否足够，如果剩余空间足够，则在当前slab上为Buffer对象分配内存，否则创建一个新的slab块，并在新的slab上为Buffer对象分配内存。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">pool</span> <span class="o">||</span> <span class="nx">pool</span><span class="p">.</span><span class="nx">lengh</span> <span class="o">-</span> <span class="nx">pool</span><span class="p">.</span><span class="nx">used</span> <span class="o">&lt;</span> <span class="k">this</span><span class="p">.</span><span class="nx">length</span><span class="p">){</span>
+    <span class="nx">allocateSlab</span><span class="p">();</span> <span class="c1">//向系统申请新的slab</span>
+    <span class="nx">allocateBuffer</span><span class="p">();</span> <span class="c1">//给buffer对象分配内存</span>
+<span class="p">}</span><span class="k">else</span><span class="p">{</span>
+    <span class="nx">allocateBuffer</span><span class="p">();</span> <span class="c1">//给buffer对象分配内存</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>从当前slab上为Buffer分配内存的算法也很容易理解，只需要将Buffer指向slab的某段内存，并调整pool的length和used等属性：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">function allocateBuffer(){
+    this.parent = pool; //buffer的parent属性指向当前slab
+    this.offset = pool.used; //buffer的offset属性指向当前slab可用内存段的开始位置
+    pool.used += this.length; //调整buffer的已使用空间
+}
+</code></pre></div>
+<p>由此可见，一个slab(SlowBuffer对象)可供多个小内存的Buffer共用：</p>
+
+<p><img src="/images/slow-buffer.png" alt="Alt text"></p>
+
+<p>在写本文时，node官方已经不建议使用<code>new Buffer()</code>创建buffer对象了，官方提供了更新的<code>Buffer.alloc()</code>和<code>Buffer.allocUnsafe()</code>。其中<code>Buffer.alloc()</code>在创建Buffer对象时会对内存进行初始化，并且不会使用slab策略；而<code>Buffer.allocUnsafe()</code>则是使用slab算法分配一块未初始化的内存，因此其性能要比<code>Buffer.alloc()</code>高很多。因此我们应该使用<code>Buffer.allocUnsafe()</code>替换来的<code>new Buffer()</code>。</p>
+
+<h3 id="6-2-4kb">6.2 大内存(&gt;4kB)的分配</h3>
+
+<p>对于大于4KB的Buffer对象，其大小甚至可能超过一个slab的大小，系统就无法使用固定大小的slab分配算法了。值得注意的是，node对单个Buffer大小是有上限的(buffer.kMaxLength)，在32系统上其上限接近1GB(2<sup>30-1)，而在64位系统上其上限则接近2GB(2<sup>31-1)。</sup></sup></p>
+
+<h3 id="6-3-slab">6.3  slab算法的代价</h3>
+
+<p>鱼与熊掌不可兼得，上文中提到slab算法一种时间和空间的折衷算法。为了提高内存的分配速度，该算法可能导致内存碎片：当一个slab上的剩余空间不足于容纳新申请的Buffer的大小，或者新申请Buffer大于等于4kb(Buffer.poolSize)时，就需要创建新的slab，原来slab上剩余的空间就浪费了。我们写个小程序证明一下我们的猜想:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">size</span><span class="p">){</span>
+    <span class="kd">var</span> <span class="nx">itt</span> <span class="o">=</span> <span class="mi">10000</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">store</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="kd">var</span> <span class="nx">rss</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">memoryUsage</span><span class="p">().</span><span class="nx">rss</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">tmpMem</span><span class="p">;</span>
+    <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span><span class="mi">0</span> <span class="p">;</span><span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">itt</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">){</span>
+        <span class="nx">store</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="k">new</span> <span class="nx">Buffer</span><span class="p">(</span><span class="mi">1</span><span class="p">));</span>
+        <span class="nx">tmp</span> <span class="o">=</span> <span class="nx">Buffer</span><span class="p">(</span><span class="nx">size</span><span class="p">);</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">i</span><span class="o">/</span><span class="mi">1000</span><span class="p">){</span>
+            <span class="nx">global</span><span class="p">.</span><span class="nx">gc</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="kd">var</span> <span class="nx">nr</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">memoryUsage</span><span class="p">().</span><span class="nx">rss</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">((((</span><span class="nx">nr</span> <span class="o">-</span> <span class="nx">rss</span><span class="p">)</span> <span class="o">/</span> <span class="mi">1024</span> <span class="o">/</span> <span class="mi">1024</span><span class="p">).</span><span class="nx">toFixed</span><span class="p">(</span><span class="mi">2</span><span class="p">)));</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>上述程序，在一万次循环中申请了一个1字节的全局缓存，并申请了size大小的临时缓存(其引用会在循环中被垃圾回收)。我们分别给<code>testBufferSlab</code>传递两个特殊的参数：<code>Buffer.poolSize</code>和<code>Buffer.poolSize/2-1</code>，并观察结果时，奇怪的现象发生了(<em>申请较大的Buffer时竟然消耗更少的内存</em>)：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">Buffer</span><span class="p">.</span><span class="nx">poolSize</span><span class="p">);</span>
+<span class="nx">node</span> <span class="o">--</span><span class="nx">expose</span><span class="o">-</span><span class="nx">gc</span> <span class="nx">test</span><span class="p">.</span><span class="nx">js</span>
+<span class="nl">output</span><span class="p">:</span> <span class="mf">5.2</span>
+</code></pre></div><div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">testBufferSlab</span><span class="p">(</span><span class="nx">Buffer</span><span class="p">.</span><span class="nx">poolSize</span><span class="o">/</span><span class="mi">2</span><span class="o">-</span><span class="mi">1</span><span class="p">);</span>
+<span class="nx">node</span> <span class="o">--</span><span class="nx">expose</span><span class="o">-</span><span class="nx">gc</span> <span class="nx">test</span><span class="p">.</span><span class="nx">js</span>
+<span class="nl">output</span><span class="p">:</span> <span class="mf">54.78</span>
+</code></pre></div>
+<p>究其原因就是：当新申请的Buffer的小于4Kb时(Buffer.poolSize/2)，会使用slab算法，即便当前Buffer块已经没有引用了，只要其对应slab上还有其他Buffer指向时，整个slab内存就无法释放，这样就会造成内存碎片。</p>
+
+<hr>
+
+<p>参考文章：</p>
+
+<p><a href="https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/">https://www.ibm.com/developerworks/cn/java/j-lo-JVMGarbageCollection/</a></p>
+
+<p><a href="https://www.zhihu.com/question/20018826">https://www.zhihu.com/question/20018826</a></p>
+
+<p><a href="https://github.com/caoxudong/oracle_jrockit_the_definitive_guide/blob/master/chap3/3.3.md">https://github.com/caoxudong/oracle_jrockit_the_definitive_guide/blob/master/chap3/3.3.md</a></p>
+
+<p><a href="http://newhtml.net/v8-garbage-collection/">http://newhtml.net/v8-garbage-collection/</a></p>
+
+<p><a href="http://taobaofed.org/blog/2016/04/15/how-to-find-memory-leak/">http://taobaofed.org/blog/2016/04/15/how-to-find-memory-leak/</a></p>
+
+<p><a href="https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap">https://developer.mozilla.org/en/docs/Web/JavaScript/Reference/Global_Objects/WeakMap</a></p>
+
+<p><a href="https://github.com/promises-aplus/promises-spec/issues/179">https://github.com/promises-aplus/promises-spec/issues/179</a></p>
+
+<p><a href="https://www.ibm.com/developerworks/cn/linux/l-linux-slab-allocator/">https://www.ibm.com/developerworks/cn/linux/l-linux-slab-allocator/</a></p>
+
+<p><a href="https://nodejs.org/api/buffer.html">https://nodejs.org/api/buffer.html</a></p>
+
+<p><a href="http://stackoverflow.com/questions/14009048/what-makes-node-js-slowbuffers-slow">http://stackoverflow.com/questions/14009048/what-makes-node-js-slowbuffers-slow</a></p>
+
+<p><a href="https://github.com/nodejs/node-v0.x-archive/issues/4525">https://github.com/nodejs/node-v0.x-archive/issues/4525</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2016-07-01T00:00:00+08:00"><a href="/redux-state-manage/">July 01, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -469,159 +786,6 @@ td, table {
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-05-01T00:00:00+08:00"><a href="/mean-web/">May 01, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/mean-web/" rel="bookmark" title="使用MEAN进行现代化WEB开发" itemprop="url">使用MEAN进行现代化WEB开发</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>纵观世界历史，生产工具的进步一次次地推动着人类社会的发展。在Web领域，最近几年也出现了一种新的生产工具栈，MEAN(MongoDB,Express,AngularJS,NodeJS)，虽然其无法完全取代LAMP(Linux,Apache,MySql,PHP)/LNMP(Linux,Nginx,MySql,PHP)，但确实是一种更先进的生产方式。</p>
-
-<p>在MEAN技术栈中，NoSql优等生MongoDB取代了传统的关系型数据库劳模MySql。<a href="https://www.mongodb.com/compare/mongodb-mysql">MongoDB官网上有其与Mysql的功能对比</a>。相比MySql，MongoDB的唯一缺点是没法支持复杂的事务，在现实的互联网应用场景中，我们面对更多的是高并发、非事务性的业务；而对于一些简单事务场景，MongoDB也是可以应对的，请参考<a href="http://foio.github.io/mongo-atom/">关于mongo原子操作的探讨</a>。MongoDB天生是分布式的，支持自动分片(Auto-Sharding)、复制集(Replication Set)，使得其可以很好的满足大数据时代背景下，超高并发、自动容错的存储要求。</p>
-
-<p>传统WEB技术(LAMP/LNMP)中的PHP，被NodeJS取代。本质上讲，PHP并不算后端语言，其主要目的是为了从各个数据源获取数据，拼接处理完成后，返回给页面，因此我们也经常将PHP称为<code>“胶水语言”</code>。PHP语言特性决定了其只能串行地从各个数据源获取数据，因此其响应时间为各个数据源的响应时间之和。而NodeJS的异步特性，使得其可以并发的请求多个数据源，其响应时间为各个数据源的响应时间之中最长的。相比PHP，NodeJS更适合作为<code>“胶水语言”</code>。</p>
-
-<p>MEAN中的Express,AngularJS分别为后端WEB框架和前端SPA(Single Page Application)开发框架。</p>
-
-<p>现代化的WEB生产方式需要有清晰的架构、高效的调试方法、规范的测试方法、以及工程化的构建方法。下面，我们就从这些方面了解基于MEAN开发的WEB开发方式，本文要求读者有传统LAMP/LNMP开发经验，同时熟悉NodeJS，并了解MongoDB。</p>
-
-<h2 id="1-mean">1.MEAN基本代码框架</h2>
-
-<p>NodeJS是一个强社区驱动的技术方案，除了核心模块外，大部分功能需要第三方模块支持，这就导致一个WEB应用可能有几十个模块，对于初学者，有较高的学习门槛，而一个标准的项目模板是一个比较好的入门方式。《MEAN WEB开发》一书从无到有构建了一个规范的MEAN项目，非常适合作为种子项目，该书的源代码请从<a href="https://github.com/amoshaviv/mean-web-development">github上下载</a>，本文也可以看作该书的读书笔记。让我们先从代码组织架构入手。</p>
-
-<h3 id="1-mvc">(1). 服务端MVC模型</h3>
-
-<p>NodeJS实现了CommonJS规范，其天生就支持现代化的模块化开发理念；而基于Express的中间件的架构，我们可以很方便地将常用功能(比如用户权限验证、日志模块)抽象为中间件模块。我们将服务端的代码组织为：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">app/
-    controllers/
-    models/
-    views/
-    routes/
-    config/
-    tests/
-</code></pre></div>
-<p>这里使用ejs作为view层的模板引擎，使用Mongoose作为Model层的ORM(对象关系映射)框架，每一个controller对应的独立express路由文件放在routes文件夹中，config文件夹存放各个中间件(passport、Mongoose)的配置，服务端单元测试脚本在tests文件夹中。</p>
-
-<h3 id="2-mvvm">(2). 客户端MVVM模型</h3>
-
-<p>客户端的基本框架是AngularJS，其本身也是将模块化理念作为其设计之本。我们将客户端代码组织如下：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">public/
-    articles/
-        aritcle.client.modules.js
-        controllers/
-        views/
-        config/
-        services/
-        test/
-            unit/
-            e2e/
-    users/
-    lib/
-    application.js
-</code></pre></div>
-<p>所有前端代码存储在public中，对应服务端的每一个controller，客户端都有一个相应的模块，每个模块放在单独的文件夹中，比如articles和users文件夹。以articles模块为例，其中包含模块定义文件aritcle.client.modules.js、控制器controllers、视图模板views、路由文件config、以及需要提供给其他模块使用的service，其中test文件夹用来存放单元测试脚本和端到端测试脚本。application.js是前端文件的入口，用于加载各个模块(比如articles和users)。</p>
-
-<h2 id="2">2.高效的调试</h2>
-
-<p>只有高效的调试方式才能适应互联网web产品的快速迭代的需求。下面我们分别介绍基于MEAN开发WEB应用过程中的前端和后端调试方法。</p>
-
-<h3 id="1-node-inspector">(1). 使用node-inspector调试服务端代码</h3>
-
-<p>借助于node-inspector，我们可以像调试浏览器端JS代码一样调试服务端代码。首先安装node-inspector。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">npm install -g node-inspector
-</code></pre></div>
-<p>然后启动node-inspecor，并在启动WEB应用时使用--debug参数</p>
-<div class="highlight"><pre><code class="language-" data-lang="">$: node-inspector
-Visit http://127.0.0.1:8080/?port=5858 to start debugging.
-$: node --debug server
-</code></pre></div>
-<p>这里的端口是可以修改的。使用chrome打开<a href="http://127.0.0.1:8080/?port=5858%EF%BC%8C%E6%88%91%E4%BB%AC%E5%B0%B1%E5%8F%AF%E4%BB%A5%E5%83%8F%E8%B0%83%E8%AF%95%E5%B8%B8%E8%A7%84%E5%89%8D%E7%AB%AFJS%E6%96%87%E4%BB%B6%E4%B8%80%E6%A0%B7%E8%B0%83%E8%AF%95%E6%9C%8D%E5%8A%A1%E7%AB%AF%E4%BB%A3%E7%A0%81%E4%BA%86%E3%80%82">http://127.0.0.1:8080/?port=5858，我们就可以像调试常规前端JS文件一样调试服务端代码了。</a></p>
-
-<h3 id="2-batarang-angularjs">(2). 使用Batarang调试AngularJS</h3>
-
-<p>在调试前端JS代码时，我们经常需要对AngularJS内部进行调试，而由于AngularJS的过度封装，对其内部调试往往很棘手。为此，AngularJS团队开发了一款名为<a href="https://chrome.google.com/webstore/detail/angularjs-batarang/ighdmehidhipcmcojjgiloacoafjmpfk?hl=en">Batarang的Chrome插件</a>。安装完Batarang插件后，用chrome打开基于AngularJS框架的页面时，使用开发者工具面板，就会出现了一个新的AngularJS标签页，使用该标签可以结构化的预览AngularJS各个Scope的变量，并可以查看AngularJS的性能。</p>
-
-<p><img src="/images/chrome-angular.png" alt="chrome-angular.png"></p>
-
-<h2 id="3">3.规范的测试</h2>
-
-<p>规范化的测试是项目持续健康发展的根基，这里我们主要介绍服务端单元测试。对于服务端，我们采用<a href="https://github.com/mochajs/mocha">Mocha测试框架</a>，Mocha提供了简洁的接口，可以方便的实现单元测试：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">describle(description,callback); //描述和封装测试集，callback用于封装测试逻辑
-it(description,callback); //描述测试指标，callback用于封装测试逻辑
-before、after、beforeEach、afterEach等4个钩子函数用来在测试的不同阶段执行
-</code></pre></div>
-<p>其中describle用于描述一个单元测试，it用于测试具体的逻辑，一个describle测试单元可以包含多个it测试，只有当所有被包含的it测试都通过时，describle描述的测试单元才能通过。此外，Mocah框架还提供了四个钩子函数，用于在测试前中做一些初始化的工作和在测试后做一些清理工作。</p>
-
-<p>Mocha测试框架并没有提供断言库，因此缺少对测试结果进行逻辑判断的功能。通过使用<a href="https://github.com/shouldjs/should.js">Should.js</a>提供的语义化接口，我们可以方便对验证代码逻辑的结果：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">user</span><span class="p">.</span><span class="nx">should</span><span class="p">.</span><span class="nx">be</span><span class="p">.</span><span class="nx">an</span><span class="p">.</span><span class="nb">Object</span><span class="p">.</span><span class="nx">and</span><span class="p">.</span><span class="nx">have</span><span class="p">.</span><span class="nx">property</span><span class="p">(</span><span class="s1">'name'</span><span class="p">);</span>
-</code></pre></div>
-<p>Should.js可以非常方便的测试对象，但却无法对HTTP结果进行测试，我们需要<a href="https://github.com/visionmedia/supertest">SuperTest断言库</a>来测试HTTP请求的结果。SuperTest断言库也提供了语义化的接口：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">request</span><span class="p">(</span><span class="nx">app</span><span class="p">).</span><span class="nx">get</span><span class="p">(</span><span class="s1">'/user'</span><span class="p">)</span>
-    <span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s1">'Accept'</span><span class="p">,</span><span class="s1">'application/json'</span><span class="p">)</span>
-    <span class="p">.</span><span class="nx">expect</span><span class="p">(</span><span class="s1">'Content-type'</span><span class="p">,</span><span class="sr">/json/</span><span class="p">)</span>
-    <span class="p">.</span><span class="nx">expect</span><span class="p">(</span><span class="mi">200</span><span class="p">,</span><span class="nx">done</span><span class="p">);</span>
-</code></pre></div>
-<p>通过使用Mocha、Should.js和SuperTest组成的工具集，我们可以方便的实现服务端的单元测试，一个单元测试的例子如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//创建Article Model的测试集</span>
-<span class="nx">describe</span><span class="p">(</span><span class="s1">'Article Model Unit Tests:'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>  
-    <span class="c1">//每次测试前执行的勾子函数</span>
-    <span class="nx">beforeEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//创建测试过程中所需要的数据   </span>
-        <span class="nx">done</span><span class="p">();</span>
-    <span class="p">});</span>
-
-    <span class="c1">//测试article是否能够存储成功</span>
-    <span class="nx">describe</span><span class="p">(</span><span class="s1">'Testing the save method'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-        <span class="c1">//测试正常文章存储逻辑</span>
-        <span class="nx">it</span><span class="p">(</span><span class="s1">'Should be able to save without problems'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-            <span class="nx">article</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">should</span><span class="p">.</span><span class="nx">not</span><span class="p">.</span><span class="nx">exist</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
-            <span class="p">});</span>
-        <span class="p">});</span>
-
-        <span class="c1">//测试异常文章存储逻辑</span>
-        <span class="nx">it</span><span class="p">(</span><span class="s1">'Should not be able to save an article without a title'</span><span class="p">,</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-            <span class="nx">article</span><span class="p">.</span><span class="nx">title</span> <span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
-            <span class="nx">article</span><span class="p">.</span><span class="nx">save</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">should</span><span class="p">.</span><span class="nx">exist</span><span class="p">(</span><span class="nx">err</span><span class="p">);</span>
-            <span class="p">});</span>
-        <span class="p">});</span>
-    <span class="p">});</span>
-
-    <span class="c1">// 每次测试后执行的勾子函数</span>
-    <span class="nx">afterEach</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//清除测试过程中产生的数据</span>
-        <span class="nx">done</span><span class="p">();</span>
-    <span class="p">});</span>
-</code></pre></div>
-<p>运行测试用例:</p>
-<div class="highlight"><pre><code class="language-" data-lang="">mocha --reporter spec app/tests
-</code></pre></div>
-<p>正常情况下，该测试的结果是：</p>
-<div class="highlight"><pre><code class="language-" data-lang=""> Article Model Unit Tests:
-    Testing the save method
-      √ Should be able to save without problems
-      √ Should not be able to save an article without a title
- 2 passing (135ms)
-</code></pre></div>
-<p>对于前端，主要采用我们熟悉的AngularJS单元测试和e2e测试，请参考<a href="http://www.cnblogs.com/vipyoumay/p/5331787.html">这篇博客</a>。</p>
-
-<h2 id="4">4.自动化的项目流程</h2>
-
-<p>前端工作的特点决定了其工程问题多于技术问题，因此在开始实际的项目代码开发之前，应该首先做好项目流程的自动化。前端项目构建工具很多，包括Grunt、Gulp、WebPack以及国内的fis等。一个完善的自动化项目流程主要包括：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">自动化构建：js、css代码检查，前端js、css合并、md5戳生成、雪碧图生成、上传的CDN等重复性操作
-自动化调试：通过添加特定的参数，比如--debug，可以方便的调试应用
-自动化测试：每次运行应用运用之前，将单元测试集运行一遍，确保功能正常
-自动化运行：以上三个步骤完成后，就可以运行应用了
-</code></pre></div>
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
 
 <div class="pagination">
   
@@ -795,6 +959,12 @@ before、after、beforeEach、afterEach等4个钩子函数用来在测试的不�
       <li>
         
           <a href="/page28">28</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page29">29</a>
         
       </li>
     
