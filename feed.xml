@@ -4,7 +4,7 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2018-09-16T21:07:53+08:00</updated>
+<updated>2018-09-16T21:11:22+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
@@ -25,7 +25,7 @@
     <uri></uri>
     <email>syszhpe@gmail.com</email>
   </author>
-  <content type="html">&lt;h1 id=&quot;1&quot;&gt;1. 新增环境依赖&lt;/h1&gt;
+  <content type="html">&lt;h2 id=&quot;1&quot;&gt;1. 新增环境依赖&lt;/h2&gt;
 
 &lt;p&gt;React 16 依赖于ES6新增集合类型 Map 和 Set。若执行环境不支持，可以使用core-js进行polyfill。&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;import 'core-js/es6/map';
@@ -35,7 +35,7 @@ import ReactDOM from 'react-dom';
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
 &lt;p&gt;React16 也依赖于 requestAnimationFrame。&lt;/p&gt;
 
-&lt;h1 id=&quot;2&quot;&gt;2. 新增客户端增量渲染能力&lt;/h1&gt;
+&lt;h2 id=&quot;2&quot;&gt;2. 新增客户端增量渲染能力&lt;/h2&gt;
 
 &lt;p&gt;React16对服务端渲染做了很多优化，真正做到了：&lt;/p&gt;
 &lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;服务端首次渲染，客户端增量渲染（目前还非常不好用）并添加事件`
@@ -75,11 +75,11 @@ import ReactDOM from 'react-dom';
 
 &lt;p&gt;React16新增了客户端首次增量渲染的能力，但我们必须非常小心地使用它，因为它并不如我们想象般聪明。目前发现增量渲染有如下问题：&lt;/p&gt;
 
-&lt;h3 id=&quot;1&quot;&gt;(1). 无法触发标签属性变更&lt;/h3&gt;
+&lt;h4 id=&quot;1&quot;&gt;(1). 无法触发标签属性变更&lt;/h4&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/react16-diff1.png&quot; alt=&quot;图片描述&quot;&gt;&lt;/p&gt;
 
-&lt;h3 id=&quot;2-dom&quot;&gt;(2). 兄弟DOM结构的删除导致页面混乱&lt;/h3&gt;
+&lt;h4 id=&quot;2-dom&quot;&gt;(2). 兄弟DOM结构的删除导致页面混乱&lt;/h4&gt;
 
 &lt;p&gt;&lt;img src=&quot;/images/react16-diff2.png&quot; alt=&quot;图片描述&quot;&gt;&lt;/p&gt;
 

@@ -127,7 +127,7 @@ rel="stylesheet" type="text/css" -->
     
   </header>
   <div class="entry-content">
-    <h1 id="1">1. 新增环境依赖</h1>
+    <h2 id="1">1. 新增环境依赖</h2>
 
 <p>React 16 依赖于ES6新增集合类型 Map 和 Set。若执行环境不支持，可以使用core-js进行polyfill。</p>
 <div class="highlight"><pre><code class="language-" data-lang="">import 'core-js/es6/map';
@@ -137,7 +137,7 @@ import ReactDOM from 'react-dom';
 </code></pre></div>
 <p>React16 也依赖于 requestAnimationFrame。</p>
 
-<h1 id="2">2. 新增客户端增量渲染能力</h1>
+<h2 id="2">2. 新增客户端增量渲染能力</h2>
 
 <p>React16对服务端渲染做了很多优化，真正做到了：</p>
 <div class="highlight"><pre><code class="language-" data-lang="">服务端首次渲染，客户端增量渲染（目前还非常不好用）并添加事件`
@@ -177,11 +177,11 @@ import ReactDOM from 'react-dom';
 
 <p>React16新增了客户端首次增量渲染的能力，但我们必须非常小心地使用它，因为它并不如我们想象般聪明。目前发现增量渲染有如下问题：</p>
 
-<h3 id="1">(1). 无法触发标签属性变更</h3>
+<h4 id="1">(1). 无法触发标签属性变更</h4>
 
 <p><img src="/images/react16-diff1.png" alt="图片描述"></p>
 
-<h3 id="2-dom">(2). 兄弟DOM结构的删除导致页面混乱</h3>
+<h4 id="2-dom">(2). 兄弟DOM结构的删除导致页面混乱</h4>
 
 <p><img src="/images/react16-diff2.png" alt="图片描述"></p>
 
