@@ -119,6 +119,47 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-05-10T00:00:00+08:00"><a href="/firefox-profile/">May 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/firefox-profile/" rel="bookmark" title="firefox profile" itemprop="url">firefox profile</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <blockquote>
+<p>profile是firefox的高级概念，开发者在扩展开发过程中一般使用不同的profile模拟不同的浏览器环境，用于测试扩展的兼容性。</p>
+</blockquote>
+
+<h1 id="profile">什么是profile</h1>
+<div class="highlight"><pre><code class="language-" data-lang="">profile是firefox用户数据的集合，包括书签，设置信息，扩展，密码信息，浏览历史等数据。
+</code></pre></div>
+<hr>
+
+<h1 id="profile">如何创建新的profile</h1>
+<div class="highlight"><pre><code class="language-" data-lang="">使用firefox的命令行创建新的profile，该命令要求所用的firefox实例都关闭：
+firefox.exe -P
+</code></pre></div>
+<p>会打开如下窗口：
+<figure>
+    <img src="/images/firefox_profile.jpg"/>
+    <figcaption>firefox profile窗口</figcaption>
+</figure></p>
+
+<hr>
+
+<h1 id="profile">如何使用新的profile</h1>
+<div class="highlight"><pre><code class="language-" data-lang="">
+使用命令行启动firefox，假设上一步创建的新的profile文件为TestProfile，可以使用如下命令使用新的profile启动firefox浏览器
+firefox.exe -P  “TestProfile”
+
+</code></pre></div>
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-04-16T00:00:00+08:00"><a href="/sci/">April 16, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -142,49 +183,6 @@ rel="stylesheet" type="text/css" -->
 </blockquote>
 
 <p>论文全文google吧！</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2013-12-01T00:00:00+08:00"><a href="/svn-post/">December 01, 2013</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/svn-post/" rel="bookmark" title="svn常用命令" itemprop="url">svn常用命令</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>发现很多人，包括很多同事对svn的命令只停留在checkout、commit、revert等基本的操作。其实svn还有其他一些更高级的用法，下面是3种最常用的命令。</p>
-
-<hr>
-
-<h2 id="1-svn">1.查看某个svn模块/文件提交记录</h2>
-<div class="highlight"><pre><code class="language-" data-lang="">基于日期: svn log -r {2012-04-01}:{2012-04-05} Test.java
-基于版本号: svn log -r 1001:1003 Test.java
-</code></pre></div>
-<p>其中<strong>参数-r</strong>后面可以是日期，也可以是svn版本号</p>
-
-<hr>
-
-<h2 id="2-svn">2.比较某个svn模块/文件的各个版本</h2>
-<div class="highlight"><pre><code class="language-" data-lang="">基于版本号: svn diff -r 1001:1003 Test.java
-基于常量: svn diff -r PREV:COMMITTED Test.java
-</code></pre></div>
-<hr>
-
-<h2 id="3-copy">3.将当前工作copy的模块/文件恢复到历史版本</h2>
-<div class="highlight"><pre><code class="language-" data-lang="">基于版本号: svn merge -r 1003:1001 Test.java
-</code></pre></div>
-<p>merge的意思可以简单的理解为<strong>将diff的差异应用到本地工作copy</strong></p>
-
-<hr>
-
-<blockquote>
-<p><strong>这里有svn的更多资料</strong>  <a href="http://svndoc.iusesvn.com/svnbook/">click</a>.</p>
-</blockquote>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -381,7 +379,7 @@ rel="stylesheet" type="text/css" -->
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
-    <span>&copy; 2017 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+    <span>&copy; 2018 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
 
   </footer>
 </div><!-- /.footer-wrapper -->

@@ -119,6 +119,137 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2017-07-01T00:00:00+08:00"><a href="/chrome-critical-css/">July 01, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/chrome-critical-css/" rel="bookmark" title="一种提取关键样式的方法" itemprop="url">一种提取关键样式的方法</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>以React服务端渲染为代表的现代化web前端技术，使得web页面的首屏时间不再依赖于JS文件的加载时间(JS文件的加载和执行只影响页面的可交互时间)。</p>
+
+<p>一个典型的web架构中，首屏渲染主要经历如下几个步骤：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">（1）浏览器向接入层请求HTML
+
+（2）接入层向后台服务请求数据后通过服务端渲染将HTML返回给浏览器
+
+（3）浏览器向CDN请求CSS后开始渲染首屏
+</code></pre></div>
+<p>如下图所示:</p>
+
+<p><img src="/images/no-critical-css.png" alt="no critical css"></p>
+
+<p>浏览器为了渲染首屏需要两次请求：一次向接入层请求HTML文档；另外一次向CDN请求CSS文件。有没有只需一次请求即可渲染出首屏的方案呢？ 通过使用内联样式，我们就可以使得浏览器不需要通过网络请求CSS；但对于一个中等规模的页面，需要内嵌的CSS内容过多，使得HTML文件本身过大，进而影响HTML本身的网络耗时，导致首屏耗时增加。我们需要一个折中方案来调和这种矛盾。</p>
+
+<h2 id="1">1.关键样式的作用</h2>
+
+<p>如果我们只是将首屏所需的关键样式内嵌到HTML页面中，然后通过网络请求获取非首屏所需的其他样式，就可以在保证一次请求即可渲染出首屏，同时尽量地减少了所需请求HTML文档的大小。</p>
+
+<p>如下图所示：通过内嵌少量的首屏关键样式，我们就使得CSS和JS加载（由于此处的CSS不影响首屏，我们可以把它同JS一起放到HTML文档的末尾）不影响首屏时间了。</p>
+
+<p><img src="/images/critical-css.png" alt="critical css"></p>
+
+<p>接下来的问题是: 我们如何准确的获取尽量小的关键样式？</p>
+
+<h2 id="2">2. 提取关键样式的方案</h2>
+
+<p>提取关键样式有多种方案：比如基于组件的方案，对于<a href="https://github.com/css-modules/css-modules">CSS in JS</a>结构的前端项目就非常有效，只需要将首屏中所有组件的样式抽取出来即可；另外一种是基于运行时分析的方案，也就是本文提出的方案。</p>
+
+<h3 id="2-1-chrome-code-coverage">2.1. 使用Chrome code coverage能力提取关键样式</h3>
+
+<p>新版的chrome新增了code coverge能力，通过运行时分析能够准确地得知当前代码中未被使用的比例。如下图所示，
+其中一个CSS文件有超过80%的代码未被使用；这也就意味着只有20%的CSS代码对于首屏渲染是有效的。</p>
+
+<p><img src="/images/code-coverage.png" alt="critical css"></p>
+
+<p>有没有程序化的手段，来获取具体哪些代码是有效的呢？ 通过<a href="https://github.com/cyrus-and/chrome-remote-interface">Chrome Debug Protocol</a>接口，我们可以在页面执行某个时间点(比如domReady时)，收集到当前已经使用到的CSS。具体伪代码如下：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//DOMContentLoaded时触发</span>
+<span class="nx">Page</span><span class="p">.</span><span class="nx">domContentEventFired</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kr">const</span> <span class="nx">styleSheetIds</span> <span class="o">=</span> <span class="p">{};</span>
+    <span class="kr">const</span> <span class="nx">styleSheetMap</span> <span class="o">=</span> <span class="p">{};</span>
+
+    <span class="nx">CSS</span><span class="p">.</span><span class="nx">takeCoverageDelta</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span><span class="nx">rules</span><span class="o">=&gt;</span><span class="p">{</span>
+        <span class="c1">//获取已经被使用的CSS规则的ID</span>
+        <span class="kr">const</span> <span class="nx">usedRules</span> <span class="o">=</span> <span class="nx">rules</span><span class="p">.</span><span class="nx">coverage</span><span class="p">.</span><span class="nx">filter</span><span class="p">((</span><span class="nx">rule</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+            <span class="nx">styleSheetIds</span><span class="p">[</span><span class="nx">rule</span><span class="p">.</span><span class="nx">styleSheetId</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="k">return</span> <span class="nx">rule</span><span class="p">.</span><span class="nx">used</span><span class="p">;</span>
+        <span class="p">});</span>
+
+        <span class="c1">//获取所有已经被使用规则片段</span>
+        <span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">styleSheetIds</span><span class="p">).</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">styleSheetId</span> <span class="o">=&gt;</span> <span class="p">{</span>
+            <span class="nx">stylesSheetsPromises</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span>
+                <span class="nx">CSS</span><span class="p">.</span><span class="nx">getStyleSheetText</span><span class="p">({</span>
+                    <span class="na">styleSheetId</span><span class="p">:</span> <span class="nx">styleSheetId</span>
+                <span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="nx">stylesheet</span> <span class="o">=&gt;</span> <span class="p">{</span>
+                    <span class="nx">styleSheetMap</span><span class="p">[</span><span class="nx">styleSheetId</span><span class="p">]</span> <span class="o">=</span> <span class="nx">stylesheet</span><span class="p">.</span><span class="nx">text</span> <span class="o">||</span> <span class="s1">''</span><span class="p">;</span>
+                <span class="p">})</span>
+            <span class="p">)</span>
+        <span class="p">})</span>
+
+        <span class="c1">//根据规则片段拼接出关键css文本</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kr">const</span> <span class="nx">usedRule</span> <span class="nx">of</span> <span class="nx">usedRules</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kr">const</span> <span class="nx">curStyleId</span> <span class="o">=</span> <span class="nx">usedRule</span><span class="p">.</span><span class="nx">styleSheetId</span><span class="p">;</span>
+            <span class="kr">const</span> <span class="nx">styleSeg</span> <span class="o">=</span> <span class="nx">styleSheetMap</span><span class="p">[</span><span class="nx">curStyleId</span><span class="p">].</span><span class="nx">slice</span><span class="p">(</span><span class="nx">usedRule</span><span class="p">.</span><span class="nx">startOffset</span><span class="p">,</span> <span class="nx">usedRule</span><span class="p">.</span><span class="nx">endOffset</span><span class="p">);</span>
+            <span class="c1">//收集关键样式</span>
+            <span class="nx">cirticalCssArr</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">styleSeg</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="kr">const</span> <span class="nx">cirticalStyle</span> <span class="o">=</span> <span class="nx">cirticalCssArr</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s1">''</span><span class="p">);</span>
+
+    <span class="p">})</span>
+<span class="p">})</span>
+</code></pre></div>
+<p>以上只截取了部分代码,全部代码请参考<a href="https://github.com/foio/chromeCriticalCss/blob/master/critical.js">critical.js</a> :</p>
+
+<p>虽然我们已经能够通过Chrome Debug Protocol来获取关键样式，但该关键样式仍然无法直接应用于生产环境。一个主要的原因是它丢失了Media Query信息；Chrome Code Coverage能力只能针对特定的User Agent工作，这就使得我们获取的关键样式不具有普适性。我们需要额外的解决方案。</p>
+
+<h3 id="2-2-postcss-media-query">2.2 使用Postcss获取关键样式中的Media Query</h3>
+
+<p><a href="https://github.com/postcss/postcss">postcss</a>作为业界最强大的CSS处理器，借助于它我们可以结构化地处理CSS，比如抽取关键样式中Media Query。通过结合Code Coverage和postcss，我们就能获取到准确的、UA无关地关键样式了。</p>
+
+<p><img src="/images/post-critical-css.png" alt="post critical css"></p>
+
+<p>核心代码如下所示：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//解析全部css</span>
+<span class="kr">const</span> <span class="nx">allStyleParser</span> <span class="o">=</span> <span class="nx">postCss</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">allStyle</span><span class="p">);</span>
+<span class="c1">//结构化地遍历CSS</span>
+<span class="nx">allStyleParser</span><span class="p">.</span><span class="nx">walkAtRules</span><span class="p">(</span><span class="nx">rule</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">let</span> <span class="nx">isCritical</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="c1">//遍历Media Query表达式</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">rule</span><span class="p">.</span><span class="nx">name</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/^media/</span><span class="p">))</span> <span class="p">{</span>
+        <span class="c1">//只选取关键的media query</span>
+        <span class="nx">rule</span><span class="p">.</span><span class="nx">each</span><span class="p">((</span><span class="nx">subRule</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+            <span class="kr">const</span> <span class="nx">selector</span> <span class="o">=</span> <span class="nx">subRule</span><span class="p">.</span><span class="nx">selector</span><span class="p">;</span>
+            <span class="k">if</span><span class="p">(</span><span class="nx">cirticalStyle</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">selector</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">){</span>
+                <span class="nx">isCritical</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+                <span class="nx">subRule</span><span class="p">.</span><span class="nx">remove</span><span class="p">();</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">isCritical</span><span class="p">){</span>
+            <span class="nx">mediaQueriesCss</span> <span class="o">+=</span> <span class="nx">rule</span><span class="p">.</span><span class="nx">toString</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">})</span>
+<span class="c1">//关键样式+MediaQuery为最终首屏核心样式</span>
+<span class="kr">const</span> <span class="nx">coveredStyle</span> <span class="o">=</span> <span class="nx">cirticalStyle</span> <span class="o">+</span> <span class="nx">mediaQueriesCss</span><span class="p">;</span>
+</code></pre></div>
+<p>以上只截取了部分代码,全部代码请参考<a href="https://github.com/foio/chromeCriticalCss/blob/master/critical.js">critical.js</a> :</p>
+
+<p>本文提出的关键样式提取方案只适用于形态相对稳定的页面（尤其适合静态页面）；对于千人千面的个性化页面，可以尝试其他方案（基于组件的关键样式提取）。</p>
+
+<p><a href="https://www.gideonpyzer.com/blog/runtime-coverage-using-chrome-devtools/">https://www.gideonpyzer.com/blog/runtime-coverage-using-chrome-devtools/</a> </p>
+
+<p><a href="https://github.com/cyrus-and/chrome-remote-interface">https://github.com/cyrus-and/chrome-remote-interface</a> </p>
+
+<p><a href="https://github.com/foio/chromeCriticalCss">https://github.com/foio/chromeCriticalCss</a> <a href="https://github.com/postcss/postcss">https://github.com/postcss/postcss</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2017-05-01T00:00:00+08:00"><a href="/service-worker-cache/">May 01, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -400,211 +531,6 @@ rel="stylesheet" type="text/css" -->
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2017-02-28T00:00:00+08:00"><a href="/babel-try-catch/">February 28, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/babel-try-catch/" rel="bookmark" title="一种生产环境中高效定位JS异常的方案" itemprop="url">一种生产环境中高效定位JS异常的方案</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>在我的一篇文章中：<a href="http://foio.github.io/javascript-global-exceptions/">捕获页面中全局Javascript异常</a>，介绍了通过AST(抽象语法树)技术，借助于UglifyJs提供的AST的API，对源文件进行预处理，对每个函数自动地添加try catch包裹代码，从而捕获生产环境中的JS异常。通过使用<a href="https://github.com/foio/try-catch-global.js">try-catch-global.js</a>，可以简单的如下源代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">
-<span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'test'</span><span class="p">);</span>
-<span class="p">}</span>
-
-</code></pre></div>
-<p>转换成</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">test</span> <span class="o">=</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>             
-    <span class="k">try</span> <span class="p">{</span>                           
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s2">"test"</span><span class="p">);</span>        
-    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>               
-        <span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>          
-            <span class="c1">//your logic to handle error     </span>
-        <span class="p">})(</span><span class="nx">error</span><span class="p">);</span>                  
-    <span class="p">}</span>                               
-<span class="p">};</span>                 
-</code></pre></div>
-<p>但是由于我们发布到生产环境中的代码，往往都经过压缩和混淆，文件名、函数名、变量名已经不具有可读性了，捕获的异常堆栈信息的价值有限，简单的通过这些异常信息，我们依然很难定位到源文件中错误出处。本文我们就试图解决这个问题：依然基于AST(抽象语法树)对源代码进行try catch包裹，但会在catch语句中收集更多源文件的信息(包括文件名、函数名、函数起始行号等)，最后借助于babel和webpack的插件体系，提供一个工程化的解决方案。</p>
-
-<h3 id="1-babel-plugin-try-catch">1. 自定义babel-plugin实现try catch包裹</h3>
-
-<p>在文章<a href="http://foio.github.io/javascript-global-exceptions/">捕获页面中全局Javascript异常</a>中，我们使用的是UglifyJS提供的操作Javascript语法树的API，这套API比较底层，需要发力气才能啃透，不适合初学者使用。babel提供了抽象层次更高的操作语法树的API:<a href="https://github.com/babel/babylon">babylon</a>，并且提供了一系列工具<a href="https://www.npmjs.com/package/babel-template">babel-template</a>、<a href="https://www.npmjs.com/package/babel-helper-function-name">babel-helper-function-name</a>等。</p>
-
-<p>在使用Babel对Javascript源文件进行处理时，有三个主要步骤，分别是： 解析（parse），转换（transform），生成（generate）。Babel首先会将源文件转换为抽象语法树(AST)，然后对抽象语法树进行转换，最后由抽象语法树生成新的源代码，如下图所示。在转换（transform）阶段，Babel提供了非常便利的插件机制，开发者可以在插件中实现自己的AST转换。关于如何开发Babel插件，最好的教程就是<a href="https://github.com/thejameskyle/babel-handbook/blob/master/translations/en/plugin-handbook.md">官方文档</a>。</p>
-
-<p><img src="/images//babel-plugin-ast.png" alt="babel插件转换AST"></p>
-
-<p>在对AST的转换阶段，Babel使用babel-traverse对AST进行深度优先遍历，它的插件机制使得我们可以针对某个特定类型的语法树节点（比如，函数、条件语句等）注册钩子函数，从而完成我们对语法树的转换工作。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">  <span class="nx">visitor</span><span class="err">:</span> <span class="p">{</span>
-    <span class="nl">Function</span><span class="p">:</span> <span class="p">{</span>
-      <span class="c1">//遍历到函数时</span>
-    <span class="p">},</span>
-    <span class="nx">ClassMethod</span><span class="err">:</span> <span class="p">{</span>
-      <span class="c1">//遍历catch语句块时</span>
-    <span class="p">}</span>
-    <span class="p">......</span>
-  <span class="p">}</span>
-</code></pre></div>
-<p>通过插件机制，我们可以对所有的函数和类方法节点进行转换，插入try catch包裹代码；同时，在babel解析后的语法树中包含了详细的源文件的元信息，我们可以将这些源文件信息透传到自定义的错误处理函数中。对于函数，我们可以如下处理：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">visitor</span><span class="err">:</span> <span class="p">{</span>
-        <span class="c1">//只处理函数和类方法节点</span>
-        <span class="s2">"Function|ClassMethod"</span> <span class="p">{</span>
-            <span class="nl">exit</span><span class="p">:</span> <span class="kd">function</span> <span class="nx">exit</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span> <span class="nx">state</span><span class="p">)</span> <span class="p">{</span>
-                <span class="c1">//深度优先搜索会遍历两次，需要避免重复</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">shouldSkip</span><span class="p">(</span><span class="nx">path</span><span class="p">,</span> <span class="nx">state</span><span class="p">))</span> <span class="p">{</span>
-                    <span class="k">return</span><span class="p">;</span>
-                <span class="p">}</span>
-
-                <span class="c1">//如果函数体为空则不处理</span>
-                <span class="kd">var</span> <span class="nx">body</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">body</span><span class="p">;</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">body</span><span class="p">.</span><span class="nx">length</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="k">return</span><span class="p">;</span>
-                <span class="p">}</span>
-
-                <span class="c1">//收集函数名</span>
-                <span class="kd">var</span> <span class="nx">functionName</span> <span class="o">=</span> <span class="s1">'anonymous function'</span><span class="p">;</span>
-                <span class="nx">babelHelperFunctionName2</span><span class="p">(</span><span class="nx">path</span><span class="p">);</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">id</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="nx">functionName</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">id</span><span class="p">.</span><span class="nx">name</span> <span class="o">||</span> <span class="s1">'anonymous function'</span><span class="p">;</span>
-                <span class="p">}</span>
-
-                <span class="c1">//收集类方法名</span>
-                <span class="k">if</span><span class="p">(</span><span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">key</span><span class="p">){</span>
-                    <span class="nx">functionName</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">key</span><span class="p">.</span><span class="nx">name</span> <span class="o">||</span> <span class="s1">'anonymous function'</span><span class="p">;</span>
-                <span class="p">}</span>
-
-                <span class="c1">//函数起始行号</span>
-                <span class="kd">var</span> <span class="nx">loc</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">node</span><span class="p">.</span><span class="nx">loc</span><span class="p">;</span>
-
-                <span class="c1">//异常变量名</span>
-                <span class="kd">var</span> <span class="nx">errorVariableName</span> <span class="o">=</span> <span class="nx">path</span><span class="p">.</span><span class="nx">scope</span><span class="p">.</span><span class="nx">generateUidIdentifier</span><span class="p">(</span><span class="s1">'e'</span><span class="p">);</span>
-
-                <span class="c1">//使用函数模板进行try catch包裹，需要注意的是AST无法获取到文件名信息，需要外部传入</span>
-                <span class="nx">path</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">'body'</span><span class="p">).</span><span class="nx">replaceWith</span><span class="p">(</span><span class="nx">wrapFunction</span><span class="p">({</span>
-                    <span class="na">BODY</span><span class="p">:</span> <span class="nx">body</span><span class="p">,</span>
-                    <span class="na">FILENAME</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">StringLiteral</span><span class="p">(</span><span class="nx">filename</span><span class="p">),</span>
-                    <span class="na">FUNCTION_NAME</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">StringLiteral</span><span class="p">(</span><span class="nx">functionName</span><span class="p">),</span>
-                    <span class="na">LINE</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">NumericLiteral</span><span class="p">(</span><span class="nx">loc</span><span class="p">.</span><span class="nx">start</span><span class="p">.</span><span class="nx">line</span><span class="p">),</span>
-                    <span class="na">COLUMN</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">NumericLiteral</span><span class="p">(</span><span class="nx">loc</span><span class="p">.</span><span class="nx">start</span><span class="p">.</span><span class="nx">column</span><span class="p">),</span>
-                    <span class="na">REPORT_ERROR</span><span class="p">:</span> <span class="nx">t</span><span class="p">.</span><span class="nx">identifier</span><span class="p">(</span><span class="nx">reportError</span><span class="p">),</span>
-                    <span class="na">ERROR_VARIABLE_NAME</span><span class="p">:</span> <span class="nx">errorVariableName</span>
-                <span class="p">}));</span>
-            <span class="p">}</span>
-        <span class="p">},</span>
-</code></pre></div>
-<p>babel提供了非常便利的工具babel template，其中隐藏了AST转换的细节，简单的使用函数模板就可以对函数进行任意转换，如下代码我们使用template对函数进行try catch包裹：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">const</span> <span class="nx">wrapFunction</span> <span class="o">=</span> <span class="nx">template</span><span class="p">(</span><span class="err">`</span><span class="p">{</span>
-  <span class="k">try</span> <span class="p">{</span>
-    <span class="nx">BODY</span>
-  <span class="p">}</span> <span class="k">catch</span><span class="p">(</span><span class="nx">ERROR_VARIABLE_NAME</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">REPORT_ERROR</span><span class="p">(</span><span class="nx">ERROR_VARIABLE_NAME</span><span class="p">,</span> <span class="nx">FILENAME</span><span class="p">,</span> <span class="nx">FUNCTION_NAME</span><span class="p">,</span> <span class="nx">LINE</span><span class="p">,</span> <span class="nx">COLUMN</span><span class="p">)</span>
-    <span class="k">throw</span> <span class="nx">ERROR_VARIABLE_NAME</span>
-  <span class="p">}</span>
-<span class="p">}</span><span class="err">`</span><span class="p">)</span>
-
-</code></pre></div>
-<p>通过使用babel插件，在babel对源代码进行处理时注册针对特定AST节点的钩子函数（本文我们只关心函数类型节点），使用bable-template对函数进行try catch包裹，并在catch语句中预埋入从AST中收集到的源文件信息。</p>
-
-<p>处理前的代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"> <span class="kd">function</span> <span class="nx">testA</span><span class="p">(){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-<span class="p">}</span>
-
-
-<span class="kr">class</span> <span class="nx">A</span> <span class="p">{</span>
-    <span class="nx">testB</span><span class="p">(){</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">testD</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
-<span class="p">}</span>
-
-</code></pre></div>
-<p>处理后的代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">testA</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">try</span> <span class="p">{</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">_e</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">reportError</span><span class="p">(</span><span class="nx">_e</span><span class="p">,</span> <span class="s2">"test.js"</span><span class="p">,</span> <span class="s2">"testA"</span><span class="p">,</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kr">class</span> <span class="nx">A</span> <span class="p">{</span>
-    <span class="nx">testB</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">try</span> <span class="p">{</span>
-            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">_e2</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">reportError</span><span class="p">(</span><span class="nx">_e2</span><span class="p">,</span> <span class="s2">"test.js"</span><span class="p">,</span> <span class="s2">"testB"</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">4</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">testD</span> <span class="o">=</span> <span class="kd">function</span> <span class="nx">testD</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">try</span> <span class="p">{</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">_e4</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">reportError</span><span class="p">(</span><span class="nx">_e4</span><span class="p">,</span> <span class="s2">"test.js"</span><span class="p">,</span> <span class="s2">"testD"</span><span class="p">,</span> <span class="mi">19</span><span class="p">,</span> <span class="mi">12</span><span class="p">);</span>
-    <span class="p">}</span>
-<span class="p">};</span>
-
-</code></pre></div>
-<p>转换后的代码通过后续的混淆、压缩后发布到生产环境，生产环境中的代码发生异常时，catch语句中的reportError会将异常上报到日志平台，上报的信息中包含了我们从AST中预埋入的变量名、函数名、函数函数起始行号、文件名等信息，通过这些信息我们就可以快速定位到源代码中的异常位置。</p>
-
-<h3 id="2-webpack-loader">2. 使用webpack loader进行工程化构建</h3>
-
-<p>上文讲到使用babel插件对Javascript源代码生成的AST进行转换，最终对所有的函数生成try catch包裹代码。本小节我们考虑将构建流程集成到webpack中。webpack首先使用loader对源代码进行处理，然后将入口文件以及其依赖打包到一个chunk中。在webpack的编译流程中，我们可以借助于自定义的loader来实现对源代码的AST转换。</p>
-
-<p>编写一个自定义的webpack的loader非常简单，简单的教程请参考<a href="https://webpack.github.io/docs/how-to-write-a-loader.html">官方文档</a>，下文是一个非常简单的loader，其接收源代码内容作为输入，并转转换后的源代码作为输出。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">source</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">//your logic to change source</span>
-  <span class="k">return</span> <span class="nx">source</span><span class="p">;</span>
-<span class="p">};</span>
-</code></pre></div>
-<p>我们也实现了一个webpack的loader：<a href="https://github.com/foio/babel_try_catch_loader">babel_try_catch_loader</a>，它借助于babel插件<a href="https://github.com/foio/babel-plugin-try-catch-wrapper">babel-plugin-try-catch-wrapper</a>，通过AST技术对源代码进行处理。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">tryCatchWrapper</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'babel-plugin-try-catch'</span><span class="p">)</span>
-<span class="p">...</span>
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">source</span><span class="p">,</span> <span class="nx">inputMap</span><span class="p">)</span> <span class="p">{</span>
-    <span class="p">......</span>
-    <span class="kd">var</span> <span class="nx">transOpts</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="na">plugins</span><span class="p">:</span> <span class="p">[</span>
-            <span class="p">[</span><span class="nx">tryCatchWrapper</span><span class="p">,</span> <span class="p">{</span>
-                <span class="na">filename</span><span class="p">:</span> <span class="nx">filename</span><span class="p">,</span>
-                <span class="na">reportError</span><span class="p">:</span> <span class="nx">userOptions</span><span class="p">.</span><span class="nx">reporter</span><span class="p">,</span>
-                <span class="na">rethrow</span><span class="p">:</span> <span class="nx">userOptions</span><span class="p">.</span><span class="nx">rethrow</span>
-            <span class="p">}]</span>
-        <span class="p">],</span>
-        <span class="na">sourceMaps</span><span class="p">:</span> <span class="kc">true</span>
-    <span class="p">};</span>
-    <span class="kd">var</span> <span class="nx">result</span> <span class="o">=</span> <span class="nx">babel</span><span class="p">.</span><span class="nx">transform</span><span class="p">(</span><span class="nx">source</span><span class="p">,</span> <span class="nx">transOpts</span><span class="p">);</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">callback</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span> <span class="nx">result</span><span class="p">.</span><span class="nx">code</span><span class="p">,</span> <span class="nx">result</span><span class="p">.</span><span class="nx">map</span><span class="p">);</span>
-    <span class="p">......</span>
-<span class="p">};</span>
-</code></pre></div>
-<p>只需要在webpack配置文件中使用<a href="https://github.com/foio/babel_try_catch_loader">babel_try_catch_loader</a>，我们就可以通过一行配置文件来将项目中源代码中所有的函数进行try catch包裹了。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">loaders</span><span class="err">:</span> <span class="p">[</span>
-            <span class="p">......</span>
-            <span class="p">{</span>
-                <span class="nl">test</span><span class="p">:</span> <span class="sr">/</span><span class="se">\.</span><span class="sr">jsx|</span><span class="se">\.</span><span class="sr">js$/</span><span class="p">,</span>
-                <span class="nx">loader</span><span class="err">:</span> <span class="s1">'babel-try-catch-loader?rethrow=true&amp;verbose&amp;reporter=reportError&amp;tempdir=.tryCatchResult!babel-loader'</span><span class="p">,</span>
-                <span class="nx">exclude</span><span class="err">:</span> <span class="o">/</span><span class="nx">node_modules</span><span class="o">/</span>
-            <span class="p">}</span>
-            <span class="p">......</span>
-        <span class="p">],</span>
-
-<span class="nx">devtool</span><span class="err">:</span> <span class="s1">'source-map'</span>
-</code></pre></div>
-<p>上文中的配置文件，对项目中的所有源代码使用babel-loader进行转换，然后使用babel-try-catch-loader处理babel-loader产生的代码和source map，保证了经过后续的混淆、压缩并发布到线上环境的生产代码仍然具有较强的debug能力。详细的配置文件请参考<a href="https://github.com/foio/webpack-try-catch-demo">webpack-try-catch-demo</a>。实现原理请参考<a href="https://github.com/foio/babel_try_catch_loader">babel-try-catch-loader</a>.</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
 
 <div class="pagination">
   
@@ -795,7 +721,7 @@ rel="stylesheet" type="text/css" -->
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
-    <span>&copy; 2017 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+    <span>&copy; 2018 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
 
   </footer>
 </div><!-- /.footer-wrapper -->

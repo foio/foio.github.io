@@ -1,0 +1,304 @@
+<!doctype html>
+<!--[if lt IE 7]><html class="no-js lt-ie9 lt-ie8 lt-ie7" lang="en"> <![endif]-->
+<!--[if (IE 7)&!(IEMobile)]><html class="no-js lt-ie9 lt-ie8" lang="en"><![endif]-->
+<!--[if (IE 8)&!(IEMobile)]><html class="no-js lt-ie9" lang="en"><![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
+<head>
+<meta charset="utf-8">
+<title>一种提取关键样式的方法 &#8211; 积木村の研究所</title>
+<meta name="description" content="使用chrome的代码覆盖能力和postcss工具获取准确的关键样式">
+<meta name="keywords" content="关键样式, Critical CSS, postcss, Chrome debug protocol, Code Coverage">
+
+
+
+<!-- Open Graph -->
+<meta property="og:locale" content="en_US">
+<meta property="og:type" content="article">
+<meta property="og:title" content="一种提取关键样式的方法">
+<meta property="og:description" content="使用chrome的代码覆盖能力和postcss工具获取准确的关键样式">
+<meta property="og:url" content="/chrome-critical-css/">
+<meta property="og:site_name" content="积木村の研究所">
+
+
+
+
+
+<link rel="canonical" href="/chrome-critical-css/">
+<link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
+
+
+<!-- http://t.co/dKP3o1e -->
+<meta name="HandheldFriendly" content="True">
+<meta name="MobileOptimized" content="320">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<!-- For all browsers -->
+<link rel="stylesheet" href="/assets/css/main.min.css">
+<!-- Webfonts -->
+<!--link href="http://fonts.googleapis.com/css?family=Lato:300,400,700,300italic,400italic"
+rel="stylesheet" type="text/css" -->
+
+<meta http-equiv="cleartype" content="on">
+
+<!-- Load Modernizr -->
+<script src="/assets/js/vendor/modernizr-2.6.2.custom.min.js"></script>
+
+<!-- Icons -->
+<!-- 16x16 -->
+<link rel="shortcut icon" href="/favicon.ico">
+<!-- 32x32 -->
+<link rel="shortcut icon" href="/favicon.png">
+<!-- 57x57 (precomposed) for iPhone 3GS, pre-2011 iPod Touch and older Android devices -->
+<link rel="apple-touch-icon-precomposed" href="/images/apple-touch-icon-precomposed.png">
+<!-- 72x72 (precomposed) for 1st generation iPad, iPad 2 and iPad mini -->
+<link rel="apple-touch-icon-precomposed" sizes="72x72" href="/images/apple-touch-icon-72x72-precomposed.png">
+<!-- 114x114 (precomposed) for iPhone 4, 4S, 5 and post-2011 iPod Touch -->
+<link rel="apple-touch-icon-precomposed" sizes="114x114" href="/images/apple-touch-icon-114x114-precomposed.png">
+<!-- 144x144 (precomposed) for iPad 3rd and 4th generation -->
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="/images/apple-touch-icon-144x144-precomposed.png">
+
+
+
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
+</head>
+
+<body id="post" >
+
+<!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
+<nav id="dl-menu" class="dl-menuwrapper" role="navigation">
+	<button class="dl-trigger">Open Menu</button>
+	<ul class="dl-menu">
+		<li><a href="/">Home</a></li>
+		<li>
+			<a href="#">About</a>
+			<ul class="dl-submenu">
+				<li>
+					<img src="/images/self.jpg" alt="foio photo" class="author-photo">
+					<h4>foio</h4>
+					<p>QQ手机浏览器前端工程师</p>
+				</li>
+                <!--<li><a href="/about/">Learn More</a></li>-->
+				<li>
+					<a href="mailto:syszhpe@gmail.com"><i class="fa fa-envelope"></i> Email</a>
+				</li>
+				
+				
+				
+				
+				
+				
+				
+				
+				
+			</ul><!-- /.dl-submenu -->
+		</li>
+		<li>
+			<a href="#">Posts</a>
+			<ul class="dl-submenu">
+				<li><a href="/posts/">All Posts</a></li>
+				<li><a href="/tags/">All Tags</a></li>
+			</ul>
+		</li>
+		
+	</ul><!-- /.dl-menu -->
+</nav><!-- /.dl-menuwrapper -->
+
+
+
+
+<div id="main" role="main">
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/chrome-critical-css/" rel="bookmark" title="一种提取关键样式的方法">一种提取关键样式的方法</a></h1>
+        
+        <h2>July 01, 2017</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>以React服务端渲染为代表的现代化web前端技术，使得web页面的首屏时间不再依赖于JS文件的加载时间(JS文件的加载和执行只影响页面的可交互时间)。</p>
+
+<p>一个典型的web架构中，首屏渲染主要经历如下几个步骤：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">（1）浏览器向接入层请求HTML
+
+（2）接入层向后台服务请求数据后通过服务端渲染将HTML返回给浏览器
+
+（3）浏览器向CDN请求CSS后开始渲染首屏
+</code></pre></div>
+<p>如下图所示:</p>
+
+<p><img src="/images/no-critical-css.png" alt="no critical css"></p>
+
+<p>浏览器为了渲染首屏需要两次请求：一次向接入层请求HTML文档；另外一次向CDN请求CSS文件。有没有只需一次请求即可渲染出首屏的方案呢？ 通过使用内联样式，我们就可以使得浏览器不需要通过网络请求CSS；但对于一个中等规模的页面，需要内嵌的CSS内容过多，使得HTML文件本身过大，进而影响HTML本身的网络耗时，导致首屏耗时增加。我们需要一个折中方案来调和这种矛盾。</p>
+
+<h2 id="1">1.关键样式的作用</h2>
+
+<p>如果我们只是将首屏所需的关键样式内嵌到HTML页面中，然后通过网络请求获取非首屏所需的其他样式，就可以在保证一次请求即可渲染出首屏，同时尽量地减少了所需请求HTML文档的大小。</p>
+
+<p>如下图所示：通过内嵌少量的首屏关键样式，我们就使得CSS和JS加载（由于此处的CSS不影响首屏，我们可以把它同JS一起放到HTML文档的末尾）不影响首屏时间了。</p>
+
+<p><img src="/images/critical-css.png" alt="critical css"></p>
+
+<p>接下来的问题是: 我们如何准确的获取尽量小的关键样式？</p>
+
+<h2 id="2">2. 提取关键样式的方案</h2>
+
+<p>提取关键样式有多种方案：比如基于组件的方案，对于<a href="https://github.com/css-modules/css-modules">CSS in JS</a>结构的前端项目就非常有效，只需要将首屏中所有组件的样式抽取出来即可；另外一种是基于运行时分析的方案，也就是本文提出的方案。</p>
+
+<h3 id="2-1-chrome-code-coverage">2.1. 使用Chrome code coverage能力提取关键样式</h3>
+
+<p>新版的chrome新增了code coverge能力，通过运行时分析能够准确地得知当前代码中未被使用的比例。如下图所示，
+其中一个CSS文件有超过80%的代码未被使用；这也就意味着只有20%的CSS代码对于首屏渲染是有效的。</p>
+
+<p><img src="/images/code-coverage.png" alt="critical css"></p>
+
+<p>有没有程序化的手段，来获取具体哪些代码是有效的呢？ 通过<a href="https://github.com/cyrus-and/chrome-remote-interface">Chrome Debug Protocol</a>接口，我们可以在页面执行某个时间点(比如domReady时)，收集到当前已经使用到的CSS。具体伪代码如下：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//DOMContentLoaded时触发</span>
+<span class="nx">Page</span><span class="p">.</span><span class="nx">domContentEventFired</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kr">const</span> <span class="nx">styleSheetIds</span> <span class="o">=</span> <span class="p">{};</span>
+    <span class="kr">const</span> <span class="nx">styleSheetMap</span> <span class="o">=</span> <span class="p">{};</span>
+
+    <span class="nx">CSS</span><span class="p">.</span><span class="nx">takeCoverageDelta</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span><span class="nx">rules</span><span class="o">=&gt;</span><span class="p">{</span>
+        <span class="c1">//获取已经被使用的CSS规则的ID</span>
+        <span class="kr">const</span> <span class="nx">usedRules</span> <span class="o">=</span> <span class="nx">rules</span><span class="p">.</span><span class="nx">coverage</span><span class="p">.</span><span class="nx">filter</span><span class="p">((</span><span class="nx">rule</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+            <span class="nx">styleSheetIds</span><span class="p">[</span><span class="nx">rule</span><span class="p">.</span><span class="nx">styleSheetId</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="k">return</span> <span class="nx">rule</span><span class="p">.</span><span class="nx">used</span><span class="p">;</span>
+        <span class="p">});</span>
+
+        <span class="c1">//获取所有已经被使用规则片段</span>
+        <span class="nb">Object</span><span class="p">.</span><span class="nx">keys</span><span class="p">(</span><span class="nx">styleSheetIds</span><span class="p">).</span><span class="nx">forEach</span><span class="p">(</span><span class="nx">styleSheetId</span> <span class="o">=&gt;</span> <span class="p">{</span>
+            <span class="nx">stylesSheetsPromises</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span>
+                <span class="nx">CSS</span><span class="p">.</span><span class="nx">getStyleSheetText</span><span class="p">({</span>
+                    <span class="na">styleSheetId</span><span class="p">:</span> <span class="nx">styleSheetId</span>
+                <span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="nx">stylesheet</span> <span class="o">=&gt;</span> <span class="p">{</span>
+                    <span class="nx">styleSheetMap</span><span class="p">[</span><span class="nx">styleSheetId</span><span class="p">]</span> <span class="o">=</span> <span class="nx">stylesheet</span><span class="p">.</span><span class="nx">text</span> <span class="o">||</span> <span class="s1">''</span><span class="p">;</span>
+                <span class="p">})</span>
+            <span class="p">)</span>
+        <span class="p">})</span>
+
+        <span class="c1">//根据规则片段拼接出关键css文本</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kr">const</span> <span class="nx">usedRule</span> <span class="nx">of</span> <span class="nx">usedRules</span><span class="p">)</span> <span class="p">{</span>
+            <span class="kr">const</span> <span class="nx">curStyleId</span> <span class="o">=</span> <span class="nx">usedRule</span><span class="p">.</span><span class="nx">styleSheetId</span><span class="p">;</span>
+            <span class="kr">const</span> <span class="nx">styleSeg</span> <span class="o">=</span> <span class="nx">styleSheetMap</span><span class="p">[</span><span class="nx">curStyleId</span><span class="p">].</span><span class="nx">slice</span><span class="p">(</span><span class="nx">usedRule</span><span class="p">.</span><span class="nx">startOffset</span><span class="p">,</span> <span class="nx">usedRule</span><span class="p">.</span><span class="nx">endOffset</span><span class="p">);</span>
+            <span class="c1">//收集关键样式</span>
+            <span class="nx">cirticalCssArr</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">styleSeg</span><span class="p">);</span>
+        <span class="p">}</span>
+        <span class="kr">const</span> <span class="nx">cirticalStyle</span> <span class="o">=</span> <span class="nx">cirticalCssArr</span><span class="p">.</span><span class="nx">join</span><span class="p">(</span><span class="s1">''</span><span class="p">);</span>
+
+    <span class="p">})</span>
+<span class="p">})</span>
+</code></pre></div>
+<p>以上只截取了部分代码,全部代码请参考<a href="https://github.com/foio/chromeCriticalCss/blob/master/critical.js">critical.js</a> :</p>
+
+<p>虽然我们已经能够通过Chrome Debug Protocol来获取关键样式，但该关键样式仍然无法直接应用于生产环境。一个主要的原因是它丢失了Media Query信息；Chrome Code Coverage能力只能针对特定的User Agent工作，这就使得我们获取的关键样式不具有普适性。我们需要额外的解决方案。</p>
+
+<h3 id="2-2-postcss-media-query">2.2 使用Postcss获取关键样式中的Media Query</h3>
+
+<p><a href="https://github.com/postcss/postcss">postcss</a>作为业界最强大的CSS处理器，借助于它我们可以结构化地处理CSS，比如抽取关键样式中Media Query。通过结合Code Coverage和postcss，我们就能获取到准确的、UA无关地关键样式了。</p>
+
+<p><img src="/images/post-critical-css.png" alt="post critical css"></p>
+
+<p>核心代码如下所示：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//解析全部css</span>
+<span class="kr">const</span> <span class="nx">allStyleParser</span> <span class="o">=</span> <span class="nx">postCss</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">allStyle</span><span class="p">);</span>
+<span class="c1">//结构化地遍历CSS</span>
+<span class="nx">allStyleParser</span><span class="p">.</span><span class="nx">walkAtRules</span><span class="p">(</span><span class="nx">rule</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="kd">let</span> <span class="nx">isCritical</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="c1">//遍历Media Query表达式</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">rule</span><span class="p">.</span><span class="nx">name</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="sr">/^media/</span><span class="p">))</span> <span class="p">{</span>
+        <span class="c1">//只选取关键的media query</span>
+        <span class="nx">rule</span><span class="p">.</span><span class="nx">each</span><span class="p">((</span><span class="nx">subRule</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+            <span class="kr">const</span> <span class="nx">selector</span> <span class="o">=</span> <span class="nx">subRule</span><span class="p">.</span><span class="nx">selector</span><span class="p">;</span>
+            <span class="k">if</span><span class="p">(</span><span class="nx">cirticalStyle</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">selector</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">){</span>
+                <span class="nx">isCritical</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+            <span class="p">}</span><span class="k">else</span><span class="p">{</span>
+                <span class="nx">subRule</span><span class="p">.</span><span class="nx">remove</span><span class="p">();</span>
+            <span class="p">}</span>
+        <span class="p">});</span>
+        <span class="k">if</span><span class="p">(</span><span class="nx">isCritical</span><span class="p">){</span>
+            <span class="nx">mediaQueriesCss</span> <span class="o">+=</span> <span class="nx">rule</span><span class="p">.</span><span class="nx">toString</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+<span class="p">})</span>
+<span class="c1">//关键样式+MediaQuery为最终首屏核心样式</span>
+<span class="kr">const</span> <span class="nx">coveredStyle</span> <span class="o">=</span> <span class="nx">cirticalStyle</span> <span class="o">+</span> <span class="nx">mediaQueriesCss</span><span class="p">;</span>
+</code></pre></div>
+<p>以上只截取了部分代码,全部代码请参考<a href="https://github.com/foio/chromeCriticalCss/blob/master/critical.js">critical.js</a> :</p>
+
+<p>本文提出的关键样式提取方案只适用于形态相对稳定的页面（尤其适合静态页面）；对于千人千面的个性化页面，可以尝试其他方案（基于组件的关键样式提取）。</p>
+
+<p><a href="https://www.gideonpyzer.com/blog/runtime-coverage-using-chrome-devtools/">https://www.gideonpyzer.com/blog/runtime-coverage-using-chrome-devtools/</a> </p>
+
+<p><a href="https://github.com/cyrus-and/chrome-remote-interface">https://github.com/cyrus-and/chrome-remote-interface</a> </p>
+
+<p><a href="https://github.com/foio/chromeCriticalCss">https://github.com/foio/chromeCriticalCss</a> <a href="https://github.com/postcss/postcss">https://github.com/postcss/postcss</a></p>
+
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#关键样式" title="Pages tagged 关键样式" class="tag">关键样式</a><a href="/tags/#Critical CSS" title="Pages tagged Critical CSS" class="tag">Critical CSS</a><a href="/tags/#postcss" title="Pages tagged postcss" class="tag">postcss</a><a href="/tags/#Chrome debug protocol" title="Pages tagged Chrome debug protocol" class="tag">Chrome debug protocol</a><a href="/tags/#Code Coverage" title="Pages tagged Code Coverage" class="tag">Code Coverage</a></span>
+        <span><a href="/chrome-critical-css/" rel="bookmark" title="一种提取关键样式的方法">一种提取关键样式的方法</a> was published on <span class="entry-date date published updated"><time datetime="2017-07-01T00:00:00+08:00">July 01, 2017</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2017-07-01">07/01/2017</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
+
+    
+	        
+
+    
+    
+    <div class="read-more">
+      
+        <div class="read-more-header">
+          <a href="/service-worker-cache/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/service-worker-cache/" title="PWA轻度实践：使用service worker对静态资源进行全缓存">PWA轻度实践：使用service worker对静态资源进行全缓存</a></h3>
+          <p>Service Worker，PWA，静态资源缓存 <a href="/service-worker-cache/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
+      
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/babel-try-catch/" title="一种生产环境中高效定位JS异常的方案">一种生产环境中高效定位JS异常的方案</a></h4>
+            <span>Published on February 28, 2017</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/mobx-react/" title="使用mobx开发高性能react应用">使用mobx开发高性能react应用</a></h4>
+            <span>Published on January 02, 2017</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
+      
+    </div><!-- /.read-more -->
+  </article>
+</div><!-- /#main -->
+
+
+<div class="footer-wrapper">
+  <footer role="contentinfo">
+    <span>&copy; 2018 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+
+  </footer>
+</div><!-- /.footer-wrapper -->
+
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-79866739-1', 'auto');
+  ga('send', 'pageview');
+</script>
+<script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
+<script src="/assets/js/scripts.min.js"></script>
+	        
+</body>
+</html>

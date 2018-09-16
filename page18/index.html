@@ -119,6 +119,156 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-08-27T00:00:00+08:00"><a href="/php-sapi/">August 27, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/php-sapi/" rel="bookmark" title="理解php内核中SAPI的作用" itemprop="url">理解php内核中SAPI的作用</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>SAPI: Server Application Programming Interface 服务器端应用编程端口。先看一张php模块图。
+<figure style="margin:0 auto;width:400px">
+    <img src="/images/sapi.jpg"/>
+</figure></p>
+
+<p>从图中可以看出，各种应用都是通过对应的SAPI与php进行交互的，SAPI相当于一个接口，使得php的核心实现不用关心各个应用交互的细节。虽然通过Web服务器和命令行程序执行脚本看起来很不一样，实际上它们的工作流程是一样的。</p>
+
+<hr>
+
+<p>在php的源代码sapi目录下有多种sapi的具体实现，比如cgi、cli、apache、fpm等。SAPI中最重要的一个数据结构就是<code>_sapi_module_struct</code>，定义在/main/SAPI.h中。</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">struct</span> <span class="n">_sapi_module_struct</span> <span class="p">{</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">;</span>       <span class="c1">//应用层的名称，比如cgi，apache等
+</span>    <span class="kt">char</span> <span class="o">*</span><span class="n">pretty_name</span><span class="p">;</span>     <span class="c1">//应用层更易读的名字
+</span>    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">startup</span><span class="p">)(</span><span class="k">struct</span> <span class="n">_sapi_module_struct</span> <span class="o">*</span><span class="n">sapi_module</span><span class="p">);</span>    <span class="c1">//startup 函数指针, 当一个应用要调用PHP的时候，这个函数会被调用
+</span>    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">shutdown</span><span class="p">)(</span><span class="k">struct</span> <span class="n">_sapi_module_struct</span> <span class="o">*</span><span class="n">sapi_module</span><span class="p">);</span>     <span class="c1">// shutdown 函数指针，
+</span>    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">activate</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>    <span class="c1">//active 函数指针，PHP会在每个request的时候，处理一些初始化，资源分配的事务。这部分就是activate字段要定义的
+</span>    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">deactivate</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>    <span class="c1">//deactivate函数指针，这个是对应与activate的函数，顾名思义，它会提供一个handler, 用来处理收尾工作
+</span>    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">ub_write</span><span class="p">)(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">str_length</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>    <span class="c1">//这个hanlder告诉了php如何输出数据，比如cgi和fpm模式下输出数据方式肯定不一样
+</span>    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">flush</span><span class="p">)(</span><span class="kt">void</span> <span class="o">*</span><span class="n">server_context</span><span class="p">);</span>    <span class="c1">//这个是提供给php的刷新缓存的函数指针
+</span>    <span class="k">struct</span> <span class="n">stat</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">get_stat</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>    <span class="c1">//这部分用来让php可以验证一个要执行脚本文件的state，从而判断文件是否据有执行权限等等
+</span>    <span class="kt">char</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">getenv</span><span class="p">)(</span><span class="kt">char</span> <span class="o">*</span><span class="n">name</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">name_len</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>     <span class="c1">//为Zend提供了一个根据name来查找环境变量的接口
+</span>    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">sapi_error</span><span class="p">)(</span><span class="kt">int</span> <span class="n">type</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">error_msg</span><span class="p">,</span> <span class="p">...);</span>    <span class="c1">//错误处理函数指针
+</span>    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">header_handler</span><span class="p">)(</span><span class="n">sapi_header_struct</span> <span class="o">*</span><span class="n">sapi_header</span><span class="p">,</span> <span class="n">sapi_header_op_enum</span> <span class="n">op</span><span class="p">,</span> <span class="n">sapi_headers_struct</span> <span class="o">*</span><span class="n">sapi_headers</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>    <span class="c1">// 这个函数会在我们调用PHP的header()函数的时候被调用
+</span>    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">send_headers</span><span class="p">)(</span><span class="n">sapi_headers_struct</span> <span class="o">*</span><span class="n">sapi_headers</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>  <span class="c1">//这个函数会在要真正发送header的时候被调用，一般来说，就是当有任何的输出要发送之前
+</span>    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">send_header</span><span class="p">)(</span><span class="n">sapi_header_struct</span> <span class="o">*</span><span class="n">sapi_header</span><span class="p">,</span> <span class="kt">void</span> <span class="o">*</span><span class="n">server_context</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>  <span class="c1">//单独发送每一个header的函数指针
+</span>    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">read_post</span><span class="p">)(</span><span class="kt">char</span> <span class="o">*</span><span class="n">buffer</span><span class="p">,</span> <span class="n">uint</span> <span class="n">count_bytes</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>   <span class="c1">//这个句函数指针明了如何获取POST的数据
+</span>    <span class="kt">char</span> <span class="o">*</span><span class="p">(</span><span class="o">*</span><span class="n">read_cookies</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>  <span class="c1">//这个句函数指针明了如何获取COOKIE的数据
+</span>    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">register_server_variables</span><span class="p">)(</span><span class="n">zval</span> <span class="o">*</span><span class="n">track_vars_array</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>    <span class="c1">//这个函数给了一个接口，用以给$_SERVER变量中添加变量 
+</span>    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">log_message</span><span class="p">)(</span><span class="kt">char</span> <span class="o">*</span><span class="n">message</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>    <span class="c1">//用来输出错误信息的函数指针
+</span>    <span class="kt">double</span> <span class="p">(</span><span class="o">*</span><span class="n">get_request_time</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>   <span class="c1">//获得请求时间的函数指针
+</span>    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">terminate_process</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span> 
+    <span class="kt">char</span> <span class="o">*</span><span class="n">php_ini_path_override</span><span class="p">;</span>
+    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">block_interruptions</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">unblock_interruptions</span><span class="p">)(</span><span class="kt">void</span><span class="p">);</span>
+    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">default_post_reader</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>
+    <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">treat_data</span><span class="p">)(</span><span class="kt">int</span> <span class="n">arg</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">str</span><span class="p">,</span> <span class="n">zval</span> <span class="o">*</span><span class="n">destArray</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
+    <span class="kt">char</span> <span class="o">*</span><span class="n">executable_location</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">php_ini_ignore</span><span class="p">;</span>
+    <span class="kt">int</span> <span class="n">php_ini_ignore_cwd</span><span class="p">;</span> <span class="cm">/* don't look for php.ini in the current directory */</span>
+    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">get_fd</span><span class="p">)(</span><span class="kt">int</span> <span class="o">*</span><span class="n">fd</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
+    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">force_http_10</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>
+    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">get_target_uid</span><span class="p">)(</span><span class="n">uid_t</span> <span class="o">*</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
+    <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">get_target_gid</span><span class="p">)(</span><span class="n">gid_t</span> <span class="o">*</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
+    <span class="kt">unsigned</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">input_filter</span><span class="p">)(</span><span class="kt">int</span> <span class="n">arg</span><span class="p">,</span> <span class="kt">char</span> <span class="o">*</span><span class="n">var</span><span class="p">,</span> <span class="kt">char</span> <span class="o">**</span><span class="n">val</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">val_len</span><span class="p">,</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="o">*</span><span class="n">new_val_len</span> <span class="n">TSRMLS_DC</span><span class="p">);</span>
+   <span class="kt">void</span> <span class="p">(</span><span class="o">*</span><span class="n">ini_defaults</span><span class="p">)(</span><span class="n">HashTable</span> <span class="o">*</span><span class="n">configuration_hash</span><span class="p">);</span>
+   <span class="kt">int</span> <span class="n">phpinfo_as_text</span><span class="p">;</span>
+   <span class="kt">char</span> <span class="o">*</span><span class="n">ini_entries</span><span class="p">;</span>
+   <span class="k">const</span> <span class="n">zend_function_entry</span> <span class="o">*</span><span class="n">additional_functions</span><span class="p">;</span>
+   <span class="kt">unsigned</span> <span class="kt">int</span> <span class="p">(</span><span class="o">*</span><span class="n">input_filter_init</span><span class="p">)(</span><span class="n">TSRMLS_D</span><span class="p">);</span>
+<span class="p">};</span></code></pre></figure>
+
+<p>不同的SAPI就是用不同的参数实例化_sapi_module_struct来实习的，下面我们分别简单分析一些cgi SAPI和cli SAPI的源代码，力求对SAPI有些更深入的理解。</p>
+
+<hr>
+
+<h3 id="1-cgi">1.cgi模式</h3>
+
+<p>cgi模式下，_sapi_module_struct的实例定义在cgi_main.c中。</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="n">sapi_module_struct</span> <span class="n">cgi_sapi_module</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">"cgi-fcgi"</span><span class="p">,</span>                     <span class="cm">/* name */</span>
+    <span class="s">"CGI/FastCGI"</span><span class="p">,</span>                  <span class="cm">/* pretty name */</span>
+    <span class="n">php_cgi_startup</span><span class="p">,</span>                <span class="cm">/* startup */</span>
+    <span class="n">php_module_shutdown_wrapper</span><span class="p">,</span>    <span class="cm">/* shutdown */</span>
+    <span class="n">sapi_cgi_activate</span><span class="p">,</span>              <span class="cm">/* activate */</span>
+    <span class="n">sapi_cgi_deactivate</span><span class="p">,</span>            <span class="cm">/* deactivate */</span>
+    <span class="n">sapi_cgi_ub_write</span><span class="p">,</span>              <span class="cm">/* unbuffered write */</span>
+    <span class="n">sapi_cgi_flush</span><span class="p">,</span>                 <span class="cm">/* flush */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* get uid */</span>
+    <span class="n">sapi_cgi_getenv</span><span class="p">,</span>                <span class="cm">/* getenv */</span>
+    <span class="n">php_error</span><span class="p">,</span>                      <span class="cm">/* error handler */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* header handler */</span>
+    <span class="n">sapi_cgi_send_headers</span><span class="p">,</span>          <span class="cm">/* send headers handler */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* send header handler */</span>
+    <span class="n">sapi_cgi_read_post</span><span class="p">,</span>             <span class="cm">/* read POST data */</span>
+    <span class="n">sapi_cgi_read_cookies</span><span class="p">,</span>          <span class="cm">/* read Cookies */</span>
+    <span class="n">sapi_cgi_register_variables</span><span class="p">,</span>    <span class="cm">/* register server variables */</span>
+    <span class="n">sapi_cgi_log_message</span><span class="p">,</span>           <span class="cm">/* Log message */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* Get request time */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* Child terminate */</span>
+    <span class="n">STANDARD_SAPI_MODULE_PROPERTIES</span>
+<span class="p">};</span></code></pre></figure>
+
+<p>下面分析 <code>char *(*read_cookies)(TSRMLS_D)</code> 在cgi模式下的实现:sapi_cgi_read_cookies。其中sapi_cgi_read_cookies的源码片段如下：</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">char</span> <span class="o">*</span><span class="nf">sapi_cgi_read_cookies</span><span class="p">(</span><span class="n">TSRMLS_D</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="n">getenv</span><span class="p">(</span><span class="s">"HTTP_COOKIE"</span><span class="p">);</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>可以看到，cgi模式下的<code>char *(*read_cookies)(TSRMLS_D)</code>最终为从环境变量中读取HTTP_COOKIE。</p>
+
+<h3 id="2-cli">2.cli 模式</h3>
+
+<p>cgi模式下，_sapi_module_struct的实例定义在php_cli.c</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="n">sapi_module_struct</span> <span class="n">cli_sapi_module</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s">"cli"</span><span class="p">,</span>                          <span class="cm">/* name */</span>
+    <span class="s">"Command Line Interface"</span><span class="p">,</span>       <span class="cm">/* pretty name */</span>
+    <span class="n">php_cli_startup</span><span class="p">,</span>                <span class="cm">/* startup */</span>
+    <span class="n">php_module_shutdown_wrapper</span><span class="p">,</span>    <span class="cm">/* shutdown */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* activate */</span>
+    <span class="n">sapi_cli_deactivate</span><span class="p">,</span>            <span class="cm">/* deactivate */</span>
+    <span class="n">sapi_cli_ub_write</span><span class="p">,</span>              <span class="cm">/* unbuffered write */</span>
+    <span class="n">sapi_cli_flush</span><span class="p">,</span>                 <span class="cm">/* flush */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* get uid */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* getenv */</span>
+    <span class="n">php_error</span><span class="p">,</span>                      <span class="cm">/* error handler */</span>
+    <span class="n">sapi_cli_header_handler</span><span class="p">,</span>        <span class="cm">/* header handler */</span>
+    <span class="n">sapi_cli_send_headers</span><span class="p">,</span>          <span class="cm">/* send headers handler */</span>
+    <span class="n">sapi_cli_send_header</span><span class="p">,</span>           <span class="cm">/* send header handler */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* read POST data */</span>
+    <span class="n">sapi_cli_read_cookies</span><span class="p">,</span>          <span class="cm">/* read Cookies */</span>
+    <span class="n">sapi_cli_register_variables</span><span class="p">,</span>    <span class="cm">/* register server variables */</span>
+    <span class="n">sapi_cli_log_message</span><span class="p">,</span>           <span class="cm">/* Log message */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* Get request time */</span>
+    <span class="nb">NULL</span><span class="p">,</span>                           <span class="cm">/* Child terminate */</span>
+    <span class="n">STANDARD_SAPI_MODULE_PROPERTIES</span>
+<span class="p">};</span></code></pre></figure>
+
+<p>下面分析 <code>char *(*read_cookies)(TSRMLS_D)</code> 在cli模式下的实现:sapi_cli_read_cookies。其中sapi_cli_read_cookies的源码片段如下：</p>
+
+<figure class="highlight"><pre><code class="language-c" data-lang="c"><span class="k">static</span> <span class="kt">char</span><span class="o">*</span> <span class="nf">sapi_cli_read_cookies</span><span class="p">(</span><span class="n">TSRMLS_D</span><span class="p">)</span> 
+<span class="p">{</span>
+    <span class="k">return</span> <span class="nb">NULL</span><span class="p">;</span>
+<span class="p">}</span></code></pre></figure>
+
+<p>可以看到，cgi模式下的<code>char *(*read_cookies)(TSRMLS_D)</code>最终为直接返回NULL，因为cli模式下不存在用户cookies信息。</p>
+
+<hr>
+
+<p>通过上面的cgi和cli模式下read_cookies的不同实现，可以看出sapi确实对下层php屏蔽了交互细节，当下层php核心要读取用户cookies时，只需要通过sapi_module_struct-&gt;read_cookies，而不需要关注上层应用的交互细节。</p>
+
+<p>that right! 这就是SAPI的作用。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-08-12T00:00:00+08:00"><a href="/nginx-empty-domain/">August 12, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -171,127 +321,6 @@ rel="stylesheet" type="text/css" -->
      ......
  }
 </code></pre></div>
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-08-10T00:00:00+08:00"><a href="/php-safe/">August 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/php-safe/" rel="bookmark" title="php安全问题及场景演示" itemprop="url">php安全问题及场景演示</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>php是一门极其灵活的编程语言，它是高效开发web程序的最佳选择之一。但是灵活性往往带来安全性问题，这就需要我们工程师时刻审视自己的代码安全性。下面列举一些经常容易出现安全性问题的场景极其解决方案。</p>
-
-<p>对于php的安全防患，是有一些基本原则的:</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1.不信任任何从客户端传入的数据，如$SERVER,$_GET,$_POST,$_COOKIE,$FILES,$ENV,$REQUEST等。
-
-2.最小化原则，将用户输入的数据的范围限制到最小化
-
-3.安全的代码不依赖任何安全配置，不能寄希望与php.ini的安全性配置
-
-4.程序的错误信息对外界屏蔽，程序的错误信息会给攻击者带来极大帮助
-</code></pre></div>
-<p>本文列举了数据库操作场景、文件操作场景、命令执行场景下容易出现的安全问题以及应对方案。</p>
-
-<h2 id="1">1 数据库操作场景</h2>
-
-<h3 id="1-1">1.1 字符串变量注入</h3>
-
-<p>比如如下php代码：。</p>
-
-<figure class="highlight"><pre><code class="language-php" data-lang="php">$user = $_POST['uesr'];
-$password = $_POST['password'];
-$query="select * from user where name = '$user' and password = '$password'";
-$result=$mysqli-&gt;query($query);</code></pre></figure>
-
-<p>这段代码没有对不可信输入做检查，当<code>$_POST[&#39;user&#39;] = &quot;&#39; OR &#39;&#39; = &#39;&quot;</code>且<code>$_POST[&#39;password&#39;] = &quot;&#39; OR &#39;&#39; = &#39;&quot;</code>，实际的sql为：<code>select * from user where name = &#39;&#39; OR &#39;&#39; = &#39;&#39; and password = &#39;&#39; OR &#39;&#39; = &#39;&#39;</code>，这样的sql就可能将所有的数据库中用户信息泄露。</p>
-
-<h3 id="1-2">1.2 整形注入</h3>
-
-<p>比如如下php代码：。</p>
-
-<figure class="highlight"><pre><code class="language-php" data-lang="php">$user = $_POST['id'];
-$query="select * from user where id = $id";
-$result=$mysqli-&gt;query($query);</code></pre></figure>
-
-<p>这段代码没有对不可信输入做检查，当<code>$_POST[&#39;id&#39;] = &quot;1 OR &#39;&#39; = &#39;&#39;&quot;</code>，实际的sql为：<code>select * from user where id = 1 OR &#39;&#39; = &#39;&#39;</code>，这样的sql就可能将所有的数据库中用户信息泄露。</p>
-
-<blockquote>
-<p>安全编码建议：以上情况都是要使用客户端传来的参数，因此必须严格检查。对于字符串型变量最好使用mysql_real_escape_string进行过滤，而对于整形变量必须使用intval来保证类型。</p>
-</blockquote>
-
-<hr>
-
-<h2 id="2">2 文件操作场景</h2>
-
-<h3 id="2-1">2.1 文件名安全问题</h3>
-
-<p>如下php代码段：</p>
-
-<figure class="highlight"><pre><code class="language-php" data-lang="php">$file = $_GET['file'];
-if(!empty($file)){
-    include_once($file);
-}</code></pre></figure>
-
-<p>include,include_once,require,requre_once这些函数的本质是载入php文件并执行，因此使用这些函数时务必非常小心。这段代码非常不安全，比如<code>$_GET[&#39;file&#39;]=&quot;../../../../../../../../etc/passwd%00.php&quot;</code>时，将会打开敏感文件/etc/passwd，因为<code>%00</code>是<code>\0</code>url编码后的值，对于操作系统而言相当于字符串的结束符。</p>
-
-<h3 id="2-2">2.2 文件读写安全问题</h3>
-
-<p>如下php代码段：</p>
-
-<figure class="highlight"><pre><code class="language-php" data-lang="php">$filename="test1.txt";
-$file_info="user input:\n";
-$file_info.= "$conent";
-file_put_conent($filename,$conent);</code></pre></figure>
-
-<p>当<code>$conent=&quot;eval($php_code)&quot;</code>时，会执行代码中的php_code，理论上攻击者可以运行任何php代码。这段代码主要问题在于用<code>双引号</code>包含用户提交的文件内容。</p>
-
-<blockquote>
-<p>安全编码建议：将输出到文件的数据放到单引号中而非双引号。在php中表示一个字符串的方法有三种：单引号、双引号、定界符，和其他两种语法不同，单引号字符串中出现的变量和转义序列不会被变量的值替代。无论从效率还是安全性方面，都强烈推荐使用单引号。</p>
-</blockquote>
-
-<hr>
-
-<h2 id="3">3 命令行操作场景</h2>
-
-<p>如下php代码段：</p>
-
-<figure class="highlight"><pre><code class="language-php" data-lang="php">uri = $request['uri'];
-$from = $request['from'];
-$to   = $request['to'];
-$tmp = '/tmp/act_css_tmp_' . $uri;  
-system("/usr/bin/wget $from -O $tmp");</code></pre></figure>
-
-<p>$request变量来自于用户URL的输入，最终进入到system函数里作为命令来执行，但是这段代码没有安全处理用户的输入，任意用户都可以通过如下URL来在机上执行自己的命令， <code>php?cmd=1190&amp;func=sync_css&amp;uri=hi&amp;from=;cat /etc/passwd;&amp;to=hi&amp;1=2</code> 最后导致系统的沦陷。</p>
-
-<blockquote>
-<p>安全编码建议我们应该尽量避免使用systemexecpopenpassthru, 反引号(``)......等直接执行系统命令的函数如果必须使用这些函数的时候我们就需要在用户的参数进入system函数之前经过过滤。Php提供两个作为命令安全输入的函数一个是escapeshellarg一个是escapeshellcmd。</p>
-</blockquote>
-
-<hr>
-
-<h3 id="4">4.安全配置</h3>
-<div class="highlight"><pre><code class="language-" data-lang="">register_globals = Off   
-</code></pre></div>
-<p>register_globals允许php将$_GET和$_POST,$_COOKIE等变量里的内容自动注册为全局变量,如果程序里的某些变量没有经过初始化而直接使用将导致安全问题。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">isplay_errors = Off, log_errors = On 
-</code></pre></div>
-<p>如果脚本运行时出错,错误信息将提供非常多的信息给黑客,里面可能包含了web路径,一些调试信息甚至是部分的php代码。我们应该强制在线上业务关闭错误信息对外的显示该选项。并将error_log 指定为我们自定义的错误路径。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">expose_php = Off
-</code></pre></div>
-<p>防止php在http头输出中加入版本信息防止恶意攻击者从中获取敏感信息强制执行将此选项为off。</p>
-<div class="highlight"><pre><code class="language-" data-lang=""> allow_url_include = Off
-</code></pre></div>
-<p>防止php将远程资源作为php源文件执行。从而从一定程度上防范文件包含漏洞。强制执行此选项为off。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">max_input_vars = 1000 
-</code></pre></div>
-<p>设置用户输入生成的最大变量值。防止利用大量无用变量造成php程序hashtable冲突导致占用大量系统资源。建议执行为默认1000个值。 </p>
-
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
@@ -487,7 +516,7 @@ system("/usr/bin/wget $from -O $tmp");</code></pre></figure>
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
-    <span>&copy; 2017 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+    <span>&copy; 2018 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
 
   </footer>
 </div><!-- /.footer-wrapper -->

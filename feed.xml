@@ -4,13 +4,146 @@
 <generator uri="https://github.com/mojombo/jekyll">Jekyll</generator>
 <link rel="self" type="application/atom+xml" href="/feed.xml" />
 <link rel="alternate" type="text/html" href="" />
-<updated>2017-06-19T22:07:38+08:00</updated>
+<updated>2018-09-16T20:24:58+08:00</updated>
 <id>/</id>
 <author>
   <name>foio</name>
   <uri>/</uri>
   <email>syszhpe@gmail.com</email>
 </author>
+
+
+<entry>
+  <title type="html"><![CDATA[一种提取关键样式的方法]]></title>
+ <link rel="alternate" type="text/html" href="/chrome-critical-css/" />
+  <id>/chrome-critical-css</id>
+  <updated>2017-07-01T00:00:00-00:00</updated>
+  <published>2017-07-01T00:00:00+08:00</published>
+  
+  <author>
+    <name>foio</name>
+    <uri></uri>
+    <email>syszhpe@gmail.com</email>
+  </author>
+  <content type="html">&lt;p&gt;以React服务端渲染为代表的现代化web前端技术，使得web页面的首屏时间不再依赖于JS文件的加载时间(JS文件的加载和执行只影响页面的可交互时间)。&lt;/p&gt;
+
+&lt;p&gt;一个典型的web架构中，首屏渲染主要经历如下几个步骤：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-&quot; data-lang=&quot;&quot;&gt;（1）浏览器向接入层请求HTML
+
+（2）接入层向后台服务请求数据后通过服务端渲染将HTML返回给浏览器
+
+（3）浏览器向CDN请求CSS后开始渲染首屏
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;如下图所示:&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/no-critical-css.png&quot; alt=&quot;no critical css&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;浏览器为了渲染首屏需要两次请求：一次向接入层请求HTML文档；另外一次向CDN请求CSS文件。有没有只需一次请求即可渲染出首屏的方案呢？ 通过使用内联样式，我们就可以使得浏览器不需要通过网络请求CSS；但对于一个中等规模的页面，需要内嵌的CSS内容过多，使得HTML文件本身过大，进而影响HTML本身的网络耗时，导致首屏耗时增加。我们需要一个折中方案来调和这种矛盾。&lt;/p&gt;
+
+&lt;h2 id=&quot;1&quot;&gt;1.关键样式的作用&lt;/h2&gt;
+
+&lt;p&gt;如果我们只是将首屏所需的关键样式内嵌到HTML页面中，然后通过网络请求获取非首屏所需的其他样式，就可以在保证一次请求即可渲染出首屏，同时尽量地减少了所需请求HTML文档的大小。&lt;/p&gt;
+
+&lt;p&gt;如下图所示：通过内嵌少量的首屏关键样式，我们就使得CSS和JS加载（由于此处的CSS不影响首屏，我们可以把它同JS一起放到HTML文档的末尾）不影响首屏时间了。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/critical-css.png&quot; alt=&quot;critical css&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;接下来的问题是: 我们如何准确的获取尽量小的关键样式？&lt;/p&gt;
+
+&lt;h2 id=&quot;2&quot;&gt;2. 提取关键样式的方案&lt;/h2&gt;
+
+&lt;p&gt;提取关键样式有多种方案：比如基于组件的方案，对于&lt;a href=&quot;https://github.com/css-modules/css-modules&quot;&gt;CSS in JS&lt;/a&gt;结构的前端项目就非常有效，只需要将首屏中所有组件的样式抽取出来即可；另外一种是基于运行时分析的方案，也就是本文提出的方案。&lt;/p&gt;
+
+&lt;h3 id=&quot;2-1-chrome-code-coverage&quot;&gt;2.1. 使用Chrome code coverage能力提取关键样式&lt;/h3&gt;
+
+&lt;p&gt;新版的chrome新增了code coverge能力，通过运行时分析能够准确地得知当前代码中未被使用的比例。如下图所示，
+其中一个CSS文件有超过80%的代码未被使用；这也就意味着只有20%的CSS代码对于首屏渲染是有效的。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/code-coverage.png&quot; alt=&quot;critical css&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;有没有程序化的手段，来获取具体哪些代码是有效的呢？ 通过&lt;a href=&quot;https://github.com/cyrus-and/chrome-remote-interface&quot;&gt;Chrome Debug Protocol&lt;/a&gt;接口，我们可以在页面执行某个时间点(比如domReady时)，收集到当前已经使用到的CSS。具体伪代码如下：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;//DOMContentLoaded时触发&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;Page&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;domContentEventFired&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(()&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;styleSheetIds&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{};&lt;/span&gt;
+    &lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;styleSheetMap&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{};&lt;/span&gt;
+
+    &lt;span class=&quot;nx&quot;&gt;CSS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;takeCoverageDelta&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;().&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;then&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;rules&lt;/span&gt;&lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;//获取已经被使用的CSS规则的ID&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;usedRules&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rules&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;coverage&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;filter&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;rule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;styleSheetIds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;rule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;styleSheetId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;1&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;return&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;used&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;//获取所有已经被使用规则片段&lt;/span&gt;
+        &lt;span class=&quot;nb&quot;&gt;Object&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;keys&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;styleSheetIds&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;forEach&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;styleSheetId&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;stylesSheetsPromises&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;
+                &lt;span class=&quot;nx&quot;&gt;CSS&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;getStyleSheetText&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;({&lt;/span&gt;
+                    &lt;span class=&quot;na&quot;&gt;styleSheetId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;:&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;styleSheetId&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;}).&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;then&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;stylesheet&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                    &lt;span class=&quot;nx&quot;&gt;styleSheetMap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;styleSheetId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;]&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;stylesheet&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;text&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;||&lt;/span&gt; &lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+                &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;)&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+
+        &lt;span class=&quot;c1&quot;&gt;//根据规则片段拼接出关键css文本&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;for&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;usedRule&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;of&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;usedRules&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;curStyleId&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;usedRule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;styleSheetId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;styleSeg&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;styleSheetMap&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;[&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;curStyleId&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;].&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;slice&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;usedRule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;startOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;,&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;usedRule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;endOffset&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+            &lt;span class=&quot;c1&quot;&gt;//收集关键样式&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;cirticalCssArr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;push&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;styleSeg&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cirticalStyle&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cirticalCssArr&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;join&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;s1&quot;&gt;''&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+
+    &lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;以上只截取了部分代码,全部代码请参考&lt;a href=&quot;https://github.com/foio/chromeCriticalCss/blob/master/critical.js&quot;&gt;critical.js&lt;/a&gt; :&lt;/p&gt;
+
+&lt;p&gt;虽然我们已经能够通过Chrome Debug Protocol来获取关键样式，但该关键样式仍然无法直接应用于生产环境。一个主要的原因是它丢失了Media Query信息；Chrome Code Coverage能力只能针对特定的User Agent工作，这就使得我们获取的关键样式不具有普适性。我们需要额外的解决方案。&lt;/p&gt;
+
+&lt;h3 id=&quot;2-2-postcss-media-query&quot;&gt;2.2 使用Postcss获取关键样式中的Media Query&lt;/h3&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/postcss/postcss&quot;&gt;postcss&lt;/a&gt;作为业界最强大的CSS处理器，借助于它我们可以结构化地处理CSS，比如抽取关键样式中Media Query。通过结合Code Coverage和postcss，我们就能获取到准确的、UA无关地关键样式了。&lt;/p&gt;
+
+&lt;p&gt;&lt;img src=&quot;/images/post-critical-css.png&quot; alt=&quot;post critical css&quot;&gt;&lt;/p&gt;
+
+&lt;p&gt;核心代码如下所示：&lt;/p&gt;
+&lt;div class=&quot;highlight&quot;&gt;&lt;pre&gt;&lt;code class=&quot;language-javascript&quot; data-lang=&quot;javascript&quot;&gt;&lt;span class=&quot;c1&quot;&gt;//解析全部css&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;allStyleParser&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;postCss&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;parse&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;allStyle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;);&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;//结构化地遍历CSS&lt;/span&gt;
+&lt;span class=&quot;nx&quot;&gt;allStyleParser&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;walkAtRules&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;rule&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+    &lt;span class=&quot;kd&quot;&gt;let&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;isCritical&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;false&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+    &lt;span class=&quot;c1&quot;&gt;//遍历Media Query表达式&lt;/span&gt;
+    &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;rule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;name&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;match&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;sr&quot;&gt;/^media/&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;))&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+        &lt;span class=&quot;c1&quot;&gt;//只选取关键的media query&lt;/span&gt;
+        &lt;span class=&quot;nx&quot;&gt;rule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;each&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;((&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;subRule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&amp;gt;&lt;/span&gt; &lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+            &lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;subRule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;cirticalStyle&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;indexOf&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;selector&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;)&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;&amp;gt;&lt;/span&gt; &lt;span class=&quot;mi&quot;&gt;0&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+                &lt;span class=&quot;nx&quot;&gt;isCritical&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;kc&quot;&gt;true&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;&lt;span class=&quot;k&quot;&gt;else&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;{&lt;/span&gt;
+                &lt;span class=&quot;nx&quot;&gt;subRule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;remove&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+            &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;});&lt;/span&gt;
+        &lt;span class=&quot;k&quot;&gt;if&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;(&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;isCritical&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;){&lt;/span&gt;
+            &lt;span class=&quot;nx&quot;&gt;mediaQueriesCss&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;rule&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;toString&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
+        &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+    &lt;span class=&quot;p&quot;&gt;}&lt;/span&gt;
+&lt;span class=&quot;p&quot;&gt;})&lt;/span&gt;
+&lt;span class=&quot;c1&quot;&gt;//关键样式+MediaQuery为最终首屏核心样式&lt;/span&gt;
+&lt;span class=&quot;kr&quot;&gt;const&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;coveredStyle&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;=&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;cirticalStyle&lt;/span&gt; &lt;span class=&quot;o&quot;&gt;+&lt;/span&gt; &lt;span class=&quot;nx&quot;&gt;mediaQueriesCss&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;;&lt;/span&gt;
+&lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
+&lt;p&gt;以上只截取了部分代码,全部代码请参考&lt;a href=&quot;https://github.com/foio/chromeCriticalCss/blob/master/critical.js&quot;&gt;critical.js&lt;/a&gt; :&lt;/p&gt;
+
+&lt;p&gt;本文提出的关键样式提取方案只适用于形态相对稳定的页面（尤其适合静态页面）；对于千人千面的个性化页面，可以尝试其他方案（基于组件的关键样式提取）。&lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://www.gideonpyzer.com/blog/runtime-coverage-using-chrome-devtools/&quot;&gt;https://www.gideonpyzer.com/blog/runtime-coverage-using-chrome-devtools/&lt;/a&gt; &lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/cyrus-and/chrome-remote-interface&quot;&gt;https://github.com/cyrus-and/chrome-remote-interface&lt;/a&gt; &lt;/p&gt;
+
+&lt;p&gt;&lt;a href=&quot;https://github.com/foio/chromeCriticalCss&quot;&gt;https://github.com/foio/chromeCriticalCss&lt;/a&gt; &lt;a href=&quot;https://github.com/postcss/postcss&quot;&gt;https://github.com/postcss/postcss&lt;/a&gt;&lt;/p&gt;
+
+  &lt;p&gt;&lt;a href=&quot;/chrome-critical-css/&quot;&gt;一种提取关键样式的方法&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on July 01, 2017.&lt;/p&gt;</content>
+</entry>
 
 
 <entry>
@@ -4111,60 +4244,6 @@ largecode: code/with/slashes.
 &lt;span class=&quot;nx&quot;&gt;man&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;.&lt;/span&gt;&lt;span class=&quot;nx&quot;&gt;say&lt;/span&gt;&lt;span class=&quot;p&quot;&gt;();&lt;/span&gt;
 &lt;/code&gt;&lt;/pre&gt;&lt;/div&gt;
   &lt;p&gt;&lt;a href=&quot;/javascript-inheritance/&quot;&gt;系统的研究Javascript继承实现机制&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on December 02, 2015.&lt;/p&gt;</content>
-</entry>
-
-
-<entry>
-  <title type="html"><![CDATA[chrome的timeline中stalled问题解析]]></title>
- <link rel="alternate" type="text/html" href="/chrome-stalled/" />
-  <id>/chrome-stalled</id>
-  <updated>2015-11-26T00:00:00-00:00</updated>
-  <published>2015-11-26T00:00:00+08:00</published>
-  
-  <author>
-    <name>foio</name>
-    <uri></uri>
-    <email>syszhpe@gmail.com</email>
-  </author>
-  <content type="html">&lt;p&gt;在公司国做一个运营活动，上线后PM总是抱怨访问速度过慢，影响运营效果。然而从前端的角度来说我已经做了如下优化： css、js合并压缩、图片压缩、雪碧图、静态资源全部上CDN。但是依然很慢，实在s是困惑，通过chrome的timeline分析，发现有些请求确实很慢，但是大部分时间消耗在stalled阶段。如下图:&lt;/p&gt;
-
-&lt;figure&gt;
-     &lt;img src=&quot;/images/chrome-stalled.jpg&quot; alt=&quot;chrome-stalled&quot;&gt;
-&lt;/figure&gt;
-
-&lt;p&gt;下文来分析具体原因。&lt;/p&gt;
-
-&lt;hr&gt;
-
-&lt;p&gt;什么是stalled呢？下面是一段比较容易懂的解释：&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;Time the request spent waiting before it could be sent. This time is inclusive of any time spent in proxy negotiation.Additionally, this time will include when the browser is waiting for an already established connection to become available for re-use, obeying Chrome’s maximum six TCP connection per origin rule.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;也即是从TCP连接建立完成，到真正可以传输数据之间的时间差。先让我们要分析TCP连接为什么要等待这么久才能用？我用Wireshark抓包发现(如下图)，TCP连接过程中有多次重传，直到达到最大重传次数后连接被客户端重置。&lt;/p&gt;
-
-&lt;figure&gt;
-    &lt;img src=&quot;/images/wireshark-error.png&quot; alt=&quot;wireshark-error&quot;&gt;
-&lt;/figure&gt;
-
-&lt;p&gt;为什么会发生重传呢？&lt;/p&gt;
-
-&lt;blockquote&gt;
-&lt;p&gt;The sender waits for an ACK for the byte-range sent to the client and when not received, resends the packets, after a particular interval. After a certain number of retries, the host is considered to be “down” and the sender gives up and tears down the TCP connection.&lt;/p&gt;
-&lt;/blockquote&gt;
-
-&lt;p&gt;TCP三次握手后，发送端发送数据后，一段时间内（不同的操作系统时间段不同）接收不到服务端ACK包，就会以
-某一时间间隔(时间间隔一般为指数型增长)重新发送，从重传开始到接收端正确响应的时间就是stalled阶段。而重传超过一定的次数（windows系统是5次），发送端就认为本次TCP连接已经down掉了，需要重新建立连接。
-对比以下，没有重传的http请求过程。如下图：&lt;/p&gt;
-
-&lt;figure&gt;
-    &lt;img src=&quot;/images/wireshark-normal.jpg&quot; alt=&quot;wireshark-normal&quot;&gt;
-&lt;/figure&gt;
-
-&lt;p&gt;总结一下：stalled阶段时TCP连接的检测过程，如果检测成功就会继续使用该TCP连接发送数据，如果检测失败就会重新建立TCP连接。所以出现stalled阶段过长，往往是丢包所致，这也意味着网络或服务端有问题。&lt;/p&gt;
-
-  &lt;p&gt;&lt;a href=&quot;/chrome-stalled/&quot;&gt;chrome的timeline中stalled问题解析&lt;/a&gt; was originally published by foio at &lt;a href=&quot;&quot;&gt;积木村の研究所&lt;/a&gt; on November 26, 2015.&lt;/p&gt;</content>
 </entry>
 
 </feed>

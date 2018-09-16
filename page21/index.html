@@ -119,6 +119,42 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-20T00:00:00+08:00"><a href="/mysql-master-slave/">July 20, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/mysql-master-slave/" rel="bookmark" title="mysql读写分离机制" itemprop="url">mysql读写分离机制</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>Mysql是这个世界上最通用的数据库了，很多优点集于一身：开源、高效、免费等。但是对于生成实践中的高并发、高可用性、安全性等要求，单台mysql往往无法满足。</p>
+
+<h1 id="master-slave">master-slave</h1>
+
+<p>一般可以通过主从读写分离来提升数据库的并发能力。</p>
+
+<p>常见的部署如下：</p>
+
+<p><img src="http://heylinux.com/wp-content/uploads/2011/06/mysql-master-salve-proxy.jpg" alt="enter image description here"></p>
+
+<p>这种架构满足了生产环境的需要，但是却大大增加了开发复杂度，作为一名研发人员要在业务代码中考虑读写分离以及由此引发的更加复杂的事务操作，不得不说很糟糕。为了解决这种问题，可以引入中间层proxy。</p>
+
+<hr>
+
+<h1 id="mysql-proxy">mysql proxy</h1>
+
+<p>mysql proxy实现了mysql client和mysql server的标准通信协议。因此对研发人员来说使用mysql  proxy和使用单机的msyql没有区别，他们甚至感觉不到proxy的存在。mysql proxy实现了读写分离、连接池、负载均衡。
+下图是一个简单的proxy示意图，其中关键点在于：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">将写和事务性语句分发到master，将读分发的slave
+</code></pre></div>
+<p><img src="http://jan.kneschke.de/assets/projects/mysql/mysql-proxy-types-trx-splitting.png" alt="enter image description here"></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-07-17T00:00:00+08:00"><a href="/mysql-log/">July 17, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -304,119 +340,6 @@ mysqlbinlog --start-position=870 --stop-position=1274 mysql-bin.000004  &gt; /tm
 #将mysql中的binlog中某段时间内的sql导出，可用于恢复一段时间的数据
 mysqlbinlog --start-datetime="2012-07-16 00:00:00" --stop-datetime="2012-07-17 00:00:00" mysql-bin.000004 &gt; /tmp/mysql_restore.sql 
 </code></pre></div>
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-07-16T00:00:00+08:00"><a href="/weka-kmeans/">July 16, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/weka-kmeans/" rel="bookmark" title="weka kmeans算法测试" itemprop="url">weka kmeans算法测试</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>weka是机器学习和数据挖掘库java库，提供有GUI界面版本和类库版本。weka是GNU通用公共许可证下发布的开源软件，这意味着我们在自己的项目自由的使用，并可以在开放源代码的情况下改进weka。在使用weka之前，我们首先要将自己的数据集转换为weka支持的格式。weka的数据格式请参考<a href="http://www.cs.waikato.ac.nz/ml/weka/arff.html">arff格式说明</a>。学习weka库最好先有一下机器学习方面的基础知识，然后学习官方example。接下来简单说明如何使用weka库的kmeans算法。</p>
-
-<hr>
-
-<p><strong>训练数据集集</strong></p>
-<div class="highlight"><pre><code class="language-" data-lang="">@relation race
-
-@attribute height NUMERIC
-@attribute weight NUMERIC
-@attribute eyeColor NUMERIC
-@attribute hairColor NUMERIC
-
-@data
-170,70,1,1
-180,70,2,2
-175,70,1,1
-200,80,2,3
-210,80,2,1
-200,70,2,2
-150,50,1,1
-155,50,1,1
-170,70,1,1
-173,70,1,1
-170,70,1,2
-</code></pre></div>
-<p><strong>测试数据集集</strong></p>
-<div class="highlight"><pre><code class="language-" data-lang="">@relation race
-
-@attribute height NUMERIC
-@attribute weight NUMERIC
-@attribute eyeColor NUMERIC
-@attribute hairColor NUMERIC
-
-@data
-170,71,1,1
-200,80,2,2
-</code></pre></div>
-<hr>
-
-<h3 id="1">1.代码</h3>
-<div class="highlight"><pre><code class="language-java" data-lang="java"><span class="kd">public</span> <span class="kd">class</span> <span class="nc">KmeansTest</span> <span class="o">{</span>
-      <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span><span class="o">[]</span> <span class="n">args</span><span class="o">)</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
-            <span class="n">File</span> <span class="n">trainFile</span> <span class="o">=</span> <span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="s">"race_train.arff"</span><span class="o">);</span>
-            <span class="n">File</span> <span class="n">testFile</span>  <span class="o">=</span> <span class="k">new</span> <span class="n">File</span><span class="o">(</span><span class="s">"race_test.arff"</span><span class="o">);</span>
-            <span class="n">ArffLoader</span> <span class="n">atf</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArffLoader</span><span class="o">();</span>  
-            <span class="c1">// load data</span>
-            <span class="n">atf</span><span class="o">.</span><span class="na">setFile</span><span class="o">(</span><span class="n">trainFile</span><span class="o">);</span>  
-            <span class="n">Instances</span> <span class="n">train</span> <span class="o">=</span> <span class="n">atf</span><span class="o">.</span><span class="na">getDataSet</span><span class="o">();</span>
-            <span class="n">atf</span><span class="o">.</span><span class="na">setFile</span><span class="o">(</span><span class="n">testFile</span><span class="o">);</span>  
-            <span class="n">Instances</span> <span class="n">test</span> <span class="o">=</span> <span class="n">atf</span><span class="o">.</span><span class="na">getDataSet</span><span class="o">();</span> 
-            <span class="c1">// build clusterer</span>
-            <span class="n">SimpleKMeans</span> <span class="n">clusterer</span> <span class="o">=</span> <span class="k">new</span> <span class="n">SimpleKMeans</span><span class="o">();</span>
-            <span class="n">clusterer</span><span class="o">.</span><span class="na">setNumClusters</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
-            <span class="n">clusterer</span><span class="o">.</span><span class="na">buildClusterer</span><span class="o">(</span><span class="n">train</span><span class="o">);</span>   
-            <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="n">clusterer</span><span class="o">.</span><span class="na">toString</span><span class="o">());</span>
-            <span class="c1">// output predictions       </span>
-            <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">test</span><span class="o">.</span><span class="na">numInstances</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
-              <span class="kt">int</span> <span class="n">cluster</span> <span class="o">=</span> <span class="n">clusterer</span><span class="o">.</span><span class="na">clusterInstance</span><span class="o">(</span><span class="n">test</span><span class="o">.</span><span class="na">instance</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
-              <span class="kt">double</span><span class="o">[]</span> <span class="n">dist</span> <span class="o">=</span> <span class="n">clusterer</span><span class="o">.</span><span class="na">distributionForInstance</span><span class="o">(</span><span class="n">test</span><span class="o">.</span><span class="na">instance</span><span class="o">(</span><span class="n">i</span><span class="o">));</span>
-              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">((</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="o">));</span>
-              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">" - "</span><span class="o">);</span>
-              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">cluster</span><span class="o">);</span>
-              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="s">" - "</span><span class="o">);</span>
-              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">print</span><span class="o">(</span><span class="n">Utils</span><span class="o">.</span><span class="na">arrayToString</span><span class="o">(</span><span class="n">dist</span><span class="o">));</span>
-              <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">();</span>
-            <span class="o">}</span> 
-          <span class="o">}</span>
-<span class="o">}</span>
-</code></pre></div>
-<hr>
-
-<h3 id="2">2.结果如下</h3>
-<div class="highlight"><pre><code class="language-" data-lang="">//kMeans聚类结果信息如下，比较重要的是每个聚类的中心以及误差
-kMeans
-======
-
-Number of iterations: 2
-Within cluster sum of squared errors: 1.7463888888888888
-Missing values globally replaced with mean/mode
-
-Cluster centroids:
-                         Cluster#
-Attribute    Full Data          0          1
-                  (11)        (4)        (7)
-============================================
-height        177.5455      197.5   166.1429
-weight         68.1818         75    64.2857
-eyeColor        1.3636          2          1
-hairColor       1.4545          2     1.1429
-
-//分类结果如下
-1 - 1 - 0.0,1.0
-2 - 0 - 1.0,0.0
-
-</code></pre></div>
-<blockquote>
-<p>更多资料请阅读<a href="http://www.cs.waikato.ac.nz/ml/weka/">weka官网</a>。</p>
-</blockquote>
-
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
@@ -612,7 +535,7 @@ hairColor       1.4545          2     1.1429
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
-    <span>&copy; 2017 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
+    <span>&copy; 2018 foio. 本站全部文章禁止转载,侵权必究. Powered by <a href="http://jekyllrb.com">Jekyll</a></span>
 
   </footer>
 </div><!-- /.footer-wrapper -->

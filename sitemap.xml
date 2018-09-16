@@ -152,6 +152,10 @@
 
     
     <url>
+        <loc>/chrome-critical-css/</loc>
+    </url>
+    
+    <url>
         <loc>/service-worker-cache/</loc>
     </url>
     
