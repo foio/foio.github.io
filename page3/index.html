@@ -119,6 +119,414 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2017-01-02T00:00:00+08:00"><a href="/mobx-react/">January 02, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/mobx-react/" rel="bookmark" title="使用mobx开发高性能react应用" itemprop="url">使用mobx开发高性能react应用</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <style type="text/css">
+td, table {
+   border: solid gray 1px;
+   padding: 10px;
+}
+table{
+   margin: 0 auto;
+}
+</style>
+
+<blockquote>
+<p>react作为模块化的UI层框架，在前端领域正处于如日中天的地位。但如果仅仅使用react，往往需要在UI层中承载过多的业务逻辑，引入模块化的同时却破坏了分层。为此业界有很多解决方案，目前最流行的就是redux，关于redux的详细介绍请参考我的另外两篇文章：<a href="http://foio.github.io/redux-state-manage/">redux,一种页面状态管理的优雅方案</a>和<a href="http://foio.github.io/react-redux-performance-boost/">react+redux渲染性能优化原理</a>。redux是一个设计规范、严格的单向数据流框架，适用于大型项目。而本文将详细介绍一种更灵活的、适合于中小型应用的数据层框架mobx。</p>
+</blockquote>
+
+<p>本文中的代码全部源于<a href="https://github.com/foio/react-mobx-isomorphic-todolist">react-mobx-isomorphic-todolist</a>。</p>
+
+<h2 id="1-mobx">1.mobx的基本用法</h2>
+
+<p>作为一个数据层框架，mobx基于一个最简单的原则：</p>
+
+<blockquote>
+<p>当应用状态更新时，所有依赖于这些应用状态的监听者（包括UI、服务端数据同步函数等），都应该自动得到细粒度地更新。</p>
+</blockquote>
+
+<p>mobx推荐使用ES7的decorator语法，以实现最精炼的表达。通过对babel简单的配置我们就可以使用decorator的语法了，具体配置请参考<a href="https://mobxjs.github.io/mobx/best/decorators.html">官方文档</a>。在理解mobx之前，我们需要搞清楚mobx中的两个基本概念Observable和Reactions：</p>
+
+<blockquote>
+<p>Observable: 需要被监听的应用状态；通过<code>@observable</code>修饰符可以细粒度地控制一个Class的哪个属性需要被监听。</p>
+
+<p>Reactions: 应用状态的监听者；当依赖的应用状态发生变化时，能够自动地执行相应的动作。<code>reaction</code>、<code>autorun</code>、<code>@observer</code>都可以生成一个Reactions。</p>
+</blockquote>
+
+<p>mobx通过使用Observable和Reactions的抽象概念，分别表示需要被监听应用状态和应用状态的监听者。</p>
+
+<h3 id="1">(1). 创建需要被监听的应用状态</h3>
+
+<p>通过对Class的属性简单的使用<code>@observable</code>修饰符，就定义了一个需要被监听的应用状态变量；然后直接在类中定义对应用状态变量的操作；我们就实现了一个灵活的Store层。如下代码中，创建了一个TodoItemModel的Store层：使用<code>@observable</code>修饰符将title和completed定义为需要被监听地应用状态变量。这样，mobx就会监听title和completed的变化，并在其发生变化时，执行这些变量的监听者(Reactions)。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">class</span> <span class="nx">TodoItemModel</span> <span class="p">{</span>
+    <span class="nx">id</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">title</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">completed</span><span class="p">;</span>
+
+    <span class="nx">toggle</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">completed</span> <span class="o">=</span> <span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">completed</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="nx">setTitle</span><span class="p">(</span><span class="nx">title</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">title</span> <span class="o">=</span> <span class="nx">title</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="p">...</span>
+<span class="p">}</span>
+
+</code></pre></div>
+<h3 id="2">(2).创建应用状态的监听者</h3>
+
+<p>上文中提到，有多种方式可以创建应用状态的监听者(Reactions)，包括<code>autorun</code>、<code>reaction</code>、<code>@observer</code>等，具体用法请参考官方文档。Reactions中有应用状态（使用<code>@observable</code>修饰符标记的变量）的依赖，在应用状态更新时，会自动执行相应的动作，比如：打印日志、向服务端同步数据、更新UI等。下面是几种常用的监听者(Reactions)。</p>
+
+<p>使用autorun在应用状态变化时打印日志：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">autorun</span><span class="p">(()</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">completed</span><span class="p">);</span>
+</code></pre></div>
+<p>使用reaction在应用状态变化时向服务端同步数据:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">reaction</span><span class="p">(</span>
+    <span class="p">()</span> <span class="o">=&gt;</span> <span class="k">this</span><span class="p">.</span><span class="nx">toJS</span><span class="p">(),</span>
+    <span class="nx">todo</span> <span class="o">=&gt;</span> <span class="nx">fetch</span><span class="p">(</span><span class="s1">'/todos/'</span> <span class="o">+</span> <span class="nx">todo</span><span class="p">.</span><span class="nx">id</span><span class="p">,</span> <span class="p">{</span>
+        <span class="na">method</span><span class="p">:</span> <span class="s1">'PUT'</span><span class="p">,</span>
+        <span class="na">headers</span><span class="p">:</span> <span class="k">new</span> <span class="nx">Headers</span><span class="p">({</span><span class="s1">'Content-Type'</span><span class="p">:</span> <span class="s1">'application/json'</span><span class="p">}),</span>
+        <span class="na">body</span><span class="p">:</span> <span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">todo</span><span class="p">)</span>
+    <span class="p">})</span>
+<span class="p">)</span>
+</code></pre></div>
+<p>使用@observer在应用状态变化时更新UI，和React组件结合使用，会在应用状态更新时，重新渲染组件：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="err">@</span><span class="nx">observer</span>
+<span class="kr">class</span> <span class="nx">TodoItem</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+    <span class="p">.....</span>
+    <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+        <span class="c1">//UI logic code ...</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">....</span>
+        <span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>在使用<code>autorun</code>、<code>reaction</code>、<code>@observer</code>创建监听者(Reactions)时，我们并没有显示的指定当前的监听者(Reactions)监听的是哪个应用状态(Observable)，mobx却能够做到精确地更新，比如如下代码，reaction1和reaction2只有在各自依赖的应用状态变量变动时才会执行：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">class</span> <span class="nx">TodoItemModel</span> <span class="p">{</span>
+    <span class="nx">id</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">title</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">completed</span><span class="p">;</span>
+    <span class="p">......</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">todoItemStore</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">TodoItemModel</span><span class="p">();</span>
+
+<span class="c1">//只有在title发生变化时，reaction1才会执行</span>
+<span class="kr">const</span> <span class="nx">reaction1</span> <span class="o">=</span> <span class="nx">reaction</span><span class="p">(</span>
+    <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">todoItemStore</span><span class="p">.</span><span class="nx">title</span><span class="p">,</span>
+    <span class="nx">text</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">id</span><span class="o">+</span><span class="s2">":"</span><span class="o">+</span><span class="nx">text</span><span class="p">)</span>
+<span class="p">);</span>
+
+<span class="c1">//只有在completed发生变化时，reaction2才会执行</span>
+<span class="kr">const</span> <span class="nx">reaction1</span> <span class="o">=</span> <span class="nx">reaction</span><span class="p">(</span>
+    <span class="p">()</span> <span class="o">=&gt;</span> <span class="nx">todoItemStore</span><span class="p">.</span><span class="nx">completed</span><span class="p">,</span>
+    <span class="nx">text</span> <span class="o">=&gt;</span> <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">id</span><span class="o">+</span><span class="s2">":"</span><span class="o">+</span><span class="nx">completed</span><span class="p">)</span>
+<span class="p">);</span>
+
+</code></pre></div>
+<p>mobx是如何做到：只有在监听者(Reactions)监听的应用状态(Observable)发生变化时，才执行监听者的动作的呢？</p>
+
+<blockquote>
+<p>mobx会记录监听者(Reactions)中对Observable变量的引用，通过引用在运行时动态地构建依赖图谱，从而实现精确的更新。这样mobx就可以保证某个Observable变量变化时，只执行对其有依赖的Reactions动作。</p>
+</blockquote>
+
+<p>mobx借鉴了MVVM框架中常用的依赖收集技术，使用ES5的新特性Object.defineProperty对属性设置set和get来实现对对象属性变动地监听和依赖跟踪。关于Object.defineProperty的请参考<a href="https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Object/defineProperty">MDN文档</a>。</p>
+
+<h2 id="2-mobx-react">2.mobx-react渲染性能优化原理</h2>
+
+<p>我们可以通过使用@observer，将react组件转换成一个监听者(Reactions)，这样在被监听的应用状态变量(Observable)有更新时，react组件就会重新渲染。如下代码中，TodoItemModel中的应用状态变量有更新时，TodoItem UI会重新渲染:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">class</span> <span class="nx">TodoItemModel</span> <span class="p">{</span>
+    <span class="nx">id</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">title</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">completed</span><span class="p">;</span>
+    <span class="p">......</span>
+<span class="p">}</span>
+
+
+<span class="err">@</span><span class="nx">observer</span>
+<span class="kr">class</span> <span class="nx">TodoItem</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+    <span class="p">.....</span>
+    <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+        <span class="c1">//UI logic code ...</span>
+        <span class="kd">let</span> <span class="nx">todo</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">todo</span><span class="p">;</span>
+        <span class="kd">let</span> <span class="nx">title</span> <span class="o">=</span> <span class="nx">todo</span><span class="p">.</span><span class="nx">title</span><span class="p">;</span>
+        <span class="kd">let</span> <span class="nx">complete</span> <span class="o">=</span> <span class="nx">todo</span><span class="p">.</span><span class="nx">complete</span><span class="p">;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">....</span>
+        <span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">todoItem</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">TodoItemModel</span><span class="p">();</span>
+<span class="nx">todoItem</span><span class="p">.</span><span class="nx">title</span> <span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+
+</code></pre></div>
+<p>在使用react的过程中，我们绕不开渲染性能优化问题，因为默认情况下react组件的shouldComponentUpdate函数会一直返回true，这回导致所有的组件都会进行耗时的虚拟DOM比较。在使用redux作为react的逻辑层框架时，我们可以使用经典的PureComponent+ShallowCompare的方式进行渲染性能优化，那么在使用mobx作为react的store时，我们该如何进行渲染性能优化呢？</p>
+
+<h3 id="1">(1). 默认的基本渲染性能优化</h3>
+
+<p>通过分析源代码发现，在使用@observer将react组件转换成一个监听者(Reactions)后，mobx会为react组件提供一个精确的、细粒度的shouldComponentUpdate函数:</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">shouldComponentUpdate</span><span class="err">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">nextProps</span><span class="p">,</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
+  <span class="p">......</span>
+  <span class="c1">// update on any state changes (as is the default)</span>
+  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span> <span class="o">!==</span> <span class="nx">nextState</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="c1">// update if props are shallowly not equal</span>
+  <span class="k">return</span> <span class="nx">isObjectShallowModified</span><span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">,</span> <span class="nx">nextProps</span><span class="p">);</span>
+<span class="p">}</span>
+
+</code></pre></div>
+<p>借助于mobx框架对Observable变量引用的跟踪和依赖收集，mobx能够精确地得到react组件对Observable变量的依赖图谱，然后再用经典的ShallowCompare实现细粒度的shouldComponentUpdate函数，以达到100%无浪费render。这一切都是自动完成地，fantastic！使用mobx后，我们再也无需手动写shouldComponentUpdate函数了。</p>
+
+<h3 id="2-transaction">(2). 使用transaction进行高级渲染性能优化</h3>
+
+<p>mobx在带来便利性的同时，也可能引入新的问题。上文反复提到：mobx会记录监听者(Reactions)中对Observable变量的引用，通过引用在运行时动态地构建依赖图谱，从而实现精确地、细粒度地更新。</p>
+
+<p>如果一个React组件依赖于多个应用状态(Observable)变量，而一次操作需要更新多个应用状态(Observable)变量时，React组件就会进行多次渲染。在有些场景下，更新地粒度过细，也不是我们希望看到的场景。比如如下代码，调用TodoItemModel的reset方法设置了两个应用状态变量，会导致对应的UI组件重新渲染两次：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">
+<span class="c1">//todoItem UI组件，依赖于应用状态变量completed和title</span>
+<span class="err">@</span><span class="nx">observer</span>
+<span class="kr">class</span> <span class="nx">TodoItem</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+    <span class="p">...</span>
+    <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+        <span class="c1">//UI logic code ...</span>
+        <span class="kd">let</span> <span class="nx">todo</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">todo</span><span class="p">;</span>
+        <span class="kd">let</span> <span class="nx">title</span> <span class="o">=</span> <span class="nx">todo</span><span class="p">.</span><span class="nx">title</span><span class="p">;</span>
+        <span class="kd">let</span> <span class="nx">completed</span> <span class="o">=</span> <span class="nx">todo</span><span class="p">.</span><span class="nx">complete</span><span class="p">;</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="p">......</span>
+        <span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+
+<span class="kr">class</span> <span class="nx">TodoItemModel</span> <span class="p">{</span>
+    <span class="nx">id</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">title</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">completed</span><span class="p">;</span>
+    <span class="p">......</span>
+    <span class="nx">reset</span><span class="p">()</span> <span class="p">{</span>
+        <span class="cm">/*
+        分别设置title和completed值，
+        会触发两次todoItem UI组件的重新渲染
+        */</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">completed</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">title</span><span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="p">......</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">todoItem</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">TodoItemModel</span><span class="p">();</span>
+<span class="c1">//调用reset将触发两次TodoItem UI组件的重新渲染</span>
+<span class="nx">todoItem</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+</code></pre></div>
+<p><img src="/images/mobx-transaction-1.png" alt="mobx-transaction-1"></p>
+
+<p>在语义层面，有时我们需要将多个应用状态(Observable)的更新，<code>视为一次操作，并希望只触发一次监听者(Reactions)的动作(UI更新、网络请求等)</code>。为此mobx提供了transaction功能，可以将对多个应用状态(Observable)的更新封装成一个事务，只有在事务执行完成后，才会触发一次对应的监听者(Reactions)。这就使得我们对组件的渲染有更精细化的控制。比如如下代码，使用transaction后，对应用状态(Observable)的两次更新只会触发一次UI的更新。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kr">class</span> <span class="nx">TodoItemModel</span> <span class="p">{</span>
+    <span class="nx">id</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">title</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">completed</span><span class="p">;</span>
+    <span class="p">......</span>
+    <span class="nx">reset</span><span class="p">()</span> <span class="p">{</span>
+        <span class="cm">/*
+        使用transaction设置title和completed值，
+        只会在函数调用结束后触发一次todoItem UI组件的重新渲染
+        */</span>
+        <span class="nx">transaction</span><span class="p">(()</span><span class="o">=&gt;</span><span class="p">{</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">completed</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+            <span class="k">this</span><span class="p">.</span><span class="nx">title</span><span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+        <span class="p">})</span>
+    <span class="p">}</span>
+    <span class="p">......</span>
+<span class="p">}</span>
+
+<span class="kd">var</span> <span class="nx">todoItem</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">TodoItemModel</span><span class="p">();</span>
+<span class="c1">//调用reset只触发一次TodoItem UI组件的重新渲染</span>
+<span class="nx">todoItem</span><span class="p">.</span><span class="nx">reset</span><span class="p">();</span>
+</code></pre></div>
+<p><img src="/images/mobx-transaction-2.png" alt="mobx-transaction-2"></p>
+
+<h2 id="3">3.最佳实践</h2>
+
+<p>上文中提到，一般情况下，mobx和react结合时不需要任何的额外操作，就能够使我们的react组件达到100%无浪费渲染。但这是建立在正确的使用mobx的基础上的，mobx极其灵活，也容易误用。下面我们总结一些mobx的最佳实践。</p>
+
+<h3 id="1">(1). 延迟对象属性地解引用</h3>
+
+<p>本质上，mobx使用ES5的新特性Object.defineProperty对属性设置set和get来实现对对象属性变动的监听和依赖跟踪。只有在真正需要使用Observable变量的Reactions中，再对其解引用，才能使得mobx构建出正确的依赖图谱。从而使得mobx能够精确的更新对特定属性有依赖的Reactions。</p>
+
+<p>比如对于todolist，正确的写法是在子组件中才对需要使用的属性进行解引用：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="err">@</span><span class="nx">observer</span>
+<span class="kr">class</span> <span class="nx">MainSection</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+    <span class="p">.......</span>
+    <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+        <span class="p">......</span>
+        <span class="k">return</span> <span class="p">(</span>
+                <span class="p">......</span>
+                    <span class="p">{</span><span class="nx">todos</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span>
+                        <span class="p">(</span><span class="nx">todo</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">TodoItem</span> <span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">todo</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span> <span class="nx">todo</span><span class="o">=</span><span class="p">{</span><span class="nx">todo</span><span class="p">}</span> <span class="sr">/</span><span class="err">&gt;
+</span>                    <span class="p">)}</span>
+                <span class="p">......</span>
+        <span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="err">@</span><span class="nx">observer</span>
+<span class="kr">class</span> <span class="nx">TodoItem</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+    <span class="p">......</span>
+    <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kd">let</span> <span class="nx">todo</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">todo</span><span class="p">;</span>
+        <span class="kd">let</span> <span class="nx">title</span> <span class="o">=</span> <span class="nx">todo</span><span class="p">.</span><span class="nx">title</span><span class="p">;</span>
+        <span class="kd">let</span> <span class="nx">complete</span> <span class="o">=</span> <span class="nx">todo</span><span class="p">.</span><span class="nx">complete</span><span class="p">;</span>
+        <span class="k">return</span><span class="p">(</span>
+            <span class="p">......</span>
+        <span class="p">)</span> 
+    <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div>
+<p>如果在父组件中对属性过早的解引用，而向子组件传递原始类型的变量，则导致mobx无法搜集到子组件对应用状态的依赖，如下代码是错误的：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="err">@</span><span class="nx">observer</span>
+<span class="kr">class</span> <span class="nx">MainSection</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+    <span class="p">.......</span>
+    <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+        <span class="p">......</span>
+        <span class="k">return</span> <span class="p">(</span>
+                <span class="p">......</span>
+                    <span class="p">{</span><span class="nx">todos</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span>
+                        <span class="p">(</span><span class="nx">todo</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="o">&lt;</span><span class="nx">TodoItem</span> <span class="nx">key</span><span class="o">=</span><span class="p">{</span><span class="nx">todo</span><span class="p">.</span><span class="nx">id</span><span class="p">}</span> <span class="nx">title</span><span class="o">=</span><span class="p">{</span><span class="nx">todo</span><span class="p">.</span><span class="nx">title</span><span class="p">}</span> <span class="nx">completed</span><span class="o">=</span><span class="p">{</span><span class="nx">todo</span><span class="p">.</span><span class="nx">completed</span><span class="p">}</span><span class="sr">/</span><span class="err">&gt;
+</span>                    <span class="p">)}</span>
+                <span class="p">......</span>
+        <span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="err">@</span><span class="nx">observer</span>
+<span class="kr">class</span> <span class="nx">TodoItem</span> <span class="kr">extends</span> <span class="nx">React</span><span class="p">.</span><span class="nx">Component</span> <span class="p">{</span>
+    <span class="p">......</span>
+    <span class="nx">render</span><span class="p">()</span> <span class="p">{</span>
+        <span class="kd">let</span> <span class="nx">title</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">title</span><span class="p">;</span>
+        <span class="kd">let</span> <span class="nx">complete</span> <span class="o">=</span> <span class="k">this</span><span class="p">.</span><span class="nx">props</span><span class="p">.</span><span class="nx">complete</span><span class="p">;</span>
+        <span class="k">return</span><span class="p">(</span>
+            <span class="p">......</span>
+        <span class="p">)</span> 
+    <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div>
+<h3 id="2-observer">(2). 不要吝啬使用@observer</h3>
+
+<p>github上有个经典的问题：<a href="https://github.com/mobxjs/mobx/issues/101">Do child components need <code>@observer</code></a>？在回答这个问题的过程中，mobx的作者对mobx的设计思想也进行了很好的回答。我最初接触mobx时，我也有同样的疑惑：子组件需要使用<code>@observer</code>标记吗？应用状态可以通过父组件传递到子组件啊？</p>
+
+<p>mobx作者<a href="https://github.com/mweststrate">mweststrate</a>推荐对父组件和子组件都使用<code>@observer</code>。添加<code>@observer</code>对性能的影响可以忽略不计，不需要担心由此引发的性能问题，事实上作者在自己的项目中对所有的组件都是用<code>@observer</code>，也没有问题。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">如果一个组件需要使用`@observable`变量（应用状态），就应该使用@observer修饰符。
+</code></pre></div>
+<p>上文<code>mobx-react渲染性能优化原理</code>一节中提到，借助于精确的依赖分析，mobx可以得出组件对<code>@observable</code>变量（应用状态）的依赖图谱，对使用<code>@observer</code>进行标记的组件，实现精准的shouldComponentUpdate函数，保证组件100%无浪费渲染。如果我们不对子组件使用@observer，我们就放弃了mobx对React组件的默认性能优化。</p>
+
+<h3 id="3-action">(3). 不要吝啬使用@action</h3>
+
+<p>mobx2.2版本开始引入action，我们在使用mobx时，应该遵守如下规则:</p>
+<div class="highlight"><pre><code class="language-" data-lang="">凡是涉及到对应用状态变量修改的函数，都应该使用@action修饰符。
+</code></pre></div>
+<p>使用action后我们可以更清晰的看出，代码中的那一部分修改了<code>@observable</code>变量（应用状态）; mobx的官方调试工具，也能够提供更丰富的调试信息。在mobx-react高级渲染性能优化小节中，我们知道，使用transaction可以将多个应用状态(Observable)的更新视为一次操作，并只触发一次监听者(Reactions)的动作(UI更新、网络请求等)，从而更大程度地提升应用的性能，避免多余的UI渲染和网络请求。action中封装了transaction，对函数使用action修饰符后，无论函数中对<code>@observable</code>变量（应用状态）有多少次修改，都只会在函数执行完成后，触发一次对应的监听者。如下代码，reset函数只会触发一次UI更新。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="err">@</span><span class="nx">autobind</span>
+<span class="kr">class</span> <span class="nx">TodoItemModel</span> <span class="p">{</span>
+    <span class="nx">id</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">title</span><span class="p">;</span>
+    <span class="err">@</span><span class="nx">observable</span> <span class="nx">completed</span><span class="p">;</span>
+
+    <span class="c1">//使用action后，reset函数执行完成后，才会触发一次其监听者</span>
+    <span class="err">@</span><span class="nx">action</span>
+    <span class="nx">reset</span><span class="p">()</span> <span class="p">{</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">completed</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">title</span><span class="o">=</span> <span class="s1">''</span><span class="p">;</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+
+</code></pre></div>
+<p>需要注意的是action只能影响同步函数，函数中如果有异步调用，则需要对异步调用的函数也使用aciton包裹。请<a href="http://mobxjs.github.io/mobx/refguide/action.html">参考官方文档</a>。</p>
+
+<h3 id="4-usestaticrendering-true">(4). 服务端渲染时设置useStaticRendering为true</h3>
+
+<p>上文中，我们知道可以通过使用@observer，将react组件转换成一个监听者(Reactions)，这样在被监听的应用状态变量(Observable)有更新时，react组件就会重新渲染。而对于服务端的React组件，我们只需要它被渲染一次，而不需要组件监听模型的状态。事实上，如果服务端React组件像客户端组件一样监听模型的状态变化，就会造成严重的内存泄漏问题。官方提供了<code>useStaticRendering</code>方法，用于避免mobx服务端渲染的内存泄漏问题; 该方法只需要在server启动时设置一次。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">useStaticRendering</span><span class="p">(</span><span class="kc">true</span><span class="p">);</span>
+</code></pre></div>
+<h2 id="4-mobx-redux">4.mobx与redux的对比</h2>
+
+<p>不可否认，redux依然是react生态系统中最流行的数据层框架；但是mobx也有自己的优势。下面我们从完整性、状态传播方式、适用性等方面对mobx和redux进行简单的对比。</p>
+
+<table><thead>
+<tr>
+<th style="text-align: center"></th>
+<th style="text-align: left">redux</th>
+<th style="text-align: left">mobx</th>
+</tr>
+</thead><tbody>
+<tr>
+<td style="text-align: center">逻辑层完整性性</td>
+<td style="text-align: left">redux包括了store、view、action的整个数据流</td>
+<td style="text-align: left">mobx只关心store、view</td>
+</tr>
+<tr>
+<td style="text-align: center">状态传播</td>
+<td style="text-align: left">redux将组件分为容器型组件和展示型组件，状态只对容器型组件可见，容器型组件需要主动的使用mapStateToProps订阅状态</td>
+<td style="text-align: left">mobx对组件没有划分，使用@observer后会在运行时动态地订阅状态</td>
+</tr>
+<tr>
+<td style="text-align: center">适用性</td>
+<td style="text-align: left">redux要求对整个应用使用单一的状态树，并要求状态的更新必须是immutable地，数据流规范，设计严谨。但是其复杂度也比较高，就连最基本的异步操作，也需要中间件(redux-thunk,redux-sage等)来解决。学习曲线较陡，适合大型项目使用</td>
+<td style="text-align: left">mobx则对应用状态的设计没有特殊要求，极其灵活，异步操作也非常自然，学习曲线平缓，适合中小型项目,但缺少最佳实践</td>
+</tr>
+</tbody></table>
+
+<p>参考文档：</p>
+
+<hr>
+
+<p><a href="https://github.com/foio/react-mobx-isomorphic-todolist">https://github.com/foio/react-mobx-isomorphic-todolist</a></p>
+
+<p><a href="https://jsfiddle.net/mweststrate/wv3yopo0/">https://jsfiddle.net/mweststrate/wv3yopo0/</a></p>
+
+<p><a href="https://mobxjs.github.io/mobx/refguide/observable.html">https://mobxjs.github.io/mobx/refguide/observable.html</a></p>
+
+<p><a href="http://www.cnblogs.com/rubylouvre/p/6058045.html">http://www.cnblogs.com/rubylouvre/p/6058045.html</a></p>
+
+<p><a href="https://github.com/sorrycc/blog/issues/2">https://github.com/sorrycc/blog/issues/2</a></p>
+
+<p><a href="https://github.com/mobxjs/mobx-react-boilerplate">https://github.com/mobxjs/mobx-react-boilerplate</a></p>
+
+<p><a href="https://github.com/mobxjs/mobx/issues/101">https://github.com/mobxjs/mobx/issues/101</a></p>
+
+<p><a href="https://www.mendix.com/tech-blog/making-react-reactive-pursuit-high-performing-easily-maintainable-react-apps/">https://www.mendix.com/tech-blog/making-react-reactive-pursuit-high-performing-easily-maintainable-react-apps/</a></p>
+
+<p><a href="https://mobxjs.github.io/mobx/best/devtools.html">https://mobxjs.github.io/mobx/best/devtools.html</a></p>
+
+<p><a href="https://medium.com/@robinpokorny/index-as-a-key-is-an-anti-pattern-e0349aece318#.zdtoxpkr8">https://medium.com/@robinpokorny/index-as-a-key-is-an-anti-pattern-e0349aece318#.zdtoxpkr8</a></p>
+
+<p><a href="https://mobxjs.github.io/mobx/best/react-performance.html">https://mobxjs.github.io/mobx/best/react-performance.html</a></p>
+
+<p><a href="https://mobxjs.github.io/mobx/best/store.html">https://mobxjs.github.io/mobx/best/store.html</a></p>
+
+<p><a href="https://github.com/sorrycc/blog/issues/5?utm_source=tuicool&utm_medium=referral">https://github.com/sorrycc/blog/issues/5?utm_source=tuicool&amp;utm_medium=referral</a></p>
+
+<p><a href="https://medium.com/@mweststrate/becoming-fully-reactive-an-in-depth-explanation-of-mobservable-55995262a254#.vaxmn2rek">https://medium.com/@mweststrate/becoming-fully-reactive-an-in-depth-explanation-of-mobservable-55995262a254#.vaxmn2rek</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2016-11-18T00:00:00+08:00"><a href="/wepack-code-spliting/">November 18, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -360,157 +768,6 @@ rel="stylesheet" type="text/css" -->
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-10-11T00:00:00+08:00"><a href="/javascript-global-exceptions/">October 11, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/javascript-global-exceptions/" rel="bookmark" title="捕获页面中全局Javascript异常" itemprop="url">捕获页面中全局Javascript异常</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>一个流量巨大的前端页面面临的浏览器环境是非常复杂的，尤其是移动端页面(Android的碎片化所致)。面对如此多样的浏览器环境，常规的测试是无法完全覆盖的，我们需要一种页面脚本异常监控机制作为补充，保证能够发现前端页面脚本异常的原因。有很多种情况会导致Javascript抛出异常，包括网络失效、语法错误、运行时错误等。<code>我们希望在页面上有异常发生时，能够获得脚本错误的基本信息、文件url、行号</code>。接下来我们探讨几种实现方式。</p>
-
-<h3 id="1-window-onerror">1 使用window.onError</h3>
-
-<p>浏览器提供了全局的onError函数，我们可以使用它搜集页面上的错误</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">window</span><span class="p">.</span><span class="nx">onerror</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">message</span><span class="p">,</span> <span class="nx">source</span><span class="p">,</span> <span class="nx">lineno</span><span class="p">,</span> <span class="nx">colno</span><span class="p">,</span> <span class="nx">error</span><span class="p">)</span> <span class="p">{</span> <span class="p">...</span> <span class="p">}</span>
-</code></pre></div>
-<p>其中mesage为异常基本信息，source为发生异常Javascript文件url，lineno为发生错误的行号，我们可以通过error.stack获取异常的堆栈信息。下面是chrome中通过window.onError捕获的错误例子：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">message</span><span class="err">:</span> <span class="nx">Uncaught</span> <span class="nx">ReferenceError</span><span class="err">:</span> <span class="nx">test</span> <span class="nx">is</span> <span class="nx">not</span> <span class="nx">defined</span>
-<span class="nl">source</span><span class="p">:</span>  <span class="nl">http</span><span class="p">:</span><span class="c1">//test.com/release/attach.js</span>
-<span class="nl">lineno</span><span class="p">:</span>  <span class="mi">16144</span>
-<span class="nl">colno</span><span class="p">:</span>   <span class="mi">6</span>
-<span class="nl">error</span><span class="p">:</span>   <span class="nl">ReferenceError</span><span class="p">:</span> <span class="nx">test</span> <span class="nx">is</span> <span class="nx">not</span> <span class="nx">defined</span>
-            <span class="nx">at</span> <span class="nx">http</span><span class="err">:</span><span class="c1">//test.com/release/attach.js:16144:6</span>
-            <span class="nx">at</span> <span class="nx">HTMLDocument</span><span class="p">.</span><span class="o">&lt;</span><span class="nx">anonymous</span><span class="o">&gt;</span> <span class="p">(</span><span class="nx">http</span><span class="err">:</span><span class="c1">//test.com/release/vendor.js:654:71)</span>
-</code></pre></div>
-<p>这种方式看似完美，其实有一个致命的问题。有些浏览器为了安全方面的考虑，对于不同域的Javascript文件，通过window.onError无法获取有效的错误信息。比如firefox的错误消息只有<code>Script error</code>，而且无法获得确切的行号，更没有错误堆栈信息：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">message</span><span class="err">:</span> <span class="nx">Script</span> <span class="nx">error</span><span class="p">.</span>
-<span class="nl">source</span><span class="p">:</span>  <span class="err">"</span><span class="nx">http</span><span class="err">:</span><span class="c1">//test.com/release/attach.js</span>
-<span class="nl">lineno</span><span class="p">:</span>  <span class="mi">0</span>
-<span class="nl">colno</span><span class="p">:</span>   <span class="mi">0</span>
-<span class="nl">error</span><span class="p">:</span>   <span class="kc">null</span>
-</code></pre></div>
-<p>为了使得浏览器针对window.onError的跨域保护失效, 我们可以在静态资源服务器或者CDN的HTTP头中加上如下允许跨域提示：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">Access</span><span class="o">-</span><span class="nx">Control</span><span class="o">-</span><span class="nx">Allow</span><span class="o">-</span><span class="nx">Origin</span><span class="err">:</span> <span class="o">*</span>
-</code></pre></div>
-<p>并在引用Javascript脚本是加上crossorigin属性:</p>
-<div class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;script </span><span class="na">crossorigin</span> <span class="na">src=</span><span class="s">""</span><span class="nt">&gt;&lt;/script&gt;</span>
-</code></pre></div>
-<p>完成上述两步后，我们就可以方便的使用window.onError进行全局异常捕获，并获取丰富的异常信息了。但是有时对于第三方的CDN，我们无法添加跨域相关的头信息，下面我们就讨论针这种情况的全局Javascript异常捕获方法。</p>
-
-<h3 id="2-ast-try-catch">2 使用AST为所有函数加上try catch</h3>
-
-<p>上文中提到了使用window.onError进行浏览器全局异常捕获，但是当我们无法添加跨域相关头信息时，window.onError就失效了。针对这种情况，我们可以对每一个函数添加try catch来捕获函数内的异常，但是一个大型项目的函数太多，对每一个函数都手动添加try catch无疑是一个巨大的工作量。本文我们借助AST（抽象语法树）技术，对源文件进行预处理，对每个函数自动的添加try catch。</p>
-
-<p>语法树是对源代码最精确的表示，通过遍历和操作语法树，我们能够精确的控制源代码。生成JavaScript的AST是一件非常复杂的工作，本文暂时不打算涉及，好在UglifyJS已经有了完整的实现。</p>
-
-<p>比如如下代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">test</span><span class="p">(){</span>
-   <span class="kd">var</span> <span class="nx">a</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-   <span class="kd">var</span> <span class="nx">b</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
-   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">a</span><span class="o">+</span><span class="nx">b</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>可以用语法树表示：</p>
-
-<p><img src="/images/simple-ast.png" alt="a ast demo"></p>
-
-<p>通过使用Uglify提供的操作AST(抽象语法树)的API，我们可以对每个函数添加try catch代码块，并在catch中捕获该函数的一切异常，下面是我的实现（请参考我的github：<a href="https://github.com/foio/try-catch-global.js">try-catch-global.js</a>）：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'fs'</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">_</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'lodash'</span><span class="p">);</span>
-<span class="kd">var</span> <span class="nx">UglifyJS</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">'uglify-js'</span><span class="p">);</span>
-
-<span class="kd">var</span> <span class="nx">isASTFunctionNode</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">node</span> <span class="k">instanceof</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">AST_Defun</span> <span class="o">||</span> <span class="nx">node</span> <span class="k">instanceof</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">AST_Function</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kd">var</span> <span class="nx">globalFuncTryCatch</span> <span class="o">=</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">inputCode</span><span class="p">,</span> <span class="nx">errorHandler</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">_</span><span class="p">.</span><span class="nx">isFunction</span><span class="p">(</span><span class="nx">errorHandler</span><span class="p">)){</span>
-        <span class="k">throw</span> <span class="s1">'errorHandler should be a valid function'</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="kd">var</span> <span class="nx">errorHandlerSource</span> <span class="o">=</span> <span class="nx">errorHandler</span><span class="p">.</span><span class="nx">toString</span><span class="p">();</span>
-    <span class="kd">var</span> <span class="nx">errorHandlerAST</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="s1">'('</span> <span class="o">+</span> <span class="nx">errorHandlerSource</span> <span class="o">+</span> <span class="s1">')(error);'</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">tryCatchAST</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="s1">'try{}catch(error){}'</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">inputAST</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">inputCode</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">topFuncScope</span> <span class="o">=</span> <span class="p">[];</span>
-
-    <span class="c1">//将错误处理函数包裹进入catch中</span>
-    <span class="nx">tryCatchAST</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">bcatch</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">=</span> <span class="nx">errorHandlerAST</span><span class="p">;</span>
-
-    <span class="c1">//搜集所有函数</span>
-    <span class="kd">var</span> <span class="nx">walker</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">TreeWalker</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">isASTFunctionNode</span><span class="p">(</span><span class="nx">node</span><span class="p">))</span> <span class="p">{</span>
-            <span class="nx">topFuncScope</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="nx">node</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">});</span>
-    <span class="nx">inputAST</span><span class="p">.</span><span class="nx">walk</span><span class="p">(</span><span class="nx">walker</span><span class="p">);</span>
-
-    <span class="c1">//对函数进行变换, 添加try catch语句</span>
-    <span class="kd">var</span> <span class="nx">transfer</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">TreeTransformer</span><span class="p">(</span><span class="kc">null</span><span class="p">,</span>
-        <span class="kd">function</span> <span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">isASTFunctionNode</span><span class="p">(</span><span class="nx">node</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="nx">_</span><span class="p">.</span><span class="nx">includes</span><span class="p">(</span><span class="nx">topFuncScope</span><span class="p">,</span> <span class="nx">node</span><span class="p">))</span> <span class="p">{</span>
-                <span class="c1">//函数内部代码搜集</span>
-                <span class="kd">var</span> <span class="nx">stream</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">OutputStream</span><span class="p">();</span>
-                <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">print</span><span class="p">(</span><span class="nx">stream</span><span class="p">)</span>
-                <span class="p">}</span>
-                <span class="kd">var</span> <span class="nx">innerFuncCode</span> <span class="o">=</span> <span class="nx">stream</span><span class="p">.</span><span class="nx">toString</span><span class="p">();</span>
-
-                <span class="c1">//清除try catch中定义的多余语句</span>
-                <span class="nx">tryCatchAST</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">body</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">tryCatchAST</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="nx">body</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
-
-                <span class="c1">//用try catch包裹函数代码</span>
-                <span class="kd">var</span> <span class="nx">innerTyrCatchNode</span> <span class="o">=</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">innerFuncCode</span><span class="p">,</span> <span class="p">{</span><span class="na">toplevel</span><span class="p">:</span> <span class="nx">tryCatchAST</span><span class="p">.</span><span class="nx">body</span><span class="p">[</span><span class="mi">0</span><span class="p">]});</span>
-
-                <span class="c1">//获取函数壳</span>
-                <span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">splice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="nx">node</span><span class="p">.</span><span class="nx">body</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
-
-                <span class="c1">//生成有try catch的函数</span>
-                <span class="k">return</span> <span class="nx">UglifyJS</span><span class="p">.</span><span class="nx">parse</span><span class="p">(</span><span class="nx">innerTyrCatchNode</span><span class="p">.</span><span class="nx">print_to_string</span><span class="p">(),</span> <span class="p">{</span><span class="na">toplevel</span><span class="p">:</span> <span class="nx">node</span><span class="p">});</span>
-            <span class="p">}</span>
-        <span class="p">});</span>
-    <span class="nx">inputAST</span><span class="p">.</span><span class="nx">transform</span><span class="p">(</span><span class="nx">transfer</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">outputCode</span> <span class="o">=</span> <span class="nx">inputAST</span><span class="p">.</span><span class="nx">print_to_string</span><span class="p">({</span><span class="na">beautify</span><span class="p">:</span> <span class="kc">true</span><span class="p">});</span>
-    <span class="k">return</span> <span class="nx">outputCode</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="nx">module</span><span class="p">.</span><span class="nx">exports</span><span class="p">.</span><span class="nx">globalFuncTryCatch</span> <span class="o">=</span> <span class="nx">globalFuncTryCatch</span><span class="p">;</span>
-
-</code></pre></div>
-<p>借助于<code>globalFuncTryCatch</code>，我们对每个函数进行自动化地添加try catch语句，并使用自定义的错误处理函数：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript">
-<span class="nx">globalFuncTryCatch</span><span class="p">(</span><span class="nx">inputCode</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
-   <span class="c1">//此处是异常处理代码，可以上报并记录日志</span>
-   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">error</span><span class="p">);</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>通过将globalFuncTryCatch功能集成到构建工具中，我们就可以对目标Javascript文件进行try catch处理。</p>
-
-<p>综上所述：</p>
-
-<p>当静态资源服务器可以添加<code>Access-Control-Allow-Origin: *</code> 时，我们可以直接使用window.onError进行全局异常捕获；当静态资源服务器不受控制，window.onError失效，我们可以借助AST技术，自动化地对全部目标Javascript函数添加try catch来捕获所有异常。</p>
-
-<hr>
-
-<p>参考文档</p>
-
-<p><a href="https://blog.sentry.io/2016/01/04/client-javascript-reporting-window-onerror.html">https://blog.sentry.io/2016/01/04/client-javascript-reporting-window-onerror.html</a></p>
-
-<p><a href="http://lisperator.net/uglifyjs/">http://lisperator.net/uglifyjs/</a></p>
-
-<p><a href="https://developer.mozilla.org/en/docs/Web/API/GlobalEventHandlers/onerror">https://developer.mozilla.org/en/docs/Web/API/GlobalEventHandlers/onerror</a></p>
-
-<p><a href="http://rapheal.sinaapp.com/2014/11/06/javascript-error-monitor/">http://rapheal.sinaapp.com/2014/11/06/javascript-error-monitor/</a></p>
-
-<p><a href="http://resources.jointjs.com/demos/javascript-ast">http://resources.jointjs.com/demos/javascript-ast</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
 
 <div class="pagination">
   
@@ -690,6 +947,12 @@ rel="stylesheet" type="text/css" -->
       <li>
         
           <a href="/page29">29</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page30">30</a>
         
       </li>
     

@@ -5,25 +5,25 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>nginx下codeIgniter的rewrite设置 &#8211; 积木村の研究所</title>
-<meta name="description" content="nginx下codeIgniter">
-<meta name="keywords" content="nginx">
+<title>积木村の研究所</title>
+<meta name="description" content="this is a tech blog by foio">
+<meta name="keywords" content="tech, blog, modern">
 
 
 
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="nginx下codeIgniter的rewrite设置">
-<meta property="og:description" content="nginx下codeIgniter">
-<meta property="og:url" content="/nginxci/">
+<meta property="og:title" content="积木村の研究所">
+<meta property="og:description" content="this is a tech blog by foio">
+<meta property="og:url" content="/page30/">
 <meta property="og:site_name" content="积木村の研究所">
 
 
 
 
 
-<link rel="canonical" href="/nginxci/">
+<link rel="canonical" href="/page30/">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
 
 
@@ -59,13 +59,9 @@ rel="stylesheet" type="text/css" -->
 
 
 
-
-<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
-
-
 </head>
 
-<body id="post" >
+<body id="post-index" >
 
 <!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
 <nav id="dl-menu" class="dl-menuwrapper" role="navigation">
@@ -107,21 +103,31 @@ rel="stylesheet" type="text/css" -->
 </nav><!-- /.dl-menuwrapper -->
 
 
-
+<div class="entry-header">
+  
+  
+  <div class="header-title">
+    <div class="header-title-wrap">
+      <h1>积木村の研究所</h1>
+      <h2></h2>
+    </div><!-- /.header-title-wrap -->
+  </div><!-- /.header-title -->
+</div><!-- /.entry-header -->
 
 <div id="main" role="main">
-  <article class="hentry">
-    <header class="header-title">
-      <div class="header-title-wrap">
-        
-          <h1 class="entry-title"><a href="/nginxci/" rel="bookmark" title="nginx下codeIgniter的rewrite设置">nginx下codeIgniter的rewrite设置</a></h1>
-        
-        <h2>June 11, 2013</h2>
-        
-      </div><!-- /.header-title-wrap -->
-    </header>
-    <div class="entry-content">
-      <p>本文假设CodeIgniter放在webroot的ci目录下。如果CodeIgniter直接放在webroot下，可同样参看本文，只需要将最后几步略去。</p>
+  
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2013-06-11T00:00:00+08:00"><a href="/nginxci/">June 11, 2013</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/nginxci/" rel="bookmark" title="nginx下codeIgniter的rewrite设置" itemprop="url">nginx下codeIgniter的rewrite设置</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>本文假设CodeIgniter放在webroot的ci目录下。如果CodeIgniter直接放在webroot下，可同样参看本文，只需要将最后几步略去。</p>
 
 <p>CodeIgniter要求如下形式的路径：</p>
 <div class="highlight"><pre><code class="language-" data-lang="">host:port/ci/index.php/controller/method/params
@@ -180,48 +186,204 @@ $config['uri_protocol'] = 'REQUEST_URI';
 <p>可以在CodeIgniter的index.php的最开始hack一下,加上如下语句,替换掉最开始的ci目录:</p>
 <div class="highlight"><pre><code class="language-" data-lang="">$_SERVER['REQUEST_URI'] = preg_replace('/\/ci/','',$_SERVER['REQUEST_URI'] ); 
 </code></pre></div>
-      <footer class="entry-meta">
-        <span class="entry-tags"><a href="/tags/#nginx" title="Pages tagged nginx" class="tag">nginx</a></span>
-        <span><a href="/nginxci/" rel="bookmark" title="nginx下codeIgniter的rewrite设置">nginx下codeIgniter的rewrite设置</a> was published on <span class="entry-date date published updated"><time datetime="2013-06-11T00:00:00+08:00">June 11, 2013</time></span></span>
-        (revised: <span class="entry-date date modified"><time datetime="2014-06-11">06/11/2014</time></span>)
-        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-        
-      </footer>
-    </div><!-- /.entry-content -->
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
 
-    
-	        
 
+<div class="pagination">
+  
     
+      <a href="/page29" class="btn">Previous</a>
     
-    <div class="read-more">
+  
+  <ul class="inline-list">
+    <li>
       
-        <div class="read-more-header">
-          <a href="" class="read-more-btn">Read More</a>
-        </div><!-- /.read-more-header -->
-        <div class="read-more-content">
-          <h3><a href="/react16-wried/" title="React16升级避坑指南">React16升级避坑指南</a></h3>
-          <p>总结来从React15升级到React16时遇到的一些奇怪问题 <a href="/react16-wried/">Continue reading</a></p>
-        </div><!-- /.read-more-content -->
+      <a href="/">1</a>
       
-      <div class="read-more-list">
+    </li>
+    
+      <li>
         
-          <div class="list-item">
-            <h4><a href="/chrome-critical-css/" title="一种提取关键样式的方法">一种提取关键样式的方法</a></h4>
-            <span>Published on July 01, 2017</span>
-          </div><!-- /.list-item -->
+          <a href="/page2">2</a>
         
-          <div class="list-item">
-            <h4><a href="/service-worker-cache/" title="PWA轻度实践：使用service worker对静态资源进行全缓存">PWA轻度实践：使用service worker对静态资源进行全缓存</a></h4>
-            <span>Published on May 01, 2017</span>
-          </div><!-- /.list-item -->
+      </li>
+    
+      <li>
         
-      </div><!-- /.read-more-list -->
-      
-    </div><!-- /.read-more -->
-  </article>
+          <a href="/page3">3</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page4">4</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page5">5</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page6">6</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page7">7</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page8">8</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page9">9</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page10">10</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page11">11</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page12">12</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page13">13</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page14">14</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page15">15</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page16">16</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page17">17</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page18">18</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page19">19</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page20">20</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page21">21</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page22">22</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page23">23</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page24">24</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page25">25</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page26">26</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page27">27</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page28">28</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page29">29</a>
+        
+      </li>
+    
+      <li>
+        
+          <span class="current-page">30</span>
+        
+      </li>
+    
+  </ul>
+  
+    Next
+  
+</div><!-- /.pagination -->
+
 </div><!-- /#main -->
-
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
@@ -241,6 +403,7 @@ $config['uri_protocol'] = 'REQUEST_URI';
 </script>
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-	        
+          
+
 </body>
 </html>

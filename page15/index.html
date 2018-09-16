@@ -119,6 +119,135 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-10-23T00:00:00+08:00"><a href="/php-extension-autoload/">October 23, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/php-extension-autoload/" rel="bookmark" title="php扩展中autoload的实现" itemprop="url">php扩展中autoload的实现</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>我们在写web应用程序时通常对每个类都建立一个 PHP 源文件。为了使用这些源文件，我们就需要在每个脚本开头写大量的的包含语句(include,require)。在 PHP 5 中，不再需要这样了。我们可__autoload()函数和spl_autoload_register函数实现实现自己的加载源文件的机制，它们会在试图使用尚未被定义的类时自动调用。通过调用这些函数，脚本引擎在 PHP 出错失败前有了最后一个机会加载所需的类。本文的主要目标是讲述如何在扩展中用C语言实现自动加载源文件的机制，但是在这之前我们先熟悉一下在PHP脚本中实现自动加载的方法。</p>
+
+<h3 id="1-php">1. 在php脚本中实现自动加载</h3>
+
+<p>在 PHP 5 中我们可以定义一个 __autoload() 函数，它会在试图使用尚未被定义的类时自动调用，这样我们就可以定义一些自己的加载规则了。</p>
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
+<span class="k">function</span> <span class="nf">__autoload</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">require_once</span> <span class="nv">$class_name</span> <span class="o">.</span> <span class="s1">'.php'</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="nv">$obj</span>  <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass1</span><span class="p">();</span>
+<span class="nv">$obj2</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyClass2</span><span class="p">();</span>
+<span class="cp">?&gt;</span>
+</code></pre></div>
+<p>使用<code>spl_autoload_register</code>我们可以一次注册多个加载函数，PHP会在试图使用尚未被定义的类时按注册顺序调用。</p>
+<div class="highlight"><pre><code class="language-php" data-lang="php"><span class="cp">&lt;?php</span>
+<span class="k">function</span> <span class="nf">autoload_services</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">'services/'</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">'.php'</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="nv">$file</span><span class="p">))</span>
+    <span class="p">{</span>
+        <span class="k">require_once</span><span class="p">(</span><span class="nv">$file</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="k">function</span> <span class="nf">autoload_vos</span><span class="p">(</span><span class="nv">$class_name</span><span class="p">)</span>
+<span class="p">{</span>
+    <span class="nv">$file</span> <span class="o">=</span> <span class="s1">'vos/'</span> <span class="o">.</span> <span class="nv">$class_name</span><span class="o">.</span> <span class="s1">'.php'</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">file_exists</span><span class="p">(</span><span class="nv">$file</span><span class="p">))</span>
+    <span class="p">{</span>
+        <span class="k">require_once</span><span class="p">(</span><span class="nv">$file</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">}</span>
+<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">'autoload_services'</span><span class="p">);</span>
+<span class="nb">spl_autoload_register</span><span class="p">(</span><span class="s1">'autoload_vos'</span><span class="p">);</span>
+<span class="cp">?&gt;</span>
+</code></pre></div>
+<h3 id="2-php">2. 在php扩展中实现自动加载</h3>
+
+<p>最近在写一个php扩展，其中一个功能就是实现类的自动加载，其实也是通过在内核中调用<code>spl_autoload_register</code>函数来实现。使用zend API调用<code>spl_autoload_register</code>函数还是相对简单的，下面我们主要讲一下如何在内核中实现<code>inclue/require/include_once/require_once</code>等指令的功能。其实<code>inclue/require/include_once/require_once</code>等指令主要是读入文件编译并执行，下面的方法就是完成了这些操作，代码中有详细的注释。</p>
+<div class="highlight"><pre><code class="language-c" data-lang="c"><span class="cm">/*
+*  loader_import首先将PHP源文件编译成op_array，然后依次执行op_array中的opcode
+*/</span>
+<span class="kt">int</span> <span class="nf">loader_import</span><span class="p">(</span><span class="kt">char</span> <span class="o">*</span><span class="n">path</span><span class="p">,</span> <span class="kt">int</span> <span class="n">len</span> <span class="n">TSRMLS_DC</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">zend_file_handle</span> <span class="n">file_handle</span><span class="p">;</span>
+    <span class="n">zend_op_array</span>   <span class="o">*</span><span class="n">op_array</span><span class="p">;</span>
+    <span class="kt">char</span> <span class="n">realpath</span><span class="p">[</span><span class="n">MAXPATHLEN</span><span class="p">];</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">VCWD_REALPATH</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">realpath</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">file_handle</span><span class="p">.</span><span class="n">filename</span> <span class="o">=</span> <span class="n">path</span><span class="p">;</span>
+    <span class="n">file_handle</span><span class="p">.</span><span class="n">free_filename</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">file_handle</span><span class="p">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">ZEND_HANDLE_FILENAME</span><span class="p">;</span>
+    <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+    <span class="n">file_handle</span><span class="p">.</span><span class="n">handle</span><span class="p">.</span><span class="n">fp</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+
+    <span class="c1">//调用zend API编译源文件
+</span>    <span class="n">op_array</span> <span class="o">=</span> <span class="n">zend_compile_file</span><span class="p">(</span><span class="o">&amp;</span><span class="n">file_handle</span><span class="p">,</span> <span class="n">ZEND_INCLUDE</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">op_array</span> <span class="o">&amp;&amp;</span> <span class="n">file_handle</span><span class="p">.</span><span class="n">handle</span><span class="p">.</span><span class="n">stream</span><span class="p">.</span><span class="n">handle</span><span class="p">)</span> <span class="p">{</span>
+        <span class="kt">int</span> <span class="n">dummy</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span> <span class="o">=</span> <span class="n">path</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="c1">//将源文件注册到执行期间的全局变量(EG)的include_files列表中，这样就标记了源文件已经包含过了
+</span>        <span class="n">zend_hash_add</span><span class="p">(</span><span class="o">&amp;</span><span class="n">EG</span><span class="p">(</span><span class="n">included_files</span><span class="p">),</span> <span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">,</span> <span class="n">strlen</span><span class="p">(</span><span class="n">file_handle</span><span class="p">.</span><span class="n">opened_path</span><span class="p">)</span><span class="o">+</span><span class="mi">1</span><span class="p">,</span> <span class="p">(</span><span class="kt">void</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="n">dummy</span><span class="p">,</span>
+                <span class="k">sizeof</span><span class="p">(</span><span class="kt">int</span><span class="p">),</span> <span class="nb">NULL</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="n">zend_destroy_file_handle</span><span class="p">(</span><span class="o">&amp;</span><span class="n">file_handle</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+
+    <span class="c1">//开始执行op_array
+</span>    <span class="k">if</span> <span class="p">(</span><span class="n">op_array</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">zval</span> <span class="o">*</span><span class="n">result</span> <span class="o">=</span> <span class="nb">NULL</span><span class="p">;</span>
+        <span class="c1">//保存原来的执行环境，包括active_op_array,opline_ptr等
+</span>        <span class="n">zval</span> <span class="o">**</span> <span class="n">__old_return_value_pp</span>   <span class="o">=</span>  <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">);</span>
+        <span class="n">zend_op</span> <span class="o">**</span> <span class="n">__old_opline_ptr</span>     <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">opline_ptr</span><span class="p">);</span> 
+        <span class="n">zend_op_array</span> <span class="o">*</span> <span class="n">__old_op_array</span>  <span class="o">=</span> <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">);</span>
+        <span class="c1">//保存环境完成后，初始化本次执行环境，替换op_array
+</span>        <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="o">&amp;</span><span class="n">result</span><span class="p">;</span>
+        <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span>      <span class="o">=</span> <span class="n">op_array</span><span class="p">;</span>
+
+<span class="cp">#if ((PHP_MAJOR_VERSION == 5) &amp;&amp; (PHP_MINOR_VERSION &gt; 2)) || (PHP_MAJOR_VERSION &gt; 5)
+</span>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">EG</span><span class="p">(</span><span class="n">active_symbol_table</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">zend_rebuild_symbol_table</span><span class="p">(</span><span class="n">TSRMLS_C</span><span class="p">);</span>
+        <span class="p">}</span>
+<span class="cp">#endif
+</span>        <span class="c1">//调用zend API执行源文件的op_array
+</span>        <span class="n">zend_execute</span><span class="p">(</span><span class="n">op_array</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+        <span class="c1">//op_array执行完成后销毁，要不然就要内存泄露了，哈哈
+</span>        <span class="n">destroy_op_array</span><span class="p">(</span><span class="n">op_array</span> <span class="n">TSRMLS_CC</span><span class="p">);</span>
+        <span class="n">efree</span><span class="p">(</span><span class="n">op_array</span><span class="p">);</span>
+        <span class="c1">//通过检查执行期间的全局变量(EG)的exception是否被标记来确定是否有异常
+</span>        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">EG</span><span class="p">(</span><span class="n">exception</span><span class="p">))</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">*</span><span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">))</span> <span class="p">{</span>
+                <span class="n">zval_ptr_dtor</span><span class="p">(</span><span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">));</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="c1">//ok,执行到这里说明源文件的op_array已经执行完成了，我们要恢复原来的执行环境了
+</span>        <span class="n">EG</span><span class="p">(</span><span class="n">return_value_ptr_ptr</span><span class="p">)</span> <span class="o">=</span> <span class="n">__old_return_value_pp</span><span class="p">;</span>
+        <span class="n">EG</span><span class="p">(</span><span class="n">opline_ptr</span><span class="p">)</span>           <span class="o">=</span> <span class="n">__old_opline_ptr</span><span class="p">;</span> 
+        <span class="n">EG</span><span class="p">(</span><span class="n">active_op_array</span><span class="p">)</span>      <span class="o">=</span> <span class="n">__old_op_array</span><span class="p">;</span> 
+
+        <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">}</span>
+</code></pre></div>
+<hr>
+
+<p>学习php扩展开发需要你对zend API以及PHP内核比较熟悉，推荐以下参考资料
+ <a href="http://www.walu.cc/phpbook/index.md">php扩展入门博客</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-10-19T00:00:00+08:00"><a href="/php-hash/">October 19, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -211,44 +340,6 @@ rel="stylesheet" type="text/css" -->
 <p>反序列化攻击： 如果POST的数据有字段为数组serialize后的值，或数组json_encode后的值，在unserialize或json_decode后，会有可能造成哈希碰撞攻击。 到目前位置PHP官方还没有彻底解决反序列化攻击的问题，请避免在公网上以数组的序列化形式传递数据</p>
 </blockquote>
 
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-10-07T00:00:00+08:00"><a href="/solr-ik/">October 07, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/solr-ik/" rel="bookmark" title="solr4.7配置中文分词器IKAnalyzer踩到的坑" itemprop="url">solr4.7配置中文分词器IKAnalyzer踩到的坑</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>在为solr4.10配置ik-analyzer中文分词器时我参考<a href="http://www.solrcn.com/?tag=ik%E5%88%86%E8%AF%8D%E5%99%A8">这篇文章</a>，
-schema.xml中配置如下：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">&lt;fieldType name="text_ik" class="solr.TextField"
-sortMissingLast="true" omitNorms="true"&gt;
-    &lt;analyzer type="index" isMaxWordLength="false" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
-    &lt;analyzer type="query" isMaxWordLength="true" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
-&lt;/fieldType&gt;
-</code></pre></div>
-<p>但是同样的配置在solr4.7上却无法出现了奇怪的现象。首先在solr4.7的Analyse面板中，中文是可以正确分词的。如下图：
-<figure style="margin:0 auto;width:620px">
-    <img src="/images/solr_ik.jpg"/>
-</figure></p>
-
-<p>但是使用solr4.7搜索时，却只能搜索出完全匹配的结构。查了网络上的很多资料，才发现问题出在fieldType的autogeneratephrasequeries属性上。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">autoGeneratePhraseQueries=true|false (in schema version 1.4 and later this now defaults to false)
-</code></pre></div>
-<p>这个属性只能用于文本域。如果在查询文本分析时产生了多个词元，比如 Wi-Fi 分词为 Wi 和 Fi ，当 autoGeneratePhraseQueries 被设置为true时，这两个词元就构造了一个词组查询，即“ WiFi ”，所以索引中“ WiFi ”必须相邻才能被查询到；而autoGeneratePhraseQueries被设置成false时，他们只是两个不同的搜索词，它们没有位置上的关系。schema的版本小于1.4时，autoGeneratePhraseQueries默认为true，所以我们需要将autoGeneratePhraseQueries设置为false。</p>
-
-<p>所以solr4.7下正确的配置应该是</p>
-<div class="highlight"><pre><code class="language-" data-lang="">&lt;fieldType name="text_ik" class="solr.TextField" sortMissingLast="true"  omitNorms="true" autoGeneratePhraseQueries="false"&gt;
-    &lt;analyzer type="index" isMaxWordLength="false" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
-    &lt;analyzer type="query" isMaxWordLength="true" class="org.wltea.analyzer.lucene.IKAnalyzer"/&gt;
-&lt;/fieldType&gt;
-</code></pre></div>
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
@@ -431,6 +522,12 @@ sortMissingLast="true" omitNorms="true"&gt;
       <li>
         
           <a href="/page29">29</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page30">30</a>
         
       </li>
     

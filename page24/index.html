@@ -119,6 +119,82 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2014-07-13T00:00:00+08:00"><a href="/javascript-delegate/">July 13, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/javascript-delegate/" rel="bookmark" title="javascript事件委托机制对比" itemprop="url">javascript事件委托机制对比</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>随着DOM结构的复杂化和Ajax等动态脚本技术的运用，事件委托自然浮出了水面。jQuery为绑定和委托事件提供了.bind()、.live()和.delegate()方法。本文在讨论这几个方法内部实现的基础上，展示它们的优劣势及适用场合。</p>
+
+<hr>
+
+<h2 id="1">1.两个问题</h2>
+
+<h3 id="1">(1).元素过多时的性能问题</h3>
+
+<p>假设有一个多行多列的表格，我们想让用户单击每个单元格都能看到与其中内容相关的更多信息（比如，通过提示条）。为此，可以为每个单元格都绑定click事件：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“</span><span class="nx">info_table</span> <span class="nx">td</span><span class="err">”</span><span class="p">).</span><span class="nx">bind</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span> <span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span>
+</code></pre></div>
+<p>问题是，如果表格中要绑定单击事件的有10列500行，那么查找和遍历5000个单元格会导致脚本执行速度明显变慢，而保存5000个td元素和相应的事件处理程序也会占用大量内存。</p>
+
+<h3 id="2">(2).动态添加元素的无法直接绑定事件</h3>
+
+<p>假设一个动态翻页的表格，每一次翻页都是重新插入的表格。通过给第一页添加事件，对后续通过js异步加载的页面没有作用。</p>
+
+<hr>
+
+<h3 id="3">(3)基本解决方法</h3>
+
+<p>事件委托可以解决上述两个问题。具体到代码上，只要用jQuery1.3新增的.live()方法代替.bind()方法即可：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span> <span class="nx">td</span><span class="err">”</span><span class="p">).</span><span class="nx">live</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span>
+</code></pre></div>
+<p>这里的.live()方法会把click事件绑定到$(document)对象，而且只需要给$(document)绑定一次，就能够处理后续动态加载表格。在接收到任何事件时，$(document)对象都会检查事件类型和事件目标，如果是click事件且事件目标是td，那么就执行委托给它的处理程序。</p>
+
+<hr>
+
+<h3 id="4">(4).基本方法的问题</h3>
+
+<p>到目前为止，一切似乎很完美。可惜，事实并非如此。因为.live()方法并不完美，它有如下几个主要缺点：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">1. $()函数会找到当前页面中的所有td元素并创建jQuery对象，但在确认事件目标时却不用这个td元素集合，而是使用选择符表达式与event.target或其祖先元素进行比较，因而生成这个jQuery对象会造成不必要的开销；收集td元素并创建jQuery对象，但实际操作的却是$(document)对象，令人费解。
+2. 默认把事件绑定到$(document)元素，如果DOM嵌套结构很深，事件冒泡通过大量祖先元素会导致性能损失；
+3. 只能放在直接选择的元素后面，不能在连缀的DOM遍历方法后面使用，即$(“#info_table td”).live…可以，但$(“#info_table”).find(“td”).live…不行；
+</code></pre></div>
+<p>jQuery从1.4开始支持在使用.live()方法时配合使用一个上下文参数：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">)[</span><span class="mi">0</span><span class="p">]).</span><span class="nx">live</span><span class="p">(</span><span class="err">“</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span>
+</code></pre></div>
+<p>这样，“受托方”就从默认的$(document)变成了$(“#info_table”)[0]，节省了冒泡的旅程。不过，与.live()共同使用的上下文参数必须是一个单独的DOM元素，所以这里指定上下文对象时使用的是$(“#info_table”)[0]，即使用数组的索引操作符来取得的一个DOM元素。</p>
+
+<p>如前所述，为了突破单一.bind()方法的局限性，实现事件委托，jQuery1.3引入了.live()方法。后来，为解决“事件传播链”过长的问题，jQuery 1.4又支持为.live()方法指定上下文对象。而为了解决无谓生成元素集合的问题，jQuery 1.4.2干脆直接引入了一个新方法.delegate()。</p>
+
+<hr>
+
+<h3 id="5">(5).更好的解决办法</h3>
+
+<p>使用.delegate()，前面的例子可以这样写：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">).</span><span class="nx">delegate</span><span class="p">(</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="err">”</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO});</span>
+</code></pre></div>
+<p>使用.delegate()有如下优点：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">1. 直接将目标元素选择符（”td”）、事件（”click”）及处理程序与“受拖方”$(“#info_table”)绑定，不额外收集元素、事件传播路径缩短、语义明确；
+2. 支持在连缀的DOM遍历方法后面调用，即支持$(“table”).find(“#info”).delegate…，支持精确控制；
+</code></pre></div>
+<p>在jQuery1.7中 .delegate()已被.on()取代,.on与.delegate主要区别在参数顺序。使用.on前面的例子可以这样写：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">$</span><span class="p">(</span><span class="err">“#</span><span class="nx">info_table</span><span class="err">”</span><span class="p">).</span><span class="nx">on</span><span class="p">(</span><span class="err">”</span><span class="nx">click</span><span class="err">”</span><span class="p">,</span><span class="err">“</span><span class="nx">td</span><span class="err">”</span><span class="p">,</span><span class="kd">function</span><span class="p">(){</span><span class="c1">//TODO;});</span>
+</code></pre></div>
+<p>可见，.delegate()与.on()方法是一个相对完美的解决方案。但在DOM结构简单的情况下，也可以使用.live()。</p>
+
+<blockquote>
+<p>提示：使用事件委托时，如果注册到目标元素上的其他事件处理程序使用.stopPropagation()阻止了事件传播，那么事件委托就会失效。</p>
+</blockquote>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2014-07-13T00:00:00+08:00"><a href="/cache-negotiate/">July 13, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -179,41 +255,6 @@ Etag首先由web服务器生成，比如lighttpd会给一个静态文件生成ET
 <blockquote>
 <p>当HTTP头中同时有Expires和Cache-Control时，浏览器会优先考虑Cache-Control。</p>
 </blockquote>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2014-07-10T00:00:00+08:00"><a href="/javascript-variable/">July 10, 2014</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/javascript-variable/" rel="bookmark" title="javascript的声明提前" itemprop="url">javascript的声明提前</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <blockquote>
-<p>众所周知，javascript有全局作用域和函数局部作用域(没有c，c++，java等强类型语言中的块作用域)。那下面一段代码的结果是什么呢？</p>
-</blockquote>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">scope</span> <span class="o">=</span> <span class="s2">"global"</span><span class="p">;</span>
-<span class="kd">function</span> <span class="nx">f</span><span class="p">(){</span>
-  <span class="nx">alter</span><span class="p">(</span><span class="nx">scope</span><span class="p">);</span>
-  
-  <span class="nx">alter</span><span class="p">(</span><span class="nx">scope</span><span class="p">);</span>
-<span class="p">}</span>
-<span class="nx">f</span><span class="p">();</span></code></pre></figure>
-
-<p>这段代码的执行结果为：</p>
-
-<figure class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kc">undefined</span>
-<span class="nx">local</span></code></pre></figure>
-
-<p>输出local很容易理解，应用局部作用域的变量覆盖了全局作用域。但是输出undefined就有点奇怪了？</p>
-
-<p>这是由于函数作用域的特性导致的，局部变量在整个函数体中始终有定义，也就是说，在整个函数体中局部变量遮挡了全局变量，但是只有程序执行到var语句时局部变量才会被赋值。因此，上述过程等价于将函数内的变量的声明“提前”到函数体顶部，而变量的初始化仍然保留在原来位置，也就做“声明提前”。因为php也只有全局作用域和函数局部作用域，因此php的表现和javascript是一致的。</p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -397,6 +438,12 @@ Etag首先由web服务器生成，比如lighttpd会给一个静态文件生成ET
       <li>
         
           <a href="/page29">29</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page30">30</a>
         
       </li>
     

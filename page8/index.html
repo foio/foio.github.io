@@ -119,6 +119,174 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2016-02-24T00:00:00+08:00"><a href="/mvvm-overview/">February 24, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/mvvm-overview/" rel="bookmark" title="如何实现一个MVVM框架" itemprop="url">如何实现一个MVVM框架</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>MVVM(Model View ViewModel)最初由微软在Windows Presentation Foundation（WPF）和Silverlight中引入，近年来、它作为MVC的一种替代方案在前端也如日中天。像其他MV*一样，MVVM中的Model代表着我们应用的数据；而View代表着用户界面；最重要的是ViewModel，可以将其看作一个拥有双向数据处理能力的转换器，它将模型数据传递到视图，并将视图指令传递到模型。MVVM框架将前端工程师从繁琐的DOM操作中彻底地解放出来，让我们可以更专注于自己的业务。</p>
+
+<p>接下来我们探讨一种实现双向绑定的方案，本文适合实际使用过MVVM框架的人阅读，包括AngularJS、Avalon等。最终效果如下：</p>
+
+<p><a class="jsbin-embed" href="http://jsbin.com/vasaqekozi/embed?output">JS Bin on jsbin.com</a></p>
+
+<script src="http://static.jsbin.com/js/embed.min.js?3.35.9"></script>
+
+<p><a href="https://github.com/foio/mvvm-demo">详细源代码在请到github下载</a>。</p>
+
+<h2 id="1">1.基本功能</h2>
+
+<p>双向绑定作为MVVM框架的最大特点，是如何实现的呢？MVVM数据流示意图如下：</p>
+
+<figure style="width:80%;margin:0 auto">
+    <img src="/images/mvvm.png" alt="mvvm overview">
+</figure>
+
+<p>示意图中可以看出双向数据流：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">View将变动通知到ViewModel，然后ViewModel对Model进行更新。
+Model将变动通知到ViewModel，然后ViewModel对View进行更新。
+</code></pre></div>
+<p>其中最核心的功能是对视图(View)和模型(Model)变动的监听。</p>
+
+<h3 id="1">(1).视图变动的监听</h3>
+
+<p>MVVM框架都是通过相应的指令，在HTML中声明式的标记出需要监听的DOM节点。本文实现中，我们主要涉及到两个指令：<code>foio-controller</code>、<code>foio-model</code>以及一个表达式{{}}。
+比如：</p>
+<div class="highlight"><pre><code class="language-html" data-lang="html"><span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">"text"</span> <span class="na">foio-model=</span><span class="s">"nickname"</span><span class="nt">&gt;</span>
+</code></pre></div>
+<p>上述指令foio-model，声明将View中的input的变动通知到Model中的nickname。通过对的视图节点(input)注册监听函数就可以得到视图(input)的变动了。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//对视图中的input节点注册input事件监听函数</span>
+<span class="kd">var</span> <span class="nx">elem</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">querySelector</span><span class="p">(</span><span class="s1">'input'</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'input'</span><span class="p">,</span> <span class="nx">callback</span><span class="p">,</span> <span class="kc">false</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nx">elem</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">(</span><span class="s1">'oninput'</span><span class="p">,</span> <span class="nx">callback</span><span class="p">);</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="2">(2).模型变动的监听</h3>
+
+<p>对模型变动的监听可以通过ECMAScript5中的API实现。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">obj</span><span class="p">,</span> <span class="nx">prop</span><span class="p">,</span> <span class="nx">descriptor</span><span class="p">)</span>
+</code></pre></div>
+<p>可以通过该API为对象添加一个属性，并设置该属性的gett函数和set函数，在访问属性时会触发相应的get函数和set函数。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">air</span> <span class="o">=</span> <span class="p">{};</span>
+<span class="nb">Object</span><span class="p">.</span><span class="nx">defineProperty</span><span class="p">(</span><span class="nx">air</span><span class="p">,</span> <span class="s1">'temperature'</span><span class="p">,</span> <span class="p">{</span>
+    <span class="na">get</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'get!'</span><span class="p">);</span>
+    <span class="p">},</span>
+    <span class="na">set</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">value</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'set!'</span><span class="p">);</span>
+    <span class="p">}</span>
+<span class="p">});</span>
+
+<span class="nx">air</span><span class="p">.</span><span class="nx">temperature</span> <span class="o">=</span> <span class="mi">15</span><span class="p">;</span> <span class="c1">//output: set!</span>
+<span class="nx">air</span><span class="p">.</span><span class="nx">temperature</span><span class="p">;</span>    <span class="c1">//outpu: get!</span>
+</code></pre></div>
+<p>我们可以在set函数中得到模型的变动，并将相关变动通知到ViewModel。</p>
+
+<h2 id="2">2.总体实现</h2>
+
+<p>MVVM的主要流程包括(View)视图扫描、(Model)模型构建、以及关联视图和模型(ViewModel)</p>
+
+<h3 id="1-view">(1)View(视图)扫描</h3>
+
+<p>处理View(视图)必然涉及到对DOM结构的扫描，通过扫描抽取指令(本文只有三种指令，foio-controller、foio-model、)；并对相应的节点进行如下处理：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">绑定通知函数，用于在视图更新时通知ViewModel
+绑定更新函数，用于在模型更新时通过该函数更新视图
+</code></pre></div>
+<p>针对不同的节点类型，这些通知函数和更新函数都是预先定义好的，存储在<code>directives</code>结构中。在节点扫描过程中，当遇到指令时，就通过executeBindings函数对相应的节点进行绑定处理。流程图如下：</p>
+
+<figure style="width:80%;margin:0 auto">
+    <img src="/images/mvvm-flow.png" alt="mvvm overview">
+</figure>
+
+<h3 id="2-model">(2)Model(模型)构建</h3>
+
+<p>而对Model的处理也主要是注册监听函数，用于在Model变化时得到通知，如上图所示。controller中的每一个变量都通过<code>Object.defineProperty(obj, prop, descriptor)</code>定义到Model上，其中descriptor上的get函数可以用于搜集依赖，而set函数则用于通知依赖于该Model的视图进行更新。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">descriptor</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="kd">var</span> <span class="nx">dependencyList</span> <span class="o">=</span> <span class="p">[];</span>
+    <span class="nl">get</span><span class="p">:</span> <span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
+            <span class="c1">//搜集依赖</span>
+            <span class="nx">dependencyList</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+            <span class="k">return</span> <span class="nx">value</span><span class="p">;</span>
+        <span class="p">},</span>
+    <span class="na">set</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">newVal</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">oldVal</span> <span class="o">===</span> <span class="nx">newVal</span><span class="p">)</span> <span class="p">{</span>
+                <span class="k">return</span><span class="p">;</span>
+            <span class="p">}</span>
+            <span class="nx">oldVal</span> <span class="o">=</span> <span class="nx">newVal</span><span class="p">;</span>
+            <span class="c1">//通知依赖于该Model的视图进行更新</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">dependIdx</span> <span class="k">in</span> <span class="nx">dependencyList</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">dependencyList</span><span class="p">[</span><span class="nx">dependIdx</span><span class="p">].</span><span class="nx">updateView</span><span class="p">(</span><span class="nx">newVal</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<h3 id="3">(3)关联模型和视图</h3>
+
+<p>View(视图)扫描的结果是一个元素集合</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">bindings</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="p">{</span>
+                    <span class="na">type</span><span class="p">:</span> <span class="nx">type</span><span class="p">,</span> <span class="c1">//指令类型</span>
+                    <span class="na">element</span><span class="p">:</span> <span class="nx">elem</span><span class="p">,</span> <span class="c1">//DOM节点</span>
+                    <span class="na">expr</span><span class="p">:</span> <span class="nx">value</span><span class="p">,</span> <span class="c1">//绑定的变量名称</span>
+                <span class="p">},</span>
+                <span class="p">{...}</span>
+            <span class="p">]</span>
+</code></pre></div>
+<p>而Model(模型)构建的结果也是一个集合：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">vmodels</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="na">controller1</span><span class="p">:</span> <span class="p">{</span>
+                <span class="na">expr1</span><span class="p">:</span> <span class="nx">value1</span><span class="p">,</span>
+                <span class="na">expr2</span><span class="p">:</span> <span class="nx">value2</span><span class="p">,</span>
+                <span class="na">binder</span><span class="p">:</span> <span class="p">{</span><span class="na">expr1</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){},</span><span class="na">expr2</span><span class="p">:</span><span class="kd">function</span><span class="p">(){}}</span>
+            <span class="p">},</span>
+            <span class="na">controller1</span><span class="p">:</span> <span class="p">{...}</span>
+        <span class="p">}</span>
+</code></pre></div>
+<p>通过executeBindings函数，将视图和模型关联起来。</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">executeBindings</span><span class="p">(</span><span class="nx">bindings</span><span class="p">,</span> <span class="nx">vmodels</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="nx">binding</span><span class="p">;</span> <span class="p">(</span><span class="nx">binding</span> <span class="o">=</span> <span class="nx">bindings</span><span class="p">[</span><span class="nx">i</span><span class="o">++</span><span class="p">]);)</span> <span class="p">{</span>
+        <span class="nx">binding</span><span class="p">.</span><span class="nx">vmodels</span> <span class="o">=</span> <span class="nx">vmodels</span><span class="p">;</span>
+        <span class="nx">directives</span><span class="p">[</span><span class="nx">binding</span><span class="p">.</span><span class="nx">type</span><span class="p">](</span><span class="nx">binding</span><span class="p">);</span>
+    <span class="p">};</span>
+<span class="p">}</span>
+
+</code></pre></div>
+<p>每一种指令都有不同的初始化函数，比如针对<code>foio-model</code>指令，当DOM节点为input类型时，初始化函数做了三件事：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">监听input和DOMAutoComplete事件
+注册对模型的依赖
+提供更新该DOM节点的方法
+</code></pre></div>
+<p>详细代码如下：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">directives</span><span class="p">[</span><span class="s1">'model'</span><span class="p">]</span><span class="o">=</span><span class="p">{</span>
+        <span class="k">switch</span> <span class="p">(</span><span class="nx">binding</span><span class="p">.</span><span class="nx">xtype</span><span class="p">)</span> <span class="p">{</span>
+            <span class="k">case</span> <span class="s2">"input"</span><span class="p">:</span>
+                <span class="c1">//绑定input事件</span>
+                <span class="nx">binding</span><span class="p">.</span><span class="nx">bound</span><span class="p">(</span><span class="s1">'input'</span><span class="p">,</span> <span class="nx">updateVModel</span><span class="p">);</span>
+                <span class="c1">//绑定DOMAutoComplete事件</span>
+                <span class="nx">binding</span><span class="p">.</span><span class="nx">bound</span><span class="p">(</span><span class="s1">'DOMAutoComplete'</span><span class="p">,</span> <span class="nx">updateVModel</span><span class="p">);</span>
+                <span class="c1">//注册对模型的依赖</span>
+                <span class="nx">elem</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">closetVmodel</span><span class="p">.</span><span class="nx">binder</span><span class="p">[</span><span class="nx">binding</span><span class="p">.</span><span class="nx">expr</span><span class="p">].</span><span class="nx">apply</span><span class="p">(</span><span class="nx">binding</span><span class="p">);</span>
+                <span class="c1">//更新该DOM节点的方法</span>
+                <span class="nx">binding</span><span class="p">.</span><span class="nx">updateView</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">newVal</span><span class="p">)</span> <span class="p">{</span>
+                    <span class="nx">elem</span><span class="p">.</span><span class="nx">value</span> <span class="o">=</span> <span class="nx">newVal</span><span class="p">;</span>
+                <span class="p">};</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>至此我们实现了一个基本的MVVM框架了，虽然只有三个指令，但是基本能够说明如何设计并实现一个MVVM框架了。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2016-02-16T00:00:00+08:00"><a href="/virtual-dom/">February 16, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -342,262 +510,6 @@ rel="stylesheet" type="text/css" -->
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2016-01-10T00:00:00+08:00"><a href="/localstorage-webview/">January 10, 2016</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/localstorage-webview/" rel="bookmark" title="使用localstorage和预加载做到webview秒开" itemprop="url">使用localstorage和预加载做到webview秒开</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>提到网页加载速度优化，大家都会想到静态资源上CDN，CSS和JS文件合并，图片合并成雪碧图等常用手段；但是在某些特殊情况下这些常用方法也无法达到理想的效果。比如，在国际化场景下，很多国家还停留在2G网络阶段，无论如何优化，都无法避免过慢的网络请求。最近一直在做国际化(主要是印尼和泰国)背景下的webview性能优化，也算有一些经验。由于我们的产品是面向android用户的，而android手机对H5支持很好，因此我们主要是应用H5的新特性。</p>
-
-<h3 id="1-h5-menifest">1.H5的menifest缓存的局限</h3>
-
-<p>H5的menifest缓存机制是大家经常提起的方法，这是一种使用起来很简单的机制，其基本原理就是：当menifest文件有更新时，就会更新整个应用，否则就不会请求网络而是使用本地缓存的资源。但是我们使用起来却有不少问题：比如即使menifest文件发生变化，应用也不能及时的更新。对于menifest机制我们的结论是：menifest可以用于缓存基本不发生变化的文件(比如基本样式表base.css,javascript类库jquery.js等)，<code>对于业务代码一定不要使用menifest缓存，否则可能导致业务代码无法更新</code>。</p>
-
-<p>新浪微博中大量的使用了menifest缓存机制，但是他们也只缓存了类库和基本样式表，而没有缓存业务代码。这是一个例子 <a href="http://card.weibo.com/article/h5/s#cid=1001603928694585472076">http://card.weibo.com/article/h5/s#cid=1001603928694585472076</a>，其menifest文件如下：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">CACHE MANIFEST
-# v = 8f708b371de7949de35b8cec4dac678b
-CACHE:
-# CSS and CSS resource image
-http://u1.sinaimg.cn/apps/media/css/article_201511121505.css
-http://u1.sinaimg.cn/apps/media/img/bg_cricle.png
-http://u1.sinaimg.cn/apps/media/img/bg_criclein.png
-http://u1.sinaimg.cn/apps/media/img/bg_imgslayer.png
-http://u1.sinaimg.cn/apps/media/img/font/myfont_v3.eot
-http://u1.sinaimg.cn/apps/media/img/font/myfont_v3.woff
-http://u1.sinaimg.cn/apps/media/img/font/myfont_v3.ttf
-http://u1.sinaimg.cn/apps/media/img/font/myfont_v3.svg
-http://u1.sinaimg.cn/apps/media/img/lib/icons.svg
-http://u1.sinaimg.cn/apps/media/img/lib/icon_SmartisanNote.svg
-http://u1.sinaimg.cn/apps/media/img/lib/icon_Smart.svg
-
-# Placeholder image
-#http://ww3.sinaimg.cn/small/6f21f059jw1e4vxadm276j20f008ca9w.jpg
-
-# js file
-http://u1.sinaimg.cn/apps/media/js/jquery.min.js
-http://u1.sinaimg.cn/apps/media/js/page/article/show/offline_201511121505.js
-
-# Emoticons top 10
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/6a/laugh.gif
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/0b/tootha_org.gif
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/6d/lovea_org.gif
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/c4/liwu_org.gif
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/9d/sada_org.gif
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/40/hearta_org.gif
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/d9/ye_org.gif
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/19/heia_org.gif
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/8c/hsa_org.gif
-http://img.t.sinajs.cn/t4/appstyle/expression/ext/normal/d0/z2_org.gif
-
-NETWORK:
-*
-
-</code></pre></div>
-<h3 id="2-localstorage-js-css">2.使用localstorage缓存js和css文件</h3>
-
-<p>localstorage设计之初是为了缓存应用数据的，关于是否应该使用它缓存js和css文件，知乎上有一篇讨论：
-<a href="https://www.zhihu.com/question/28467444">静态资源（JS/CSS）存储在localStorage有什么缺点？为什么没有被广泛应用？</a>。其中得票最多的基本上概况了localstorage的适用场景以及优缺点：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">PC上因为localstorage兼容性不好，而且网速较快，因此实用价值不大
-移动端单页面应用(webapp)，因为localstorage兼容性好，网速慢，所以值得尝试
-localstorage的兼容性问题
-
-</code></pre></div>
-<p>UC的前端团队推出了基于localstorage存储前端静态资源的<a href="http://scrat.io/#!/index">Scrat-webapp模块化开发体系</a>，而且基于这个模块化体系开发了很多项目：<a href="http://tv.uc.cn/mobile/4.8.3/index.html?uc_param_str=frdnsnpfvecplabtbmntnwpvsslibieisinipr#!/index">神马视频</a>、<a href="http://nba.uc.cn/?uc_param_str=dnfrvecpntsspimiei#!/index">NBA直播</a>。大家可以通过chrome的开发者工具查看localstorage的使用情况。</p>
-
-<p>基于以上的行业经验，我们也选用了localstorage作为自己的前端资源缓存，并实现了自己的基于localstorage的静态资源加载器，其实现原理可以参考我的博客:<a href="http://foio.github.io/javascript-async/">在网页中异步加载javascript</a>
-的XHR Eval方法。具体代码如下：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="p">;(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">global</span><span class="p">)</span> <span class="p">{</span>
-    <span class="s1">'use strict'</span><span class="p">;</span>
-
-    <span class="c1">//检查文件类型</span>
-    <span class="kd">var</span> <span class="nx">TYPE_RE</span> <span class="o">=</span> <span class="sr">/</span><span class="se">\.(</span><span class="sr">js|css</span><span class="se">)(?=[</span><span class="sr">?&amp;,</span><span class="se">]</span><span class="sr">|$</span><span class="se">)</span><span class="sr">/i</span><span class="p">;</span>
-    <span class="kd">function</span> <span class="nx">fileType</span><span class="p">(</span><span class="nx">str</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">ext</span> <span class="o">=</span> <span class="s1">'js'</span><span class="p">;</span>
-        <span class="nx">str</span><span class="p">.</span><span class="nx">replace</span><span class="p">(</span><span class="nx">TYPE_RE</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">m</span><span class="p">,</span> <span class="nx">$1</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">ext</span> <span class="o">=</span> <span class="nx">$1</span><span class="p">;</span>
-        <span class="p">});</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">ext</span> <span class="o">!==</span> <span class="s1">'js'</span> <span class="o">&amp;&amp;</span> <span class="nx">ext</span> <span class="o">!==</span> <span class="s1">'css'</span><span class="p">)</span> <span class="nx">ext</span> <span class="o">=</span> <span class="s1">'unknown'</span><span class="p">;</span>
-        <span class="k">return</span> <span class="nx">ext</span><span class="p">;</span>
-    <span class="p">}</span>
-
-    <span class="c1">//将js片段插入dom结构</span>
-    <span class="kd">function</span> <span class="nx">evalGlobal</span><span class="p">(</span><span class="nx">strScript</span><span class="p">){</span>
-        <span class="kd">var</span> <span class="nx">scriptEl</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span> <span class="p">(</span><span class="s2">"script"</span><span class="p">);</span>
-        <span class="nx">scriptEl</span><span class="p">.</span><span class="nx">type</span><span class="o">=</span> <span class="s2">"text/javascript"</span><span class="p">;</span>
-        <span class="nx">scriptEl</span><span class="p">.</span><span class="nx">text</span><span class="o">=</span> <span class="nx">strScript</span><span class="p">;</span>
-        <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="s2">"head"</span><span class="p">)[</span><span class="mi">0</span><span class="p">].</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">scriptEl</span><span class="p">)</span> <span class="p">;</span>
-    <span class="p">}</span>
-
-    <span class="c1">//将css片段插入dom结构</span>
-    <span class="kd">function</span> <span class="nx">createCss</span><span class="p">(</span><span class="nx">strCss</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">styleEl</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s1">'style'</span><span class="p">);</span>
-        <span class="nb">document</span><span class="p">.</span><span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">styleEl</span><span class="p">);</span>
-        <span class="nx">styleEl</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">createTextNode</span><span class="p">(</span><span class="nx">strCss</span><span class="p">));</span>
-    <span class="p">}</span>
-
-    <span class="c1">// 在全局作用域执行js或插入style node</span>
-    <span class="kd">function</span> <span class="nx">defineCode</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="nx">str</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">type</span> <span class="o">=</span> <span class="nx">fileType</span><span class="p">(</span><span class="nx">url</span><span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">type</span> <span class="o">===</span> <span class="s2">"js"</span><span class="p">){</span>
-            <span class="c1">//with(window)eval(str);</span>
-            <span class="nx">evalGlobal</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span>
-        <span class="p">}</span><span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nx">type</span> <span class="o">===</span> <span class="s2">"css"</span><span class="p">){</span>
-            <span class="nx">createCss</span><span class="p">(</span><span class="nx">str</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-
-    <span class="c1">// 将数据写入localstorage</span>
-    <span class="kd">var</span> <span class="nx">setLocalStorage</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">item</span><span class="p">){</span>
-        <span class="nb">window</span><span class="p">.</span><span class="nx">localStorage</span> <span class="o">&amp;&amp;</span> <span class="nb">window</span><span class="p">.</span><span class="nx">localStorage</span><span class="p">.</span><span class="nx">setItem</span><span class="p">(</span><span class="nx">key</span><span class="p">,</span> <span class="nx">item</span><span class="p">);</span>
-    <span class="p">}</span>
-
-    <span class="c1">// 从localstorage中读取数据</span>
-    <span class="kd">var</span> <span class="nx">getLocalStorage</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">key</span><span class="p">){</span>
-        <span class="k">return</span> <span class="nb">window</span><span class="p">.</span><span class="nx">localStorage</span> <span class="o">&amp;&amp;</span> <span class="nb">window</span><span class="p">.</span><span class="nx">localStorage</span><span class="p">.</span><span class="nx">getItem</span><span class="p">(</span><span class="nx">key</span><span class="p">);</span>
-    <span class="p">}</span>
-
-    <span class="c1">// 通过AJAX请求读取js和css文件内容，使用队列控制js的执行顺序</span>
-    <span class="kd">var</span> <span class="nx">rawQ</span> <span class="o">=</span> <span class="p">[];</span>
-    <span class="kd">var</span> <span class="nx">monkeyLoader</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="na">loadInjection</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">onload</span><span class="p">,</span><span class="nx">bOrder</span><span class="p">){</span>
-            <span class="kd">var</span> <span class="nx">iQ</span> <span class="o">=</span> <span class="nx">rawQ</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-            <span class="k">if</span><span class="p">(</span><span class="nx">bOrder</span><span class="p">){</span>
-                <span class="kd">var</span> <span class="nx">qScript</span> <span class="o">=</span> <span class="p">{</span><span class="na">key</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">response</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">onload</span><span class="p">:</span> <span class="nx">onload</span><span class="p">,</span> <span class="na">done</span><span class="p">:</span> <span class="kc">false</span><span class="p">};</span>
-                <span class="nx">rawQ</span><span class="p">[</span><span class="nx">iQ</span><span class="p">]</span> <span class="o">=</span> <span class="nx">qScript</span><span class="p">;</span>
-            <span class="p">}</span>
-            <span class="c1">//有localstorage 缓存</span>
-            <span class="kd">var</span> <span class="nx">ls</span> <span class="o">=</span> <span class="nx">getLocalStorage</span><span class="p">(</span><span class="nx">url</span><span class="p">);</span>
-            <span class="k">if</span><span class="p">(</span><span class="nx">ls</span> <span class="o">!==</span> <span class="kc">null</span><span class="p">){</span>
-                <span class="k">if</span><span class="p">(</span><span class="nx">bOrder</span><span class="p">){</span>
-                    <span class="nx">rawQ</span><span class="p">[</span><span class="nx">iQ</span><span class="p">].</span><span class="nx">response</span> <span class="o">=</span> <span class="nx">ls</span><span class="p">;</span>
-                    <span class="nx">rawQ</span><span class="p">[</span><span class="nx">iQ</span><span class="p">].</span><span class="nx">key</span> <span class="o">=</span> <span class="nx">url</span><span class="p">;</span>
-                    <span class="nx">monkeyLoader</span><span class="p">.</span><span class="nx">injectScripts</span><span class="p">();</span>
-                <span class="p">}</span><span class="k">else</span><span class="p">{</span>
-                    <span class="nx">defineCode</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="nx">ls</span><span class="p">)</span>
-                    <span class="k">if</span><span class="p">(</span><span class="nx">onload</span><span class="p">){</span>
-                        <span class="nx">onload</span><span class="p">();</span>
-                    <span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-                <span class="kd">var</span> <span class="nx">xhrObj</span> <span class="o">=</span> <span class="nx">monkeyLoader</span><span class="p">.</span><span class="nx">getXHROject</span><span class="p">();</span>
-                <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="s1">'GET'</span><span class="p">,</span> <span class="nx">url</span><span class="p">,</span> <span class="kc">true</span><span class="p">);</span>
-                <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="kc">null</span><span class="p">);</span>
-                <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-                    <span class="k">if</span><span class="p">(</span><span class="nx">xhrObj</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="mi">4</span><span class="p">){</span>
-                        <span class="k">if</span><span class="p">(</span><span class="nx">xhrObj</span><span class="p">.</span><span class="nx">status</span> <span class="o">==</span> <span class="mi">200</span><span class="p">){</span>
-                            <span class="nx">setLocalStorage</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">responseText</span><span class="p">);</span>
-                            <span class="k">if</span><span class="p">(</span><span class="nx">bOrder</span><span class="p">){</span>
-                                <span class="nx">rawQ</span><span class="p">[</span><span class="nx">iQ</span><span class="p">].</span><span class="nx">response</span> <span class="o">=</span> <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">responseText</span><span class="p">;</span>
-                                <span class="nx">rawQ</span><span class="p">[</span><span class="nx">iQ</span><span class="p">].</span><span class="nx">key</span> <span class="o">=</span> <span class="nx">url</span><span class="p">;</span>
-                                <span class="nx">monkeyLoader</span><span class="p">.</span><span class="nx">injectScripts</span><span class="p">();</span>
-                            <span class="p">}</span><span class="k">else</span><span class="p">{</span>
-                                <span class="nx">defineCode</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">responseText</span><span class="p">)</span>
-                                <span class="k">if</span><span class="p">(</span><span class="nx">onload</span><span class="p">){</span>
-                                    <span class="nx">onload</span><span class="p">();</span>
-                                <span class="p">}</span>
-                            <span class="p">}</span>
-                        <span class="p">}</span>
-                    <span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">},</span>
-
-        <span class="na">injectScripts</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
-            <span class="kd">var</span> <span class="nx">len</span> <span class="o">=</span> <span class="nx">rawQ</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-            <span class="c1">//按顺序执行队列中的脚本</span>
-            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">len</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-                <span class="kd">var</span> <span class="nx">qScript</span> <span class="o">=</span> <span class="nx">rawQ</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
-                <span class="c1">//没有执行</span>
-                <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">done</span><span class="p">){</span>
-                    <span class="c1">//没有加载完成</span>
-                    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">response</span><span class="p">){</span>
-                        <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s2">"raw code lost or not load!"</span><span class="p">);</span>
-                        <span class="c1">//停止，等待加载完成, 由于脚本是按顺序添加到队列的，因此这里保证了脚本的执行顺序</span>
-                        <span class="k">break</span><span class="p">;</span>
-                    <span class="p">}</span><span class="k">else</span><span class="p">{</span><span class="c1">//已经加载完成了</span>
-                        <span class="nx">defineCode</span><span class="p">(</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">key</span><span class="p">,</span> <span class="nx">qScript</span><span class="p">.</span><span class="nx">response</span><span class="p">)</span>
-                        <span class="k">if</span><span class="p">(</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">onload</span><span class="p">){</span>
-                            <span class="nx">qScript</span><span class="p">.</span><span class="nx">onload</span><span class="p">();</span>
-                        <span class="p">}</span>
-                        <span class="k">delete</span> <span class="nx">qScript</span><span class="p">.</span><span class="nx">response</span><span class="p">;</span>
-                        <span class="nx">qScript</span><span class="p">.</span><span class="nx">done</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-                    <span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">},</span>
-
-        <span class="na">getXHROject</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
-            <span class="c1">//创建XMLHttpRequest对象</span>
-            <span class="kd">var</span> <span class="nx">xmlhttp</span><span class="p">;</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">XMLHttpRequest</span><span class="p">)</span>
-                <span class="p">{</span>
-                    <span class="c1">// code for IE7+, Firefox, Chrome, Opera, Safari</span>
-                    <span class="nx">xmlhttp</span><span class="o">=</span><span class="k">new</span> <span class="nx">XMLHttpRequest</span><span class="p">();</span>
-                <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-                    <span class="c1">// code for IE6, IE5</span>
-                    <span class="nx">xmlhttp</span><span class="o">=</span><span class="k">new</span> <span class="nx">ActiveXObject</span><span class="p">(</span><span class="s2">"Microsoft.XMLHTTP"</span><span class="p">);</span>
-                <span class="p">}</span>
-                <span class="k">return</span> <span class="nx">xmlhttp</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">};</span>
-
-
-    <span class="nx">global</span><span class="p">.</span><span class="nx">monkeyLoader</span> <span class="o">=</span> <span class="nx">monkeyLoader</span><span class="p">.</span><span class="nx">loadInjection</span><span class="p">;</span>
-
-<span class="p">})(</span><span class="k">this</span><span class="p">);</span>
-</code></pre></div>
-<p>在页面中我们可以使用monkeyLoader加载自己的静态资源</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">monkeyLoader</span><span class="p">(</span><span class="s1">'a.js'</span><span class="p">,</span><span class="nx">callbackA</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
-<span class="nx">monkeyLoader</span><span class="p">(</span><span class="s1">'b.js'</span><span class="p">,</span><span class="nx">callbackB</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
-</code></pre></div>
-<p>其中monkeyLoader的三个参数分别是：资源文件路径、资源加载完成后的回调函数、以及资源是否需要有序。</p>
-
-<h3 id="3-fis3-localstorage">3.基于fis3的localstorage集成解决方案</h3>
-
-<p><a href="http://fis.baidu.com/">FIS3</a>作为一个优秀的前端工程化解决方案，其在业界的影响无处不在。作为狼厂的一员，我们在项目中也大量使用FIS3，下面我们讨论一下如何将localstorage集成到FIS3的编译流程中。</p>
-
-<p>我们的目的是将通过FIS3工程化处理后的文件列表传递到monkeyLoader，以实现基于localstorage的加载。FIS3提供了静态资源映射表，当某个文件包含字符 <strong>RESOURCE_MAP</strong>，就会用表结构数据替换此字符，而该表记录了各个原始静态资源经过工程化后的目标文件。基于此，我们只需要对monkeyLoader进行简单的封装即可。下面是具体的封装代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">fisMonkeyLoader</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(</span><span class="nx">resourceMap</span><span class="p">,</span><span class="nx">resourceList</span><span class="p">){</span>
-        <span class="kd">var</span> <span class="nx">pkgList</span> <span class="o">=</span> <span class="p">[];</span>
-        <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">idx</span> <span class="k">in</span> <span class="nx">resourceList</span><span class="p">){</span>
-            <span class="kd">var</span> <span class="nx">resourceItem</span> <span class="o">=</span> <span class="nx">resourceList</span><span class="p">[</span><span class="nx">idx</span><span class="p">];</span>
-            <span class="kd">var</span> <span class="nx">pakItem</span> <span class="o">=</span> <span class="nx">resourceMap</span><span class="p">[</span><span class="s1">'pkg'</span><span class="p">][</span><span class="nx">resourceMap</span><span class="p">[</span><span class="s1">'res'</span><span class="p">][</span><span class="nx">resourceItem</span><span class="p">][</span><span class="s1">'pkg'</span><span class="p">]][</span><span class="s1">'uri'</span><span class="p">];</span>
-            <span class="nx">pkgList</span><span class="p">[</span><span class="nx">pakItem</span><span class="p">]</span> <span class="o">=</span>  <span class="mi">1</span><span class="p">;</span>
-        <span class="p">}</span>
-        <span class="k">for</span><span class="p">(</span><span class="kd">var</span> <span class="nx">pkgIdx</span> <span class="k">in</span> <span class="nx">pkgList</span><span class="p">){</span>
-            <span class="nx">monkeyLoader</span><span class="p">(</span><span class="nx">pkgIdx</span><span class="p">,</span><span class="kc">null</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
-        <span class="p">}</span>
-
-    <span class="p">}</span>
-
-</code></pre></div>
-<p>而使用方法也很简单：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">__inline</span><span class="p">(</span><span class="s1">'../js/lib/monkeyLoader.js'</span><span class="p">);</span>
-<span class="nx">fisMonkeyLoader</span><span class="p">(</span><span class="nx">__RESOURCE_MAP__</span><span class="p">,[</span>
-    <span class="s1">'css/animate.css'</span><span class="p">,</span>
-    <span class="s1">'css/app.css'</span><span class="p">,</span>
-    <span class="s1">'js/lib/zepto-1.1.3.min.js'</span><span class="p">,</span>
-    <span class="s1">'js/app/app.js'</span><span class="p">,</span>
-<span class="p">]);</span>
-
-</code></pre></div>
-<p>fisMonkeyLoader根据<strong>RESOURCE_MAP</strong>找到原始资源对应的经过工程化处理以后的资源，并通过monkeyLoader进行加载。</p>
-
-<p>也许你已经注意到了，使用localstorage只能加载同域的js和css文件，因为我们没办法通过js代码读取其他域下的静态资源的内容。而且localstorage有大小限制，一般情况下每个域名下最多使用5M的本地存储空间，因此我们务必要处理超出大小限制是的异常情况，各个浏览器抛出的异常不太一致，<a href="http://crocodillon.com/blog/always-catch-localstorage-security-and-quota-exceeded-errors">这里给出了一个跨浏览器的异常检测方案</a></p>
-
-<h3 id="4">4.通过预加载解决首次加载过慢问题</h3>
-
-<p>针对目前常见的hybrid架构，我们可以通过让native客户端预加载webview从而提升首次速度。我们的实现是：客户端在启动时打开一个1px大小(用户不可见)的webview用于提前加载某些重要的页面，而这些页面通过上文中的localstorage机制存储了几乎全部js和css静态资源，从而得到webview秒开的体验。</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
 
 <div class="pagination">
   
@@ -777,6 +689,12 @@ localstorage的兼容性问题
       <li>
         
           <a href="/page29">29</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page30">30</a>
         
       </li>
     
