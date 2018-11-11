@@ -156,6 +156,10 @@
 
     
     <url>
+        <loc>/isomorphic-render-xss/</loc>
+    </url>
+    
+    <url>
         <loc>/react16-wried/</loc>
     </url>
     

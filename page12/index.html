@@ -119,6 +119,58 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2015-11-26T00:00:00+08:00"><a href="/chrome-stalled/">November 26, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/chrome-stalled/" rel="bookmark" title="chrome的timeline中stalled问题解析" itemprop="url">chrome的timeline中stalled问题解析</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <p>在公司国做一个运营活动，上线后PM总是抱怨访问速度过慢，影响运营效果。然而从前端的角度来说我已经做了如下优化： css、js合并压缩、图片压缩、雪碧图、静态资源全部上CDN。但是依然很慢，实在s是困惑，通过chrome的timeline分析，发现有些请求确实很慢，但是大部分时间消耗在stalled阶段。如下图:</p>
+
+<figure>
+     <img src="/images/chrome-stalled.jpg" alt="chrome-stalled">
+</figure>
+
+<p>下文来分析具体原因。</p>
+
+<hr>
+
+<p>什么是stalled呢？下面是一段比较容易懂的解释：</p>
+
+<blockquote>
+<p>Time the request spent waiting before it could be sent. This time is inclusive of any time spent in proxy negotiation.Additionally, this time will include when the browser is waiting for an already established connection to become available for re-use, obeying Chrome’s maximum six TCP connection per origin rule.</p>
+</blockquote>
+
+<p>也即是从TCP连接建立完成，到真正可以传输数据之间的时间差。先让我们要分析TCP连接为什么要等待这么久才能用？我用Wireshark抓包发现(如下图)，TCP连接过程中有多次重传，直到达到最大重传次数后连接被客户端重置。</p>
+
+<figure>
+    <img src="/images/wireshark-error.png" alt="wireshark-error">
+</figure>
+
+<p>为什么会发生重传呢？</p>
+
+<blockquote>
+<p>The sender waits for an ACK for the byte-range sent to the client and when not received, resends the packets, after a particular interval. After a certain number of retries, the host is considered to be “down” and the sender gives up and tears down the TCP connection.</p>
+</blockquote>
+
+<p>TCP三次握手后，发送端发送数据后，一段时间内（不同的操作系统时间段不同）接收不到服务端ACK包，就会以
+某一时间间隔(时间间隔一般为指数型增长)重新发送，从重传开始到接收端正确响应的时间就是stalled阶段。而重传超过一定的次数（windows系统是5次），发送端就认为本次TCP连接已经down掉了，需要重新建立连接。
+对比以下，没有重传的http请求过程。如下图：</p>
+
+<figure>
+    <img src="/images/wireshark-normal.jpg" alt="wireshark-normal">
+</figure>
+
+<p>总结一下：stalled阶段时TCP连接的检测过程，如果检测成功就会继续使用该TCP连接发送数据，如果检测失败就会重新建立TCP连接。所以出现stalled阶段过长，往往是丢包所致，这也意味着网络或服务端有问题。</p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2015-11-08T00:00:00+08:00"><a href="/requireJS/">November 08, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -370,253 +422,6 @@ rel="stylesheet" type="text/css" -->
 <p>这些内容是我用将近一周的业余时间的研究心得，希望对你有帮助。当然，这些代码都只是javascript加载系统的基本框架，如果有考虑疏忽的地方，还请你指正。文中的代码只是片段，完整的代码在我的github：<a href="https://github.com/foio/MyRequireJS">https://github.com/foio/MyRequireJS</a></p>
 
 <p>如果你认真的读到这里，我有理由相信你是一个对技术有追求的人，我和你是同类人。 本文是禁止转载的，希望我们互相尊重大家的劳动成果。</p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2015-11-03T00:00:00+08:00"><a href="/javascript-async/">November 03, 2015</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/javascript-async/" rel="bookmark" title="在网页中异步加载javascript" itemprop="url">在网页中异步加载javascript</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <style type="text/css">
-td, table {
-   border: solid gray 1px;
-   padding: 10px;
-}
-</style>
-
-<p>前端工程师都知道script标签会阻塞网页上其他资源的加载。有时候这种阻塞是必要的，因为javascript可能会改变页面结构，进而对后续的资源(css,js)的作用产生影响。但是，当我们能够识别那些对页面结构不产生影响的javascript并且不希望阻塞其他资源时，我们就需要认真的研究一下，javascript异步加载的方式了。</p>
-
-<hr>
-
-<h3 id="1">1. 并行的下载脚本</h3>
-
-<h4 id="1-xhr-eval">(1) XHR eval</h4>
-
-<p>通过XHR技术我们也可以异步地获取js脚本，并通过eval()执行。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">xhrobj</span> <span class="o">=</span> <span class="nx">getXHROject</span><span class="p">();</span>
-<span class="nx">getXHROject</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-    <span class="k">if</span><span class="p">(</span><span class="nx">xhrObj</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span><span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="mi">200</span> <span class="o">==</span> <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">status</span><span class="p">){</span>
-      <span class="nb">eval</span><span class="p">(</span><span class="nx">xhrObj</span><span class="p">.</span><span class="nx">responseText</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-<span class="nx">xhrObj</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="err">‘</span><span class="nx">GET</span><span class="err">’</span><span class="p">,</span><span class="err">’</span><span class="nx">A</span><span class="p">.</span><span class="nx">js</span><span class="err">’</span><span class="p">,</span><span class="kc">true</span><span class="p">)</span>
-<span class="nx">xhrOjb</span><span class="p">.</span><span class="nx">send</span><span class="p">(</span><span class="err">‘’</span><span class="p">);</span>
-</code></pre></div>
-<p>由于XHR请求不能跨域，所以脚本必须和主页部署在相同的域中，脚本可并行下载，而且不阻塞其他资源，但是无法保证多个脚本的执行顺序。</p>
-
-<h4 id="2-script-dom-element">(2) script dom element</h4>
-
-<p>我们也可以直接在浏览器中插入script dom节点。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">scriptElem</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="err">‘</span><span class="nx">script</span><span class="err">’</span><span class="p">);</span>
-<span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="err">‘</span><span class="nx">head</span><span class="err">’</span><span class="p">)[</span><span class="mi">0</span><span class="p">].</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">scriptElem</span><span class="p">);</span>
-</code></pre></div>
-<p>这种方式允许跨域加载js脚本，不阻塞其他资源下载。只有 Firefox 和 Opera 保证脚本按文档中出现的顺序执行，其他浏览器需要工程师自己在代码层面实现执行顺序的控制。Requirjs就是这样实现的。</p>
-
-<h4 id="3-document-write-script-tag">(3) document write script tag</h4>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nb">document</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s2">"&lt;script type="</span><span class="nx">text</span><span class="o">/</span><span class="nx">javascript</span><span class="s2">" src='A.js'&gt;&lt;/script&gt;"</span><span class="p">);</span>
-</code></pre></div>
-<p>注意script Tag和script dom的区别，scritp Tag可以保证多个脚本并行加载，但是会阻塞其他资源并行下载。这种方式可以保证脚本按文档中出现的顺序执行</p>
-
-<h4 id="4-defer-async">(4) defer和async属性</h4>
-
-<p>目前大多数浏览器已经defer和async属性。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1. 如果 async="async"：脚本相对于页面的其余部分异步地执行（当页面继续进行解析时，脚本将被执行）
-2. 如果不使用 async 且 defer="defer"：脚本将在页面完成解析时执行
-3. 如果既不使用 async 也不使用 defer：在浏览器继续解析页面之前，立即读取并执行脚本
-</code></pre></div>
-<p>async=&quot;async&quot;不会阻塞其他资源，但是无法保证脚本的执行顺序。defer=&quot;defer&quot;阻塞其他资源的加载，并且可以保证脚本的执行顺序，但是要到页面解析完成后才开始执行脚本。</p>
-
-<p>这么多种异步加载javascript脚本的方式，各有利弊，接下来研究一下如何控制脚本之间执行的顺序。</p>
-
-<h3 id="2">2.脚本的执行顺序</h3>
-
-<h4 id="1">(1)保证行内脚本和外部脚本的执行顺序</h4>
-
-<p>当外部脚本按常规方式加载时，它会阻塞行内脚本的执行，可以保证顺序。但是脚本通过上述的几种方式异步加载时，就无法保证行内脚本和异步脚本之间的顺序。下面就讲解一下保证行内脚本和外部脚本保证执行顺序的技术。</p>
-
-<h5 id="1">[1].硬编码回调</h5>
-
-<p>如果web开发者能够控制外部脚本，可以在外部脚本回调行内脚本。</p>
-
-<h5 id="2-onlode">[2]onlode事件</h5>
-
-<p>添加script dom节点时，监听加载事件，当脚本成功加载时调用callback(外部脚本)函数。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//行内函数</span>
-<span class="kd">function</span> <span class="nx">callback</span><span class="p">(){</span>
-    <span class="nx">Console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="err">‘</span><span class="nx">calllback</span><span class="err">’</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="c1">//异步加载函数</span>
-<span class="kd">function</span> <span class="nx">loadScript</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="nx">callback</span><span class="p">){</span>
-    <span class="kd">var</span> <span class="nx">script</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span> <span class="p">(</span><span class="s2">"script"</span><span class="p">)</span>
-    <span class="nx">script</span><span class="p">.</span><span class="nx">type</span> <span class="o">=</span> <span class="s2">"text/javascript"</span><span class="p">;</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">script</span><span class="p">.</span><span class="nx">readyState</span><span class="p">){</span> <span class="c1">//IE</span>
-        <span class="nx">script</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">script</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">"loaded"</span> <span class="o">||</span> <span class="nx">script</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">"complete"</span><span class="p">){</span>
-                <span class="nx">script</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
-                <span class="nx">callback</span><span class="p">();</span>
-            <span class="p">}</span>
-        <span class="p">};</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="c1">//Others</span>
-        <span class="nx">script</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-            <span class="nx">callback</span><span class="p">();</span>
-        <span class="p">};</span>
-    <span class="p">}</span>
-    <span class="nx">script</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="nx">url</span><span class="p">;</span>
-    <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="s2">"head"</span><span class="p">)[</span><span class="mi">0</span><span class="p">].</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">script</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="c1">//控制行内脚本和外部脚本的执行顺序</span>
-<span class="nx">loadScript</span><span class="p">(</span><span class="s1">'a.js'</span><span class="p">,</span><span class="nx">callback</span><span class="p">);</span>
-<span class="o">&lt;</span><span class="sr">/script</span><span class="err">&gt;
-</span></code></pre></div>
-<h5 id="3">[3]定时器</h5>
-
-<p>通过定时检查外部脚本的相应变量是否定义，可以判断外部脚本是否加载并执行成功。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span> <span class="nx">src</span><span class="o">=</span><span class="s2">"MyJs.js"</span><span class="o">&gt;&lt;</span><span class="sr">/script</span><span class="err">&gt;
-</span><span class="o">&lt;</span><span class="nx">script</span><span class="o">&gt;</span>
-<span class="kd">function</span> <span class="nx">callback</span><span class="p">(){</span>
-<span class="p">}</span>
-
-<span class="kd">function</span> <span class="nx">checkMyJs</span><span class="p">(){</span>
-    <span class="k">if</span><span class="p">(</span><span class="kc">undefined</span><span class="o">===</span><span class="k">typeof</span><span class="p">(</span><span class="nx">MyJs</span><span class="p">)){</span>
-        <span class="nx">setTimeout</span><span class="p">(</span><span class="nx">checkMyJs</span><span class="p">,</span> <span class="mi">300</span><span class="p">)</span>
-    <span class="p">}</span><span class="k">else</span><span class="p">{</span>
-        <span class="nx">callback</span><span class="p">();</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="o">&lt;</span><span class="sr">/script</span><span class="err">&gt;
-</span></code></pre></div>
-<p>这三种方法都可以保证行内脚本和外部脚本之间的执行顺序。其实最难的是保证多个外部脚本之间的执行顺序，这也是我们接下来要看的内容。</p>
-
-<h4 id="2">(2)保证多个外部脚本之间的执行顺序</h4>
-
-<h5 id="1">[1]. 同域中的脚本</h5>
-
-<p>对于同域中的多个外部脚本，可以使用XHR的方式加载脚本，并通过一个队列来控制脚本的执行顺序。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span><span class="o">&gt;</span>
-    <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span> <span class="o">=</span> <span class="p">{</span>
-        <span class="c1">//脚本队列</span>
-        <span class="nx">queueScripts</span> <span class="o">=</span> <span class="p">[];</span>
-        <span class="nl">loadScriptXhrInjection</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">onload</span><span class="p">,</span><span class="nx">bOrder</span><span class="p">){</span>
-            <span class="kd">var</span> <span class="nx">iQ</span> <span class="o">=</span> <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">queueScripts</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-            <span class="k">if</span><span class="p">(</span><span class="nx">bOrder</span><span class="p">){</span>
-                <span class="kd">var</span> <span class="nx">qScript</span> <span class="o">=</span> <span class="p">{</span><span class="na">response</span><span class="p">:</span> <span class="kc">null</span><span class="p">,</span> <span class="na">onload</span><span class="p">:</span> <span class="nx">onload</span><span class="p">,</span> <span class="na">done</span><span class="p">:</span> <span class="kc">false</span><span class="p">};</span> 
-                <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">queueScripts</span><span class="p">[</span><span class="nx">iQ</span><span class="p">]</span> <span class="o">=</span> <span class="nx">qScript</span><span class="p">;</span>
-            <span class="p">}</span>
-            <span class="kd">var</span> <span class="nx">xhrObj</span> <span class="o">=</span> <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">getXHROject</span><span class="p">();</span>
-            <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-                <span class="k">if</span><span class="p">(</span><span class="nx">xhrObj</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="mi">4</span><span class="p">){</span>
-                    <span class="c1">//有顺序要求的脚本需要添加的队列，按添加顺序执行</span>
-                    <span class="k">if</span><span class="p">(</span><span class="nx">bOrder</span><span class="p">){</span>
-                        <span class="c1">//有顺序要求的脚本需要设置加载和执行状态</span>
-                        <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">queueScripts</span><span class="p">[</span><span class="nx">iQ</span><span class="p">].</span><span class="nx">response</span> <span class="o">=</span> <span class="nx">xhrObj</span><span class="p">.</span><span class="nx">responseText</span><span class="p">;</span>
-                        <span class="c1">//执行脚本队列</span>
-                        <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">injectScripts</span><span class="p">();</span>
-                    <span class="p">}</span><span class="k">else</span><span class="p">{</span><span class="c1">//没有顺序要求的脚本可直接执行</span>
-                        <span class="nb">eval</span><span class="p">(</span><span class="nx">xhrObj</span><span class="p">.</span><span class="nx">responseText</span><span class="p">);</span>
-                        <span class="k">if</span><span class="p">(</span><span class="nx">onload</span><span class="p">){</span>
-                            <span class="nx">onload</span><span class="p">();</span>
-                        <span class="p">}</span>
-                    <span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-
-
-        <span class="nl">injectScripts</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
-            <span class="kd">var</span> <span class="nx">len</span> <span class="o">=</span> <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">queueScripts</span><span class="p">.</span><span class="nx">length</span><span class="p">;</span>
-            <span class="c1">//按顺序执行队列中的脚本</span>
-            <span class="k">for</span> <span class="p">(</span><span class="kd">var</span> <span class="nx">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">len</span><span class="p">;</span> <span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-                <span class="kd">var</span> <span class="nx">qScript</span> <span class="o">=</span> <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">queueScripts</span><span class="p">[</span><span class="nx">i</span><span class="p">];</span>
-                <span class="c1">//没有执行</span>
-                <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">done</span><span class="p">){</span>
-                    <span class="c1">//没有加载完成</span>
-                    <span class="k">if</span><span class="p">(</span><span class="o">!</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">response</span><span class="p">){</span>
-                        <span class="c1">//停止，等待加载完成, 由于脚本是按顺序添加到队列的，因此这里保证了脚本的执行顺序</span>
-                        <span class="k">break</span><span class="p">;</span>
-                    <span class="p">}</span><span class="k">else</span><span class="p">{</span><span class="c1">//已经加载完成了</span>
-                        <span class="nb">eval</span><span class="p">(</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">response</span><span class="p">);</span>
-                        <span class="k">if</span><span class="p">(</span><span class="nx">qScript</span><span class="p">.</span><span class="nx">onload</span><span class="p">){</span>
-                            <span class="nx">qScript</span><span class="p">.</span><span class="nx">onload</span><span class="p">();</span> 
-                        <span class="p">}</span>
-                        <span class="nx">qScript</span><span class="p">.</span><span class="nx">done</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-                    <span class="p">}</span>
-                <span class="p">}</span>
-            <span class="p">};</span>
-        <span class="p">},</span>
-
-        <span class="na">getXHROject</span><span class="p">:</span> <span class="kd">function</span><span class="p">(){</span>
-            <span class="c1">//创建XMLHttpRequest对象</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-
-    <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">loadScriptXhrInjection</span><span class="p">(</span><span class="s1">'A.js'</span><span class="p">,</span><span class="kc">null</span><span class="p">,</span><span class="kc">false</span><span class="p">);</span>
-    <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">loadScriptXhrInjection</span><span class="p">(</span><span class="s1">'B.js'</span><span class="p">,</span><span class="nx">InitB</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
-    <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">Script</span><span class="p">.</span><span class="nx">loadScriptXhrInjection</span><span class="p">(</span><span class="s1">'C.js'</span><span class="p">,</span><span class="nx">InitC</span><span class="p">,</span><span class="kc">true</span><span class="p">);</span>
-<span class="o">&lt;</span><span class="sr">/script</span><span class="err">&gt;
-</span></code></pre></div>
-<h5 id="2">[2]对于不同域的脚本</h5>
-
-<p>script dom element 可以异步脚本脚本，不阻塞其他资源，并且在firefox和opera可以保证执行顺序；而document write script 可以异步加载脚本，会阻塞其他资源，在所有浏览器都可以保证执行顺序。因此我们可以根据浏览器选择以上两种方案来控制
-不同域的脚本的执行顺序。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">script</span><span class="o">&gt;</span>
-    <span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">script</span><span class="p">{</span>
-       <span class="nl">loadScriptDomElement</span><span class="p">:</span><span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span> <span class="nx">onload</span><span class="p">){</span>
-            <span class="kd">var</span> <span class="nx">script</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span> <span class="p">(</span><span class="s2">"script"</span><span class="p">)</span>
-            <span class="nx">script</span><span class="p">.</span><span class="nx">type</span> <span class="o">=</span> <span class="s2">"text/javascript"</span><span class="p">;</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">script</span><span class="p">.</span><span class="nx">readyState</span><span class="p">){</span> <span class="c1">//IE</span>
-                <span class="nx">script</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-                    <span class="k">if</span> <span class="p">(</span><span class="nx">script</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">"loaded"</span> <span class="o">||</span> <span class="nx">script</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">"complete"</span><span class="p">){</span>
-                        <span class="nx">script</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kc">null</span><span class="p">;</span>
-                        <span class="nx">onload</span><span class="p">();</span>
-                    <span class="p">}</span>
-                <span class="p">};</span>
-            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span> <span class="c1">//Others</span>
-                <span class="nx">script</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span>
-                    <span class="nx">onload</span><span class="p">();</span>
-                <span class="p">};</span>
-            <span class="p">}</span>
-            <span class="nx">script</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="nx">url</span><span class="p">;</span>
-            <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="s2">"head"</span><span class="p">)[</span><span class="mi">0</span><span class="p">].</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">script</span><span class="p">);</span>
-        <span class="p">}</span>    
-
-        <span class="nl">loadScriptDomWrite</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">onload</span><span class="p">){</span>
-            <span class="nb">document</span><span class="p">.</span><span class="nx">write</span><span class="p">(</span><span class="s1">'&lt;script  src="'</span><span class="o">+</span><span class="nx">url</span><span class="o">+</span><span class="s1">'" type="text/javascript"&gt;&lt;/script&gt;'</span><span class="p">);</span>  
-            <span class="k">if</span><span class="p">(</span><span class="nx">onload</span><span class="p">){</span>
-                <span class="k">if</span><span class="p">(</span><span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">){</span><span class="c1">//others</span>
-                    <span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="nb">window</span><span class="p">,</span><span class="s1">'load'</span><span class="p">,</span><span class="nx">onload</span><span class="p">);</span>
-                <span class="p">}</span><span class="k">else</span> <span class="k">if</span><span class="p">(</span><span class="nx">elem</span><span class="p">.</span><span class="nx">attachEvent</span><span class="p">){</span> <span class="c1">//IE</span>
-                    <span class="nx">elem</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="nb">window</span><span class="p">,</span><span class="s1">'onload'</span><span class="p">,</span><span class="nx">onload</span><span class="p">);</span>
-                <span class="p">}</span>
-            <span class="p">}</span>
-        <span class="p">}</span> 
-
-        <span class="c1">//根据浏览器选择浏览器加载js的方式</span>
-        <span class="nl">loadScript</span><span class="p">:</span> <span class="kd">function</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">onload</span><span class="p">){</span>
-                <span class="k">if</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span> <span class="o">!=</span> <span class="nx">navigator</span><span class="p">.</span><span class="nx">userAgent</span><span class="p">.</span><span class="nx">idexOf</span><span class="p">(</span><span class="s1">'Firefox'</span><span class="p">)</span> <span class="o">||</span>
-                   <span class="o">-</span><span class="mi">1</span> <span class="o">!=</span> <span class="nx">navigator</span><span class="p">.</span><span class="nx">userAgent</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s1">'Opera'</span><span class="p">)){</span>
-                    <span class="c1">//当浏览器为firefox和opera时通过Script Dom Element 保证脚本执行顺序</span>
-                        <span class="nx">DomTag</span><span class="p">.</span><span class="nx">script</span><span class="p">.</span><span class="nx">loadScriptDomElement</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">onload</span><span class="p">);</span> 
-                <span class="p">}</span><span class="k">else</span><span class="p">{</span>
-                    <span class="c1">//当为其他浏览器时，通过document write Script保证脚本执行顺序。此时脚本的加载会阻塞其他资源，这是一种折衷</span>
-                        <span class="nx">DomTag</span><span class="p">.</span><span class="nx">script</span><span class="p">.</span><span class="nx">loadScriptDomWrite</span><span class="p">(</span><span class="nx">url</span><span class="p">,</span><span class="nx">onload</span><span class="p">);</span>
-                <span class="p">}</span>
-        <span class="p">}</span>  
-<span class="p">}</span>
-<span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">script</span><span class="p">.</span><span class="nx">loadScript</span><span class="p">(</span><span class="s1">'A.js'</span><span class="p">,</span><span class="nx">initA</span><span class="p">);</span>
-<span class="nx">ScriptLoader</span><span class="p">.</span><span class="nx">script</span><span class="p">.</span><span class="nx">loadScript</span><span class="p">(</span><span class="s1">'B.js'</span><span class="p">,</span><span class="nx">initB</span><span class="p">);</span>
-<span class="o">&lt;</span><span class="sr">/script</span><span class="err">&gt;
-</span></code></pre></div>
-<p>夜深了，城市的灯光污染，我无法看到今夜的月。</p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->

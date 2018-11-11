@@ -5,25 +5,25 @@
 <!--[if gt IE 8]><!--> <html class="no-js" lang="en"><!--<![endif]-->
 <head>
 <meta charset="utf-8">
-<title>积木村の研究所</title>
-<meta name="description" content="this is a tech blog by foio">
-<meta name="keywords" content="tech, blog, modern">
+<title>同构渲染的常见风险 &#8211; 积木村の研究所</title>
+<meta name="description" content="同构渲染状态传递过程中常见的问题">
+<meta name="keywords" content="react, isomorphic render, xss">
 
 
 
 <!-- Open Graph -->
 <meta property="og:locale" content="en_US">
 <meta property="og:type" content="article">
-<meta property="og:title" content="积木村の研究所">
-<meta property="og:description" content="this is a tech blog by foio">
-<meta property="og:url" content="/">
+<meta property="og:title" content="同构渲染的常见风险">
+<meta property="og:description" content="同构渲染状态传递过程中常见的问题">
+<meta property="og:url" content="/isomorphic-render-xss/">
 <meta property="og:site_name" content="积木村の研究所">
 
 
 
 
 
-<link rel="canonical" href="/">
+<link rel="canonical" href="/isomorphic-render-xss/">
 <link href="/feed.xml" type="application/atom+xml" rel="alternate" title="积木村の研究所 Feed">
 
 
@@ -59,9 +59,13 @@ rel="stylesheet" type="text/css" -->
 
 
 
+
+<style type="text/css">body {background-image:url(/images/triangular.png);}</style>
+
+
 </head>
 
-<body id="post-index" >
+<body id="post" >
 
 <!--[if lt IE 9]><div class="upgrade"><strong><a href="http://whatbrowser.org/">Your browser is quite old!</strong> Why not upgrade to a different browser to better enjoy this site?</a></div><![endif]-->
 <nav id="dl-menu" class="dl-menuwrapper" role="navigation">
@@ -103,31 +107,21 @@ rel="stylesheet" type="text/css" -->
 </nav><!-- /.dl-menuwrapper -->
 
 
-<div class="entry-header">
-  
-  
-  <div class="header-title">
-    <div class="header-title-wrap">
-      <h1>积木村の研究所</h1>
-      <h2></h2>
-    </div><!-- /.header-title-wrap -->
-  </div><!-- /.header-title -->
-</div><!-- /.entry-header -->
+
 
 <div id="main" role="main">
-  
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2017-10-01T00:00:00+08:00"><a href="/isomorphic-render-xss/">October 01, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/isomorphic-render-xss/" rel="bookmark" title="同构渲染的常见风险" itemprop="url">同构渲染的常见风险</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>使用同构渲染可以明显地改善页面的首屏时间，在各大前端团队中，该技术方案已是标配。同构渲染时，我们往往通过如下方法，把服务端的初始页面状态数据传递到浏览器。</p>
+  <article class="hentry">
+    <header class="header-title">
+      <div class="header-title-wrap">
+        
+          <h1 class="entry-title"><a href="/isomorphic-render-xss/" rel="bookmark" title="同构渲染的常见风险">同构渲染的常见风险</a></h1>
+        
+        <h2>October 01, 2017</h2>
+        
+      </div><!-- /.header-title-wrap -->
+    </header>
+    <div class="entry-content">
+      <p>使用同构渲染可以明显地改善页面的首屏时间，在各大前端团队中，该技术方案已是标配。同构渲染时，我们往往通过如下方法，把服务端的初始页面状态数据传递到浏览器。</p>
 <div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">renderPage</span><span class="p">(</span><span class="nx">renderedString</span><span class="p">,</span> <span class="nx">initialState</span><span class="p">){</span>
     <span class="k">return</span> <span class="err">`</span>
         <span class="o">&lt;</span><span class="nx">html</span><span class="o">&gt;</span>
@@ -196,284 +190,48 @@ rel="stylesheet" type="text/css" -->
 <a href="https://gist.github.com/joni/3760795">https://gist.github.com/joni/3760795</a>
 <a href="https://github.com/tc39/proposal-json-superset">https://github.com/tc39/proposal-json-superset</a></p>
 
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
+      <footer class="entry-meta">
+        <span class="entry-tags"><a href="/tags/#react" title="Pages tagged react" class="tag">react</a><a href="/tags/#isomorphic render" title="Pages tagged isomorphic render" class="tag">isomorphic render</a><a href="/tags/#xss" title="Pages tagged xss" class="tag">xss</a></span>
+        <span><a href="/isomorphic-render-xss/" rel="bookmark" title="同构渲染的常见风险">同构渲染的常见风险</a> was published on <span class="entry-date date published updated"><time datetime="2017-10-01T00:00:00+08:00">October 01, 2017</time></span></span>
+        (revised: <span class="entry-date date modified"><time datetime="2017-10-01">10/01/2017</time></span>)
+        <span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+        
+      </footer>
+    </div><!-- /.entry-content -->
 
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2017-09-10T00:00:00+08:00"><a href="/react16-wried/">September 10, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+    
+	        
+
+    
+    
+    <div class="read-more">
       
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/react16-wried/" rel="bookmark" title="React16升级避坑指南" itemprop="url">React16升级避坑指南</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <h2 id="1">1. 新增环境依赖</h2>
-
-<p>React 16 依赖于ES6新增集合类型 Map 和 Set。若执行环境不支持，可以使用core-js进行polyfill。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">import 'core-js/es6/map';
-import 'core-js/es6/set';
-import React from 'react';
-import ReactDOM from 'react-dom';
-</code></pre></div>
-<p>React16 也依赖于 requestAnimationFrame。</p>
-
-<h2 id="2">2. 新增客户端增量渲染能力</h2>
-
-<p>React16对服务端渲染做了很多优化，真正做到了：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">服务端首次渲染，客户端增量渲染（目前还非常不好用）并添加事件`
-</code></pre></div>
-<p>React15只能做到：服务端首次渲染，客户端添加事件；使用React15时服务端渲染与客户端首次渲染的任何不一致，都会导致服务端渲染输出的DOM树被替换。</p>
-<div class="highlight"><pre><code class="language-" data-lang="">React16保证：在development模式使用React15没有任何warning时，可以无缝升级到React16。
-</code></pre></div>
-<p>但我们很难做到服务端渲染输出的DOM和客户端首次渲染输出的DOM完全一致；这就使得升级React16变得困难。针对这种状况，目前主要有三种升级思路：</p>
-
-<h3 id="2-1">2.1 简单升级，完全放弃新特性</h3>
-
-<p>基于React15时，我们往往误用renderToString，通过renderToString渲染DOM，然后在客户端通过ReactDOM.render渲染出有<code>局部差异</code>的DOM；然而由于React15对服务端渲染DOM和客户端渲染DOM执行严格的一致性检查，所以会用客户端渲染输出DOM替换服务端渲染输出的DOM；这种情况下使用renderToString并不比renderToStaticMarkup有性能优势。</p>
-
-<p>针对这种情况，升级到React16后，我们可以仍然使用renderToStaticMarkup输出服务端DOM，客户端也会使用ReactDOM.render输出的DOM替换服务端输出的DOM；相比React15没有性能上的降级。</p>
-
-<h3 id="2-3">2.3 谨慎升级，客户端不进行增量渲染</h3>
-
-<p>放弃服务端渲染会导致用户可交互时间变长，并不是最优选择。在保证服务端渲染输出的DOM和客户端首次渲染输出的DOM完全一致的情况下，我们可以安全地使用React16，在客户端添加DOM事件。</p>
-
-<p>针对客户端首次渲染的差异性要求，可以组件挂载后设置组件的状态来触发组件重新渲染。比如如下代码：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="nx">isInNavigator</span><span class="p">?</span><span class="s2">"clientClass"</span><span class="p">:</span><span class="s2">"serverClass"</span><span class="p">}}</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
-</span></code></pre></div>
-<p>可改为：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">state</span><span class="o">=</span><span class="p">{</span>
-   <span class="na">divClass</span><span class="p">:</span> <span class="s2">"serverClass"</span>
-<span class="p">}</span>
-<span class="nx">componentDidMount</span><span class="p">(){</span>
-    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
-        <span class="na">divClass</span><span class="p">:</span> <span class="s2">"clientClass"</span>
-    <span class="p">});</span>
-<span class="p">}</span>
-<span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">divClass</span><span class="p">}</span><span class="o">&gt;</span>
-<span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
-</span></code></pre></div>
-<h3 id="2-3">2.3 谨慎升级，客户端进行增量渲染</h3>
-
-<p>React16新增了客户端首次增量渲染的能力，但我们必须非常小心地使用它，因为它并不如我们想象般聪明。目前发现增量渲染有如下问题：</p>
-
-<h4 id="1">(1). 无法触发标签属性变更</h4>
-
-<p><img src="/images/react16-diff1.png" alt="图片描述"></p>
-
-<h4 id="2-dom">(2). 兄弟DOM结构的删除导致页面混乱</h4>
-
-<p><img src="/images/react16-diff2.png" alt="图片描述"></p>
-
-<p><img src="/images/react16-diff3.png" alt="图片描述"></p>
-
-<p>由于React16的客户端首次增量渲染有不少奇怪的问题，目前较为安全的做法是：</p>
-
-<blockquote>
-<p>保证服务端渲染输出的DOM结构与客户端首次渲染输出的DOM结构完全一致，客户端不做增量渲染，仅添加DOM事件。</p>
-</blockquote>
-
-<p><a href="https://github.com/reactjs/react-basic/blob/master/README.md">https://github.com/reactjs/react-basic/blob/master/README.md</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-
-<div class="pagination">
-  
-    Previous
-  
-  <ul class="inline-list">
-    <li>
+        <div class="read-more-header">
+          <a href="/react16-wried/" class="read-more-btn">Read More</a>
+        </div><!-- /.read-more-header -->
+        <div class="read-more-content">
+          <h3><a href="/react16-wried/" title="React16升级避坑指南">React16升级避坑指南</a></h3>
+          <p>总结来从React15升级到React16时遇到的一些奇怪问题 <a href="/react16-wried/">Continue reading</a></p>
+        </div><!-- /.read-more-content -->
       
-        <span class="current-page">1</span>
+      <div class="read-more-list">
+        
+          <div class="list-item">
+            <h4><a href="/chrome-critical-css/" title="一种提取关键样式的方法">一种提取关键样式的方法</a></h4>
+            <span>Published on July 01, 2017</span>
+          </div><!-- /.list-item -->
+        
+          <div class="list-item">
+            <h4><a href="/service-worker-cache/" title="PWA轻度实践：使用service worker对静态资源进行全缓存">PWA轻度实践：使用service worker对静态资源进行全缓存</a></h4>
+            <span>Published on May 01, 2017</span>
+          </div><!-- /.list-item -->
+        
+      </div><!-- /.read-more-list -->
       
-    </li>
-    
-      <li>
-        
-          <a href="/page2">2</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page3">3</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page4">4</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page5">5</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page6">6</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page7">7</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page8">8</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page9">9</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page10">10</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page11">11</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page12">12</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page13">13</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page14">14</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page15">15</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page16">16</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page17">17</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page18">18</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page19">19</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page20">20</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page21">21</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page22">22</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page23">23</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page24">24</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page25">25</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page26">26</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page27">27</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page28">28</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page29">29</a>
-        
-      </li>
-    
-      <li>
-        
-          <a href="/page30">30</a>
-        
-      </li>
-    
-  </ul>
-  
-    <a href="/page2" class="btn">Next</a>
-  
-</div><!-- /.pagination -->
-
+    </div><!-- /.read-more -->
+  </article>
 </div><!-- /#main -->
+
 
 <div class="footer-wrapper">
   <footer role="contentinfo">
@@ -493,7 +251,6 @@ import ReactDOM from 'react-dom';
 </script>
 <script>window.jQuery || document.write('<script src="/assets/js/vendor/jquery-1.9.1.min.js"><\/script>')</script>
 <script src="/assets/js/scripts.min.js"></script>
-          
-
+	        
 </body>
 </html>
