@@ -153,7 +153,15 @@
         <loc>/page30/</loc>
     </url>
     
+    <url>
+        <loc>/page31/</loc>
+    </url>
+    
 
+    
+    <url>
+        <loc>/react-implement/</loc>
+    </url>
     
     <url>
         <loc>/isomorphic-render-xss/</loc>

@@ -119,6 +119,88 @@ rel="stylesheet" type="text/css" -->
 <article class="hentry">
   <header>
     <div class="entry-meta">
+      <span class="entry-date date published updated"><time datetime="2017-09-10T00:00:00+08:00"><a href="/react16-wried/">September 10, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
+      
+    </div><!-- /.entry-meta -->
+    
+      <h1 class="entry-title"><a href="/react16-wried/" rel="bookmark" title="React16升级避坑指南" itemprop="url">React16升级避坑指南</a></h1>
+    
+  </header>
+  <div class="entry-content">
+    <h2 id="1">1. 新增环境依赖</h2>
+
+<p>React 16 依赖于ES6新增集合类型 Map 和 Set。若执行环境不支持，可以使用core-js进行polyfill。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">import 'core-js/es6/map';
+import 'core-js/es6/set';
+import React from 'react';
+import ReactDOM from 'react-dom';
+</code></pre></div>
+<p>React16 也依赖于 requestAnimationFrame。</p>
+
+<h2 id="2">2. 新增客户端增量渲染能力</h2>
+
+<p>React16对服务端渲染做了很多优化，真正做到了：</p>
+<div class="highlight"><pre><code class="language-" data-lang="">服务端首次渲染，客户端增量渲染（目前还非常不好用）并添加事件`
+</code></pre></div>
+<p>React15只能做到：服务端首次渲染，客户端添加事件；使用React15时服务端渲染与客户端首次渲染的任何不一致，都会导致服务端渲染输出的DOM树被替换。</p>
+<div class="highlight"><pre><code class="language-" data-lang="">React16保证：在development模式使用React15没有任何warning时，可以无缝升级到React16。
+</code></pre></div>
+<p>但我们很难做到服务端渲染输出的DOM和客户端首次渲染输出的DOM完全一致；这就使得升级React16变得困难。针对这种状况，目前主要有三种升级思路：</p>
+
+<h3 id="2-1">2.1 简单升级，完全放弃新特性</h3>
+
+<p>基于React15时，我们往往误用renderToString，通过renderToString渲染DOM，然后在客户端通过ReactDOM.render渲染出有<code>局部差异</code>的DOM；然而由于React15对服务端渲染DOM和客户端渲染DOM执行严格的一致性检查，所以会用客户端渲染输出DOM替换服务端渲染输出的DOM；这种情况下使用renderToString并不比renderToStaticMarkup有性能优势。</p>
+
+<p>针对这种情况，升级到React16后，我们可以仍然使用renderToStaticMarkup输出服务端DOM，客户端也会使用ReactDOM.render输出的DOM替换服务端输出的DOM；相比React15没有性能上的降级。</p>
+
+<h3 id="2-3">2.3 谨慎升级，客户端不进行增量渲染</h3>
+
+<p>放弃服务端渲染会导致用户可交互时间变长，并不是最优选择。在保证服务端渲染输出的DOM和客户端首次渲染输出的DOM完全一致的情况下，我们可以安全地使用React16，在客户端添加DOM事件。</p>
+
+<p>针对客户端首次渲染的差异性要求，可以组件挂载后设置组件的状态来触发组件重新渲染。比如如下代码：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="nx">isInNavigator</span><span class="p">?</span><span class="s2">"clientClass"</span><span class="p">:</span><span class="s2">"serverClass"</span><span class="p">}}</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span></code></pre></div>
+<p>可改为：</p>
+<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">state</span><span class="o">=</span><span class="p">{</span>
+   <span class="na">divClass</span><span class="p">:</span> <span class="s2">"serverClass"</span>
+<span class="p">}</span>
+<span class="nx">componentDidMount</span><span class="p">(){</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">setState</span><span class="p">({</span>
+        <span class="na">divClass</span><span class="p">:</span> <span class="s2">"clientClass"</span>
+    <span class="p">});</span>
+<span class="p">}</span>
+<span class="o">&lt;</span><span class="nx">div</span> <span class="nx">className</span><span class="o">=</span><span class="p">{</span><span class="k">this</span><span class="p">.</span><span class="nx">state</span><span class="p">.</span><span class="nx">divClass</span><span class="p">}</span><span class="o">&gt;</span>
+<span class="o">&lt;</span><span class="sr">/div</span><span class="err">&gt;
+</span></code></pre></div>
+<h3 id="2-3">2.3 谨慎升级，客户端进行增量渲染</h3>
+
+<p>React16新增了客户端首次增量渲染的能力，但我们必须非常小心地使用它，因为它并不如我们想象般聪明。目前发现增量渲染有如下问题：</p>
+
+<h4 id="1">(1). 无法触发标签属性变更</h4>
+
+<p><img src="/images/react16-diff1.png" alt="图片描述"></p>
+
+<h4 id="2-dom">(2). 兄弟DOM结构的删除导致页面混乱</h4>
+
+<p><img src="/images/react16-diff2.png" alt="图片描述"></p>
+
+<p><img src="/images/react16-diff3.png" alt="图片描述"></p>
+
+<p>由于React16的客户端首次增量渲染有不少奇怪的问题，目前较为安全的做法是：</p>
+
+<blockquote>
+<p>保证服务端渲染输出的DOM结构与客户端首次渲染输出的DOM结构完全一致，客户端不做增量渲染，仅添加DOM事件。</p>
+</blockquote>
+
+<p><a href="https://github.com/reactjs/react-basic/blob/master/README.md">https://github.com/reactjs/react-basic/blob/master/README.md</a></p>
+
+  </div><!-- /.entry-content -->
+</article><!-- /.hentry -->
+
+<article class="hentry">
+  <header>
+    <div class="entry-meta">
       <span class="entry-date date published updated"><time datetime="2017-07-01T00:00:00+08:00"><a href="/chrome-critical-css/">July 01, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
       
     </div><!-- /.entry-meta -->
@@ -245,290 +327,6 @@ rel="stylesheet" type="text/css" -->
 <p><a href="https://github.com/foio/chromeCriticalCss">https://github.com/foio/chromeCriticalCss</a></p>
 
 <p><a href="https://github.com/postcss/postcss">https://github.com/postcss/postcss</a></p>
-
-  </div><!-- /.entry-content -->
-</article><!-- /.hentry -->
-
-<article class="hentry">
-  <header>
-    <div class="entry-meta">
-      <span class="entry-date date published updated"><time datetime="2017-05-01T00:00:00+08:00"><a href="/service-worker-cache/">May 01, 2017</a></time></span><span class="author vcard"><span class="fn"><a href="/about/" title="About foio">foio</a></span></span>
-      
-    </div><!-- /.entry-meta -->
-    
-      <h1 class="entry-title"><a href="/service-worker-cache/" rel="bookmark" title="PWA轻度实践：使用service worker对静态资源进行全缓存" itemprop="url">PWA轻度实践：使用service worker对静态资源进行全缓存</a></h1>
-    
-  </header>
-  <div class="entry-content">
-    <p>Web应用加载性能的优化， 一直围绕着对静态资源地缓存。实现手段也从最初的<a href="http://foio.github.io/cache-negotiate/">浏览器和服务器缓存协商</a>，到<a href="http://foio.github.io/html5-application-cache/">HTML5离线缓存机制</a>和<a href="http://foio.github.io/localstorage-webview/">使用localstorage缓存js和css</a>。Google提出<a href="https://developers.google.com/web/progressive-web-apps/">PWA(Progress Web Apps)</a>的方案后，更证明了缓存的价值。</p>
-
-<p>PWA被Google称为下一代web应用技术，对比传统的Web应用技术，其主要有如下特点：借助于Service Worker提供的可编程式缓存，实现更可靠地(不同网络状态下)、速度更快地用户体验；借助于Web App Manifest将Web应用像原生应用一样安装到系统主屏。由于各个浏览器对PWA的兼容实现进度不一，我们暂时无法大规模实施PWA方案；真正应该引起我们注意的是其背后的技术方案：Service Worker。本文我们借助于Service Worker对PWA进行部分实践，将静态资源的缓存技术提升一个维度。</p>
-
-<p>HTML5标准中引入了web worker，它是运行在后台的JavaScript，独立于其他脚本，不会影响页面的性能。Service Worker就是Web Worker的一种实现，充当Web应用程序的本地代理服务器；在特定路径注册Service Worker后，我们可以拦截并处理该路径下的所有网络请求；本文中，我们就是借助于这种代理机制，实现对web页面核心资源可编程式缓存。</p>
-
-<h2 id="1-service-worker">1. Service Worker基础知识</h2>
-
-<h3 id="1-1">1.1 基本用法</h3>
-
-<h4 id="1-service-worker">(1) 注册Service Worker</h4>
-
-<p>在支持Service Worker的浏览器中，我们可以通过register方法，在当前域名的某个路径下注册一个service worker脚本：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">navigator</span><span class="p">.</span><span class="nx">serviceWorker</span><span class="p">.</span><span class="nx">register</span><span class="p">(</span><span class="s1">'your_service_worker.js'</span><span class="p">,{</span><span class="na">scope</span><span class="p">:</span> <span class="s1">'your-path-name'</span><span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">registration</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'[SW]: Registration succeeded.'</span><span class="p">);</span>
-<span class="p">}).</span><span class="k">catch</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'[SW]: Registration failed with.'</span> <span class="o">+</span> <span class="nx">error</span><span class="p">);</span>
-<span class="p">});</span>
-
-</code></pre></div>
-<h4 id="2-service-worker">(2) 注销Service Worker</h4>
-
-<p>同样地，我们可以通过getRegistration获取已经注册的Service Worker，并通过unregister取消已经注册的Service Worker脚本。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">navigator</span><span class="p">.</span><span class="nx">serviceWorker</span><span class="p">.</span><span class="nx">getRegistration</span><span class="p">(</span><span class="s1">'your_service_worker.js'</span><span class="p">,{</span><span class="na">scope</span><span class="p">:</span> <span class="s1">'your-path-name'</span><span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">registration</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">registration</span> <span class="o">&amp;&amp;</span> <span class="nx">registration</span><span class="p">.</span><span class="nx">unregister</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">registration</span><span class="p">.</span><span class="nx">unregister</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">isUnRegistered</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">isUnRegistered</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'[SW]: UnRegistration  succeeded.'</span><span class="p">);</span>
-            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-                <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'[SW]: UnRegistration failed.'</span><span class="p">);</span>
-            <span class="p">}</span>
-        <span class="p">});</span>
-    <span class="p">}</span>
-<span class="p">).</span><span class="k">catch</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'[SW]: UnRegistration failed with. '</span> <span class="o">+</span> <span class="nx">error</span><span class="p">);</span>
-<span class="p">});</span>
-</code></pre></div>
-<h4 id="3-service-worker">(3) Service Worker脚本</h4>
-
-<p>通过register方法，注册Service Worker脚本后，就可以通过监听Service Worker提供的生命周期方法来实现我们自己的业务逻辑了。如下的代码实现了一个简单的功能：监听Service Worker的install事件、activate事件和fetch事件，打印出所有的网络请求url。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">self</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'install'</span><span class="p">,</span> <span class="nx">event</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'sw installing…'</span><span class="p">);</span>
-<span class="p">});</span>
-
-<span class="nx">self</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'activate'</span><span class="p">,</span> <span class="nx">event</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'sw now ready!'</span><span class="p">);</span>
-<span class="p">});</span>
-
-<span class="nx">self</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'fetch'</span><span class="p">,</span> <span class="nx">event</span> <span class="o">=&gt;</span> <span class="p">{</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">request</span><span class="p">.</span><span class="nx">url</span><span class="p">);</span>
-  <span class="k">return</span><span class="p">;</span>
-<span class="p">});</span>
-</code></pre></div>
-<h3 id="2-2">2.2 生命周期</h3>
-
-<p>作为一个事件驱动的本地代理服务，Service Worker有着复杂的生命周期。如下图所示</p>
-
-<p><img src="/images/sw-lifecycle.png" alt="sw lifecycle image"></p>
-
-<p>我们主要关注Service Worker脚本的下载、解析、安装、激活、废弃</p>
-
-<h4 id="1">(1) 下载并解析</h4>
-
-<p>在注册Service Worker后，浏览器首先从指定路径下载并解析工作线程脚本。需要注意的是，出于安全考量，工作线程脚本只能由HTTPS承载；为了方便调试，使用localhost域名可以本地在调试工作线程脚本。</p>
-
-<h4 id="2">(2) 安装</h4>
-
-<p>成功下载并正确解析后，浏览器开始安装工作线程脚本。如果安装成功，则Service Worker会触发install事件并进入等待激活(Activating)状态，安装失败则Service Worker进入废弃(Redundant)状态。</p>
-
-<h4 id="3">(3) 激活</h4>
-
-<p>处于等待激活的Service Worker，会在以下之一的情况下，会被触发激活
-- 当前已无其他处于激活状态的Service Worker
-- 通过调用self.skipWaiting()强制激活
-- 此前处于激活状态的Service Worker已经过期(通过刷新页面可以使旧的Service Worker过期)</p>
-
-<p>激活成功后，Service Worker会触发active事件，并开始事实上接管页面的所有网络请求(fetch)。激活失败则Service Worker会进入废弃(Redundant)状态。</p>
-
-<h4 id="4-redundant">(4) 废弃(Redundant)</h4>
-
-<p>Service Worker可能以下之一的原因而被废弃(redundant)
-- installing 事件失败
-- activating 事件失败
-- 被新的Service Worker取代</p>
-
-<p>Service Worker生命周期的任何过程出现错误都会导致其进入废弃(Redundant)状态，而处于废弃(Redundant)状态的Service Worker，对页面没有控制权，这样就保证了错误Service Worker不会干扰页面的正常加载流程。</p>
-
-<h3 id="2-3">2.3 主要依赖</h3>
-
-<p>Service Worker作为现代浏览器的高级特性，依赖于fetch、promise、<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/CacheStorage">CacheStorage</a>、<a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Cache">cache</a>、等浏览器基础能力。对每一个前端开发来说，fetch和promise应该都比较熟悉了。而Cache提供了Request / Response对象对的存储机制。而CacheStorage则提供了存储Cache对象的机制。</p>
-
-<p><img src="/images/sw-cache-storage.png" alt="sw lifecycle image"></p>
-
-<h2 id="3">3. 静态资源全缓存最佳实践</h2>
-
-<p>PWA(Progress Web Apps)倡导离线可用的WEB应用，缓存包括主资源HTML文档在内的所有资源；这就使得WEB应用的程序入口由HTML文档变成Service Worker本身，我们也因此失去了对web应用的控制权；而且不同浏览器对Service Worker更新机制的实现并不一致，这可能导致我们陷入WEB应用无法更新或者更新不及时的危险之中。本文中我们探讨一种更具有可行性的方案：依然把HTML文档作为Web应用的入口，考虑只把Service Worker作为可编程的缓存，使用它来缓存包括css、js等在内的页面核心静态资源。</p>
-
-<p>使用Service Worker缓存资源的一般思路是：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">监听install事件提前缓存静态资源
-监听fetch事件,拦截网络请求并返回cache中已缓存的资源
-</code></pre></div>
-<p>如下所示：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">var</span> <span class="nx">CACHE_NAME</span> <span class="o">=</span> <span class="s1">'my-site-cache-v1'</span><span class="p">;</span>
-<span class="kd">var</span> <span class="nx">urlsToCache</span> <span class="o">=</span> <span class="p">[</span>
-  <span class="s1">'/'</span><span class="p">,</span>
-  <span class="s1">'/styles/main.css'</span><span class="p">,</span>
-  <span class="s1">'/script/main.js'</span>
-<span class="p">];</span>
-
-<span class="c1">//service worker安装成功后开始缓存所需的资源</span>
-<span class="nx">self</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'install'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">// Perform install steps</span>
-  <span class="nx">event</span><span class="p">.</span><span class="nx">waitUntil</span><span class="p">(</span>
-    <span class="nx">caches</span><span class="p">.</span><span class="nx">open</span><span class="p">(</span><span class="nx">CACHE_NAME</span><span class="p">)</span>
-      <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">cache</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'Opened cache'</span><span class="p">);</span>
-        <span class="k">return</span> <span class="nx">cache</span><span class="p">.</span><span class="nx">addAll</span><span class="p">(</span><span class="nx">urlsToCache</span><span class="p">);</span>
-      <span class="p">})</span>
-  <span class="p">);</span>
-<span class="p">});</span>
-
-<span class="c1">//监听浏览器的所有fetch请求，对已经缓存的资源使用本地缓存回复</span>
-<span class="nx">self</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'fetch'</span><span class="p">,</span> <span class="kd">function</span><span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
-  <span class="nx">event</span><span class="p">.</span><span class="nx">respondWith</span><span class="p">(</span>
-    <span class="nx">caches</span><span class="p">.</span><span class="nx">match</span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">request</span><span class="p">)</span>
-      <span class="p">.</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">//该fetch请求已经缓存</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
-          <span class="k">return</span> <span class="nx">response</span><span class="p">;</span>
-        <span class="p">}</span>
-        <span class="k">return</span> <span class="nx">fetch</span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">request</span><span class="p">);</span>
-      <span class="p">}</span>
-    <span class="p">)</span>
-  <span class="p">);</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>上述简单的示例描述了Service Worker的基本用法，但依然有不少问题，下面我们详细的讨论如何借助Service Worker实现一套安全、可靠的缓存系统。</p>
-
-<h3 id="3-1">3.1 版本控制</h3>
-
-<p>使用Service Worker作为缓存系统的一个核心优势之一，就是它的细粒度可控性；但这意味着我们需要自己处理缓存的版本管理问题。cacheStorage为此提供了简单的API，方便我们遍历所有的cache、找出过期的cache并删除：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">deleteObsoleteCache</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nx">caches</span><span class="p">.</span><span class="nx">keys</span><span class="p">().</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">keys</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">all</span> <span class="o">=</span> <span class="nx">keys</span><span class="p">.</span><span class="nx">map</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">key</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">key</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">CACHE_PREFIX</span><span class="p">)</span> <span class="o">!==</span> <span class="o">-</span><span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="nx">key</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">CACHE_VERSION</span><span class="p">)</span> <span class="o">===</span> <span class="o">-</span><span class="mi">1</span><span class="p">){</span>
-                  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'[SW]: Delete cache:'</span> <span class="o">+</span> <span class="nx">key</span><span class="p">);</span>
-                  <span class="k">return</span> <span class="nx">caches</span><span class="p">.</span><span class="k">delete</span><span class="p">(</span><span class="nx">key</span><span class="p">);</span>
-            <span class="p">}</span>
-        <span class="p">});</span>
-        <span class="k">return</span> <span class="nx">Promise</span><span class="p">.</span><span class="nx">all</span><span class="p">(</span><span class="nx">all</span><span class="p">);</span>
-    <span class="p">});</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>上述代码中，我们通过使用CACHE_PREFIX和CACHE_VERSION来标志web应用的缓存版本。其中CACHE_PREFIX是应用的cache前缀，CACHE_VERSION是本次cache的版本号，CACHE_PREFIX+CACHE_VERSION就构成了本次cache的key。我们遍历cacheStorage中所有的key，并找出该web应用已经过期的key，然后从cacheStorage中删除对应的cache。</p>
-
-<h3 id="3-3">3.3 白名单控制</h3>
-
-<p>默认情况下，Service Worker会代理页面中的所有网络请求；而比较安全的做法是通过通过白名单控制需要代理的网络请求url，并对其他请求使用浏览器默认行为。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//资源白名单，一般通过构建工具(webpack)生成</span>
-<span class="kd">var</span> <span class="nx">allAssets</span> <span class="o">=</span> <span class="p">[</span>
-  <span class="s1">'//your.cdn.com/app.css'</span><span class="p">,</span>
-  <span class="s1">'//your.cdn.com/common.js'</span><span class="p">,</span>
-  <span class="s1">'//your.cdn.com/index.js'</span>
-<span class="p">];</span>
-
-<span class="c1">//白名单匹配策略</span>
-<span class="kd">function</span> <span class="nx">matchAssets</span><span class="p">(</span><span class="nx">requestUrl</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kd">var</span> <span class="nx">urlObj</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">URL</span><span class="p">(</span><span class="nx">requestUrl</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">noProtocolUrl</span> <span class="o">=</span> <span class="nx">urlObj</span><span class="p">.</span><span class="nx">href</span><span class="p">.</span><span class="nx">substr</span><span class="p">(</span><span class="nx">urlObj</span><span class="p">.</span><span class="nx">protocol</span><span class="p">.</span><span class="nx">length</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">allAssets</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="nx">noProtocolUrl</span><span class="p">)</span> <span class="o">!==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="kc">true</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="kc">false</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="c1">//监听fetch事件，并只代理白名单中的GET网络请求</span>
-<span class="nx">self</span><span class="p">.</span><span class="nx">addEventListener</span><span class="p">(</span><span class="s1">'fetch'</span><span class="p">,</span> <span class="kd">function</span> <span class="p">(</span><span class="nx">event</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">try</span><span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">requestUrl</span> <span class="o">=</span> <span class="nx">event</span><span class="p">.</span><span class="nx">request</span><span class="p">.</span><span class="nx">url</span><span class="p">;</span>
-        <span class="kd">var</span> <span class="nx">isGET</span> <span class="o">=</span> <span class="nx">event</span><span class="p">.</span><span class="nx">request</span><span class="p">.</span><span class="nx">method</span> <span class="o">===</span> <span class="s1">'GET'</span><span class="p">;</span>
-        <span class="kd">var</span> <span class="nx">assetMatches</span> <span class="o">=</span> <span class="nx">matchAssets</span><span class="p">(</span><span class="nx">requestUrl</span><span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">assetMatches</span> <span class="o">||</span> <span class="o">!</span><span class="nx">isGET</span><span class="p">)</span> <span class="p">{</span>
-            <span class="k">return</span><span class="p">;</span>
-        <span class="p">}</span>
-        <span class="kd">var</span> <span class="nx">resource</span> <span class="o">=</span> <span class="nx">cacheFirstResponse</span><span class="p">(</span><span class="nx">event</span><span class="p">);</span>
-        <span class="nx">event</span><span class="p">.</span><span class="nx">respondWith</span><span class="p">(</span><span class="nx">resource</span><span class="p">);</span>
-    <span class="p">}</span><span class="k">catch</span><span class="p">(</span><span class="nx">ex</span><span class="p">){</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">error</span><span class="p">(</span><span class="s1">'[SW]: handle fetch event error, fallback'</span><span class="p">);</span>
-        <span class="k">return</span><span class="p">;</span>
-    <span class="p">}</span>
-<span class="p">});</span>
-</code></pre></div>
-<p>一般情况下，我们会在构建阶段通过构建工具生成资源白名单；上述代码中，我们了实现白名单匹配策略；然后使用Service Worker监听fetch事件，有选择地只对白名单中的网络请求进行处理。</p>
-
-<h3 id="3-4">3.4 安全性问题规避</h3>
-
-<h4 id="1">（1）跨域请求支持</h4>
-
-<p>Service Worker可以拦截它管辖范围内的所有请求，跨域资源也不例外。但是浏览器默认对跨域资源发起的是ncors请求，得到的response是opaque的，这导致我们无法判断跨域请求是否成功，以便进行缓存。
-对于跨域请求，我们需要修改fetch请求头，添加<code>mode:&#39;cros&#39;</code>标记。</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="c1">//初始化请求参数，添加跨域头</span>
-<span class="kd">var</span> <span class="nx">fetchInitParam</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="na">mode</span><span class="p">:</span> <span class="s1">'cors'</span>
-<span class="p">};</span>
-
-
-<span class="kd">function</span> <span class="nx">fetchCros</span><span class="p">(</span><span class="nx">request</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">//add cros header</span>
-    <span class="k">return</span> <span class="nx">fetch</span><span class="p">(</span><span class="nx">request</span><span class="p">.</span><span class="nx">url</span><span class="p">,</span> <span class="nx">fetchInitParam</span><span class="p">);</span>
-<span class="p">}</span>
-</code></pre></div>
-<h4 id="2">（2）避免缓存错误的结果</h4>
-
-<p>由于更新机制的问题，如果Service Worker缓存了错误的结果，将会对web应用造成灾难性的后果。我们必须小心翼翼的检查网络返回是否准确。一种常见的做法是只缓存满足如下条件的结果：</p>
-<div class="highlight"><pre><code class="language-" data-lang="">1. 响应状态码为200；避免缓存304、404、50x等常见的结果
-2. 响应类型为basic或者cors；即只缓存同源、或者正确地跨域请求结果；避免缓存错误的响应（error）和不正确的跨域请求响应（opaque）
-</code></pre></div>
-<p>如下代码所示：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="nx">fetchCros</span><span class="p">(</span><span class="nx">request</span><span class="p">).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span> <span class="p">(</span><span class="nx">response</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">//严格判断缓存是否成功</span>
-  <span class="k">if</span> <span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">status</span> <span class="o">===</span> <span class="mi">200</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">response</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="s1">'basic'</span> <span class="o">||</span> <span class="nx">response</span><span class="p">.</span><span class="nx">type</span> <span class="o">===</span> <span class="s1">'cors'</span><span class="p">))</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'[SW]: URL ['</span> <span class="o">+</span> <span class="nx">request</span><span class="p">.</span><span class="nx">url</span> <span class="o">+</span> <span class="s1">'] from network'</span><span class="p">);</span>
-    <span class="nx">cache</span><span class="p">.</span><span class="nx">put</span><span class="p">(</span><span class="nx">event</span><span class="p">.</span><span class="nx">request</span><span class="p">,</span> <span class="nx">response</span><span class="p">.</span><span class="nx">clone</span><span class="p">());</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">'[SW]: URL ['</span> <span class="o">+</span> <span class="nx">event</span><span class="p">.</span><span class="nx">request</span><span class="p">.</span><span class="nx">url</span> <span class="o">+</span> <span class="s1">'] wrong response: ['</span> <span class="o">+</span> <span class="nx">response</span><span class="p">.</span><span class="nx">status</span> <span class="o">+</span> <span class="s1">'] '</span> <span class="o">+</span> <span class="nx">response</span><span class="p">.</span><span class="nx">type</span><span class="p">);</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="nx">response</span><span class="p">;</span>
-<span class="p">});</span>
-</code></pre></div>
-<h4 id="3-http">(3) http缓存穿透</h4>
-
-<p>需要注意的是在Service Worker脚本中，使用fetch发起网络请求时，依然会使用浏览器和服务端的缓存协商机制. 而在使用Service Worker缓存js、css等资源文件时，我们尤其需要注意，因为这些文件都是放在CDN中的，往往都使用了强缓存策略。
-这样就会导致我们对资源文件的fetch请求，大部分会返回304状态。为了避免缓存错误的结果，我们只能放弃对该资源的缓存，从而导致Service Worker工作机制失效。往往通过对请求添加时间戳，就可以绕过浏览器的默认缓存协商机制：</p>
-<div class="highlight"><pre><code class="language-javascript" data-lang="javascript"><span class="kd">function</span> <span class="nx">applyCacheBust</span><span class="p">(</span><span class="nx">assetURL</span><span class="p">)</span> <span class="p">{</span>
-    <span class="kd">var</span> <span class="nx">hasQuery</span> <span class="o">=</span> <span class="nx">assetURL</span><span class="p">.</span><span class="nx">indexOf</span><span class="p">(</span><span class="s1">'?'</span><span class="p">)</span> <span class="o">!==</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
-    <span class="k">return</span> <span class="nx">assetURL</span> <span class="o">+</span> <span class="p">(</span><span class="nx">hasQuery</span> <span class="p">?</span> <span class="s1">'&amp;'</span> <span class="p">:</span> <span class="s1">'?'</span><span class="p">)</span> <span class="o">+</span> <span class="s1">'__bust='</span> <span class="o">+</span> <span class="nb">encodeURIComponent</span><span class="p">(</span><span class="nx">CACHE_TAG</span><span class="p">)</span> <span class="o">+</span> <span class="s1">'-'</span> <span class="o">+</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">();</span>
-<span class="p">}</span>
-</code></pre></div>
-<p>除了上述几点之外，我们还需要注意避免在install阶段缓存过多资源，以防止install失败；而且需要注意在fetch事件处理出现异常时，跳过Service Worker，而使用浏览器默认请求，以降低Service Worker对Web应用可用性的影响；当然，在极端情况下，我们还需要提供快速取消Service Worker注册的机制。</p>
-
-<p><a href="https://developers.google.com/web/progressive-web-apps/">https://developers.google.com/web/progressive-web-apps/</a></p>
-
-<p><a href="https://developers.google.com/web/fundamentals/engage-and-retain/web-app-manifest/">https://developers.google.com/web/fundamentals/engage-and-retain/web-app-manifest/</a></p>
-
-<p><a href="https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API">https://developer.mozilla.org/zh-CN/docs/Web/API/Service_Worker_API</a></p>
-
-<p><a href="https://bitsofco.de/the-service-worker-lifecycle/">https://bitsofco.de/the-service-worker-lifecycle/</a></p>
-
-<p><a href="https://w3ctech.com/topic/866">https://w3ctech.com/topic/866</a></p>
-
-<p><a href="https://github.com/ruanyf/articles/blob/master/dev/web/serviceworker.md">https://github.com/ruanyf/articles/blob/master/dev/web/serviceworker.md</a></p>
-
-<p><a href="https://github.com/pazguille/offline-first">https://github.com/pazguille/offline-first</a></p>
-
-<p><a href="https://github.com/NekR/offline-plugin">https://github.com/NekR/offline-plugin</a></p>
-
-<p><a href="https://github.com/GoogleChrome/sw-precache">https://github.com/GoogleChrome/sw-precache</a></p>
-
-<p><a href="https://jakearchibald.com/2016/caching-best-practices/">https://jakearchibald.com/2016/caching-best-practices/</a></p>
-
-<p><a href="https://github.com/lyzadanger/serviceworker-example/blob/master/03-versioning/serviceWorker.js">https://github.com/lyzadanger/serviceworker-example/blob/master/03-versioning/serviceWorker.js</a></p>
-
-<p><a href="https://googlechrome.github.io/sw-toolbox/usage.html">https://googlechrome.github.io/sw-toolbox/usage.html</a></p>
-
-<p><a href="https://www.smashingmagazine.com/2016/02/making-a-service-worker/">https://www.smashingmagazine.com/2016/02/making-a-service-worker/</a></p>
-
-<p><a href="https://x5.tencent.com/tbs/guide/serviceworker.html">https://x5.tencent.com/tbs/guide/serviceworker.html</a></p>
-
-<p><a href="https://developer.mozilla.org/en-US/docs/Web/API/Response/type">https://developer.mozilla.org/en-US/docs/Web/API/Response/type</a></p>
 
   </div><!-- /.entry-content -->
 </article><!-- /.hentry -->
@@ -718,6 +516,12 @@ rel="stylesheet" type="text/css" -->
       <li>
         
           <a href="/page30">30</a>
+        
+      </li>
+    
+      <li>
+        
+          <a href="/page31">31</a>
         
       </li>
     
